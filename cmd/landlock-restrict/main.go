@@ -7,7 +7,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/gnoack/landlock"
+	"github.com/gnoack/golandlock"
 )
 
 func parseFlags(args []string) (verbose bool, ro, rw, cmd []string) {
@@ -63,7 +63,7 @@ func main() {
 		log.Fatalf("Need absolute binary path, got %q", cmdArgs[0])
 	}
 
-	err := landlock.Restrict(roPaths, nil, rwPaths, nil)
+	err := golandlock.Restrict(roPaths, nil, rwPaths, nil)
 	if err != nil {
 		log.Fatalf("landlock: %v", err)
 	}
