@@ -1,3 +1,4 @@
+// Package golandlock provides a high-level interface to the Linux Landlock sandboxing feature.
 package golandlock
 
 import (
@@ -15,6 +16,28 @@ const (
 	accessFsRoughlyWrite = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
 )
 
+// Restrict restricts the current process to only "see" the files
+// provided as inputs. After this call successfully returns, the same
+// process can't open files for reading and writing any more and
+// modify subdirectories.
+//
+// roDirs: Directory paths permitted for reading. All files and
+// directories below should be readable.
+//
+// ro: Specific files permitted for reading.
+//
+// rwDirs: Directory paths permitted for writing. All files and
+// directories below are writable, and directory entries can be
+// modified.
+//
+// rw: Specific files permitted for writing.
+//
+// This function returns an error if the current kernel does not
+// support Landlock or if any of the given paths does not denote
+// an actual directory.
+//
+// This function implicitly sets the "no new privileges" flag on the
+// current process.
 func Restrict(roDirs, ro, rwDirs, rw []string) error {
 	rulesetAttr := ll.RulesetAttr{
 		HandledAccessFs: uint64(accessFsRoughlyRead | accessFsRoughlyWrite),

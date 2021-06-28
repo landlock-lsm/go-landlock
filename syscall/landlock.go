@@ -1,3 +1,4 @@
+// Package syscall provides a low-level interface to the Linux Landlock sandboxing feature.
 package syscall
 
 import (
@@ -54,11 +55,11 @@ type ruleType int
 const RuleTypePathBeneath ruleType = 1
 
 type PathBeneathAttr struct {
-	// allowedAccess is a bitmask of allowed actions for this file hierarchy
+	// AllowedAccess is a bitmask of allowed actions for this file hierarchy
 	// (cf. "Filesystem flags").
 	AllowedAccess uint64
 
-	// parentFd is a file descriptor, open with `O_PATH`, which identifies
+	// ParentFd is a file descriptor, open with `O_PATH`, which identifies
 	// the parent directory of a file hierarchy, or just a file.
 	ParentFd int
 }
