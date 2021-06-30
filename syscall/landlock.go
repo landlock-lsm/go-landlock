@@ -13,7 +13,7 @@ const (
 	SYS_LANDLOCK_RESTRICT_SELF  = 446
 )
 
-// Landlock access permissions
+// Landlock access permissions, for use in "access" bit fields:
 const (
 	AccessFSExecute    = (1 << 0)
 	AccessFSWriteFile  = (1 << 1)
@@ -39,8 +39,11 @@ type RulesetAttr struct {
 	HandledAccessFs uint64
 }
 
+// The size of the RulesetAttr struct in bytes.
 const rulesetAttrSize = 8
 
+// LandlockCreateRuleset creates a ruleset file descriptor with the
+// given attributes.
 func LandlockCreateRuleset(attr *RulesetAttr, flags int) (fd int, err error) {
 	r0, _, e1 := syscall.Syscall(SYS_LANDLOCK_CREATE_RULESET, uintptr(unsafe.Pointer(attr)), uintptr(rulesetAttrSize), uintptr(flags))
 	fd = int(r0)
@@ -50,13 +53,17 @@ func LandlockCreateRuleset(attr *RulesetAttr, flags int) (fd int, err error) {
 	return
 }
 
-type ruleType int
+// The Landlock rule types:
+const (
+	RuleTypePathBeneath = 1
+)
 
-const RuleTypePathBeneath ruleType = 1
-
+// PathBeneathAttr references a file hierarchy and defines the desired
+// extent to which it should be usable when the rule is enforced.
 type PathBeneathAttr struct {
-	// AllowedAccess is a bitmask of allowed actions for this file hierarchy
-	// (cf. "Filesystem flags").
+	// AllowedAccess is a bitmask of allowed actions for this file
+	// hierarchy (cf. "Filesystem flags"). The enabled bits must
+	// be a subset of the bits defined in the ruleset.
 	AllowedAccess uint64
 
 	// ParentFd is a file descriptor, open with `O_PATH`, which identifies
@@ -64,7 +71,15 @@ type PathBeneathAttr struct {
 	ParentFd int
 }
 
-func LandlockAddRule(rulesetFd int, ruleType ruleType, ruleAttr unsafe.Pointer, flags int) (err error) {
+// LandlockAddPathBeneathRule adds a rule of type "path beneath" to
+// the given ruleset fd. attr defines the rule parameters. flags must
+// currently be 0.
+func LandlockAddPathBeneathRule(rulesetFd int, attr *PathBeneathAttr, flags int) error {
+	return LandlockAddRule(rulesetFd, RuleTypePathBeneath, unsafe.Pointer(attr), flags)
+}
+
+// LandlockAddRule is the generic landlock_add_rule syscall.
+func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags int) (err error) {
 	_, _, e1 := syscall.Syscall6(SYS_LANDLOCK_ADD_RULE, uintptr(rulesetFd), uintptr(ruleType), uintptr(ruleAttr), uintptr(flags), 0, 0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
@@ -72,6 +87,7 @@ func LandlockAddRule(rulesetFd int, ruleType ruleType, ruleAttr unsafe.Pointer, 
 	return
 }
 
+// LandlockRestrictSelf enforces the given ruleset on the calling thread.
 func LandlockRestrictSelf(rulesetFd int, flags int) (err error) {
 	_, _, e1 := syscall.Syscall(SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
 	if e1 != 0 {

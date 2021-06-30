@@ -4,7 +4,6 @@ package golandlock
 import (
 	"fmt"
 	"syscall"
-	"unsafe"
 
 	ll "github.com/gnoack/golandlock/syscall"
 	"golang.org/x/sys/unix"
@@ -12,8 +11,8 @@ import (
 
 const (
 	accessFile           = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
-	accessFsRoughlyRead  = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
-	accessFsRoughlyWrite = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
+	accessFSRoughlyRead  = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
+	accessFSRoughlyWrite = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
 )
 
 // Restrict restricts the current process to only "see" the files
@@ -40,7 +39,7 @@ const (
 // current process.
 func Restrict(roDirs, ro, rwDirs, rw []string) error {
 	rulesetAttr := ll.RulesetAttr{
-		HandledAccessFs: uint64(accessFsRoughlyRead | accessFsRoughlyWrite),
+		HandledAccessFs: uint64(accessFSRoughlyRead | accessFSRoughlyWrite),
 	}
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
@@ -48,16 +47,16 @@ func Restrict(roDirs, ro, rwDirs, rw []string) error {
 	}
 	defer syscall.Close(fd)
 
-	if err := populateRuleset(fd, roDirs, accessFsRoughlyRead); err != nil {
+	if err := populateRuleset(fd, roDirs, accessFSRoughlyRead); err != nil {
 		return err
 	}
-	if err := populateRuleset(fd, ro, accessFsRoughlyRead&accessFile); err != nil {
+	if err := populateRuleset(fd, ro, accessFSRoughlyRead&accessFile); err != nil {
 		return err
 	}
-	if err := populateRuleset(fd, rwDirs, accessFsRoughlyWrite); err != nil {
+	if err := populateRuleset(fd, rwDirs, accessFSRoughlyWrite); err != nil {
 		return err
 	}
-	if err := populateRuleset(fd, rw, accessFsRoughlyWrite&accessFile); err != nil {
+	if err := populateRuleset(fd, rw, accessFSRoughlyWrite&accessFile); err != nil {
 		return err
 	}
 
@@ -95,7 +94,7 @@ func populate(rulesetFd int, path string, access uint64) error {
 		ParentFd:      fd,
 		AllowedAccess: access,
 	}
-	err = ll.LandlockAddRule(rulesetFd, ll.RuleTypePathBeneath, unsafe.Pointer(&pathBeneath), 0)
+	err = ll.LandlockAddPathBeneathRule(rulesetFd, &pathBeneath, 0)
 	if err != nil {
 		return fmt.Errorf("failed to update ruleset: %w", err)
 	}
