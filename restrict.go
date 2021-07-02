@@ -23,13 +23,13 @@ const (
 // roDirs: Directory paths permitted for reading. All files and
 // directories below should be readable.
 //
-// ro: Specific files permitted for reading.
+// roFiles: Specific files permitted for reading.
 //
 // rwDirs: Directory paths permitted for writing. All files and
 // directories below are writable, and directory entries can be
 // modified.
 //
-// rw: Specific files permitted for writing.
+// rwFiles: Specific files permitted for writing.
 //
 // This function returns an error if the current kernel does not
 // support Landlock or if any of the given paths does not denote
@@ -37,7 +37,7 @@ const (
 //
 // This function implicitly sets the "no new privileges" flag on the
 // current process.
-func Restrict(roDirs, ro, rwDirs, rw []string) error {
+func Restrict(roDirs, roFiles, rwDirs, rwFiles []string) error {
 	rulesetAttr := ll.RulesetAttr{
 		HandledAccessFs: uint64(accessFSRoughlyRead | accessFSRoughlyWrite),
 	}
@@ -50,13 +50,13 @@ func Restrict(roDirs, ro, rwDirs, rw []string) error {
 	if err := populateRuleset(fd, roDirs, accessFSRoughlyRead); err != nil {
 		return err
 	}
-	if err := populateRuleset(fd, ro, accessFSRoughlyRead&accessFile); err != nil {
+	if err := populateRuleset(fd, roFiles, accessFSRoughlyRead&accessFile); err != nil {
 		return err
 	}
 	if err := populateRuleset(fd, rwDirs, accessFSRoughlyWrite); err != nil {
 		return err
 	}
-	if err := populateRuleset(fd, rw, accessFSRoughlyWrite&accessFile); err != nil {
+	if err := populateRuleset(fd, rwFiles, accessFSRoughlyWrite&accessFile); err != nil {
 		return err
 	}
 
