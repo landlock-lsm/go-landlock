@@ -9,29 +9,68 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// Access permission constants for file system access.
+//
+// In Landlock, file system access permissions are represented using bits in a uint64,
+// so these constants each represent a group of file system access permissions.
+//
+// Individual permissions are available in the golandlock/syscall package.
 const (
-	accessFile           = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
-	accessFSRoughlyRead  = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
-	accessFSRoughlyWrite = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
+	// AccessFile is the set of permissions that only apply to files.
+	AccessFile uint64 = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
+
+	// AccessFSRoughlyRead are the set of access permissions associated with read access to files and directories.
+	AccessFSRoughlyRead uint64 = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
+
+	// AccessFSRoughlyWrite are the set of access permissions associated with write access to files and directories.
+	AccessFSRoughlyWrite uint64 = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
+
+	// AccessFSRoughlyReadWrite are the set of access permissions associated with read and write access to files and directories.
+	AccessFSRoughlyReadWrite uint64 = AccessFSRoughlyRead | AccessFSRoughlyWrite
 )
 
-// Restrict restricts the current process to only "see" the files
+type pathOpt func(rulesetFd int) error
+
+// PathAccess is a RestrictPath() option that restricts the given path
+// to the access permissions given by accessFS.
+func PathAccess(accessFS uint64, paths ...string) pathOpt {
+	return func(fd int) error {
+		return populateRuleset(fd, paths, accessFS)
+	}
+}
+
+// RODirs is equivalent to PathAccess(AccessFSRoughlyRead, ...)
+func RODirs(paths ...string) pathOpt { return PathAccess(AccessFSRoughlyRead, paths...) }
+
+// RWDirs is equivalent to PathAccess(AccessFSRoughlyReadWrite, ...)
+func RWDirs(paths ...string) pathOpt { return PathAccess(AccessFSRoughlyReadWrite, paths...) }
+
+// ROFiles is equivalent to PathAccess(AccessFSRoughlyRead&AccessFile, ...)
+//
+// This can be used instead of RODirs() if listing directories is not needed.
+func ROFiles(paths ...string) pathOpt { return PathAccess(AccessFSRoughlyRead&AccessFile, paths...) }
+
+// RWFiles is equivalent to PathAccess(AccessFSRoughlyReadWrite&AccessFile, ...)
+//
+// This can be used instead of RWDirs() if read and write access to directory entries is not needed.
+func RWFiles(paths ...string) pathOpt {
+	return PathAccess(AccessFSRoughlyReadWrite&AccessFile, paths...)
+}
+
+// RestrictPaths restricts the current thread to only "see" the files
 // provided as inputs. After this call successfully returns, the same
-// process can't open files for reading and writing any more and
+// thread can't open files for reading and writing any more and
 // modify subdirectories.
 //
-// roDirs: Directory paths permitted for reading. All files and
-// directories below should be readable.
+// Example: The following invocation will restrict the current thread
+// so that it can only read from /usr, /bin and /tmp, and only write
+// to /tmp. (The notions of what reading and writing means are limited
+// by what Landlock can restrict to.)
 //
-// roFiles: Directory paths permitted for file reading. All files
-// below are readable, but directories can't be read.
-//
-// rwDirs: Directory paths permitted for writing. All files and
-// directories below are writable, and directory entries can be
-// modified.
-//
-// rwFiles: Directory paths permitted for file writing. All files
-// below are writable, but directory entries can not be modified.
+// err := golandlock.RestrictPaths(
+//     golandlock.RODirs("/usr", "/bin"),
+//     golandlock.RWDirs("/tmp"),
+// )
 //
 // This function returns an error if the current kernel does not
 // support Landlock or if any of the given paths does not denote
@@ -39,9 +78,11 @@ const (
 //
 // This function implicitly sets the "no new privileges" flag on the
 // current process.
-func Restrict(roDirs, roFiles, rwDirs, rwFiles []string) error {
+func RestrictPaths(opts ...pathOpt) error {
+	// TODO: Re-think graceful degradation on old kernels
+	// and kernels without compiled-in Landlock support.
 	rulesetAttr := ll.RulesetAttr{
-		HandledAccessFs: uint64(accessFSRoughlyRead | accessFSRoughlyWrite),
+		HandledAccessFs: uint64(AccessFSRoughlyReadWrite),
 	}
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
@@ -49,17 +90,8 @@ func Restrict(roDirs, roFiles, rwDirs, rwFiles []string) error {
 	}
 	defer syscall.Close(fd)
 
-	if err := populateRuleset(fd, roDirs, accessFSRoughlyRead); err != nil {
-		return err
-	}
-	if err := populateRuleset(fd, roFiles, accessFSRoughlyRead&accessFile); err != nil {
-		return err
-	}
-	if err := populateRuleset(fd, rwDirs, accessFSRoughlyWrite); err != nil {
-		return err
-	}
-	if err := populateRuleset(fd, rwFiles, accessFSRoughlyWrite&accessFile); err != nil {
-		return err
+	for _, opt := range opts {
+		opt(fd)
 	}
 
 	if err := unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
@@ -100,4 +132,24 @@ func populate(rulesetFd int, path string, access uint64) error {
 		return fmt.Errorf("failed to update ruleset: %w", err)
 	}
 	return nil
+}
+
+// Restrict is a shortcut for:
+//
+// 	RestrictPaths(
+// 		RODirs(roDirs...),
+// 		ROFiles(roFiles...),
+// 		RWDirs(rwDirs...),
+// 		RWFiles(rwFiles...),
+// 	)
+//
+// It's recommended to use RestrictPath() instead, as it is more
+// flexible and it's harder to mix up the different parameters.
+func Restrict(roDirs, roFiles, rwDirs, rwFiles []string) error {
+	return RestrictPaths(
+		RODirs(roDirs...),
+		ROFiles(roFiles...),
+		RWDirs(rwDirs...),
+		RWFiles(rwFiles...),
+	)
 }
