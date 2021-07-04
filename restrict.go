@@ -134,7 +134,13 @@ func populate(rulesetFd int, path string, access uint64) error {
 	return nil
 }
 
-// Restrict is a shortcut for:
+// Restrict is a deprecated shortcut for RestrictPaths().
+//
+// It's recommended to use RestrictPath() instead, as it is more
+// flexible and it's harder to mix up the different parameters.
+// Restrict() will be removed in future versions of golandlock.
+//
+// Calling Restrict() is equivalent to:
 //
 // 	RestrictPaths(
 // 		RODirs(roDirs...),
@@ -143,8 +149,6 @@ func populate(rulesetFd int, path string, access uint64) error {
 // 		RWFiles(rwFiles...),
 // 	)
 //
-// It's recommended to use RestrictPath() instead, as it is more
-// flexible and it's harder to mix up the different parameters.
 func Restrict(roDirs, roFiles, rwDirs, rwFiles []string) error {
 	return RestrictPaths(
 		RODirs(roDirs...),
