@@ -67,10 +67,10 @@ func RWFiles(paths ...string) pathOpt {
 // to /tmp. (The notions of what reading and writing means are limited
 // by what Landlock can restrict to.)
 //
-// err := golandlock.RestrictPaths(
-//     golandlock.RODirs("/usr", "/bin"),
-//     golandlock.RWDirs("/tmp"),
-// )
+//   err := golandlock.RestrictPaths(
+//       golandlock.RODirs("/usr", "/bin"),
+//       golandlock.RWDirs("/tmp"),
+//   )
 //
 // This function returns an error if the current kernel does not
 // support Landlock or if any of the given paths does not denote

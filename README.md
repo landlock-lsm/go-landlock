@@ -8,8 +8,18 @@ The library provides access to Landlock on two levels:
 ## High level interface
 
 To restrict the current process to only see a given set of paths and
-subdirectories, use `golandlock.Restrict`. The parameters are lists of
-file and directory names.
+subdirectories, use `golandlock.RestrictPaths`.
+
+**Example:** The following invocation will restrict the current thread
+so that it can only read from `/usr`, `/bin` and `/tmp`, and only
+write to `/tmp`.
+
+```
+err := golandlock.RestrictPaths(
+    golandlock.RODirs("/usr", "/bin"),
+    golandlock.RWDirs("/tmp"),
+)
+```
 
 ## Low level interface
 
