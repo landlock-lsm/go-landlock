@@ -31,7 +31,7 @@ const (
 
 type pathOpt func(rulesetFd int) error
 
-// PathAccess is a RestrictPath() option that restricts the given path
+// PathAccess is a RestrictPaths() option that restricts the given path
 // to the access permissions given by accessFS.
 func PathAccess(accessFS uint64, paths ...string) pathOpt {
 	return func(fd int) error {
@@ -136,7 +136,7 @@ func populate(rulesetFd int, path string, access uint64) error {
 
 // Restrict is a deprecated shortcut for RestrictPaths().
 //
-// It's recommended to use RestrictPath() instead, as it is more
+// It's recommended to use RestrictPaths() instead, as it is more
 // flexible and it's harder to mix up the different parameters.
 // Restrict() will be removed in future versions of golandlock.
 //
