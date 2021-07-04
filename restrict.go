@@ -23,13 +23,15 @@ const (
 // roDirs: Directory paths permitted for reading. All files and
 // directories below should be readable.
 //
-// roFiles: Specific files permitted for reading.
+// roFiles: Directory paths permitted for file reading. All files
+// below are readable, but directories can't be read.
 //
 // rwDirs: Directory paths permitted for writing. All files and
 // directories below are writable, and directory entries can be
 // modified.
 //
-// rwFiles: Specific files permitted for writing.
+// rwFiles: Directory paths permitted for file writing. All files
+// below are writable, but directory entries can not be modified.
 //
 // This function returns an error if the current kernel does not
 // support Landlock or if any of the given paths does not denote
