@@ -67,7 +67,6 @@ func Restrict(roDirs, roFiles, rwDirs, rwFiles []string) error {
 	if err := ll.LandlockRestrictSelf(fd, 0); err != nil {
 		return err
 	}
-	// xxx enable
 	return nil
 }
 
