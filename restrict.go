@@ -9,10 +9,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// Access permission constants for file system access.
+// Access permission constants for filesystem access.
 //
-// In Landlock, file system access permissions are represented using bits in a uint64,
-// so these constants each represent a group of file system access permissions.
+// In Landlock, filesystem access permissions are represented using bits in a uint64,
+// so these constants each represent a group of filesystem access permissions.
 //
 // Individual permissions are available in the golandlock/syscall package.
 const (
