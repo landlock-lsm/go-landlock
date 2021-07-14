@@ -1,4 +1,31 @@
-// Package golandlock provides a high-level interface to the Linux Landlock sandboxing feature.
+// Package golandlock restricts a thread's ability to use files.
+//
+// RestrictPaths restricts a thread's access to a given set to file
+// system hierarchies, so that only a subset of file system operations
+// continues to work.
+//
+// RestrictPaths comes in two flavours:
+//
+// RestrictPaths itself is going to restrict more file system
+// operations in future versions of this library, and is meant for use
+// in programs that are confident that they have specified all
+// relevant file hierarchies broadly enough using the helpers RODirs,
+// RWDirs, ROFiles and RWFiles. Callers of RestrictPaths will benefit
+// from additional future Landlock capabilities, at the slight risk of
+// breaking their program when these capabilities are introduced.
+//
+// Example: If a program does an os.Stat syscall on a file, but that
+// file is not covered in the invocation to RestrictPaths, the os.Stat
+// syscall might fail at some point in the future, when the golandlock
+// library starts restricting this syscall. (os.Stat can't be
+// restricted with Landlock ABI V1)
+//
+// RestrictPathsV1 is a guaranteed future-compatible variant of
+// RestrictPaths. Callers of RestrictPathsV1 get the guarantee that
+// their programs continue working after an upgrade of the golandlock
+// library. In order to still benefit from new Landlock features, they
+// will have to change to a variant of the call with a higher version
+// number in future releases.
 package golandlock
 
 import (
@@ -59,25 +86,40 @@ func RWFiles(paths ...string) pathOpt {
 
 // RestrictPaths restricts the current thread to only "see" the files
 // provided as inputs. After this call successfully returns, the same
-// thread can't open files for reading and writing any more and
-// modify subdirectories.
+// thread will only be able to use files in the ways as they were
+// specified in advance in the call to RestrictPaths.
 //
 // Example: The following invocation will restrict the current thread
 // so that it can only read from /usr, /bin and /tmp, and only write
-// to /tmp. (The notions of what reading and writing means are limited
-// by what Landlock can restrict to.)
+// to /tmp.
 //
 //   err := golandlock.RestrictPaths(
 //       golandlock.RODirs("/usr", "/bin"),
 //       golandlock.RWDirs("/tmp"),
 //   )
 //
+// The notions of what reading and writing means are limited by what
+// Landlock can restrict to and are defined in constants in this module.
+//
+// Callers to RestrictPaths need to declare broadly the file
+// hierarchies that they need to access for roughly-reading and
+// -writing. This should be sufficient for most use cases, but there
+// is a theoretical risk that such programs might break after a
+// golandlock upgrade if they have missed to declare file operations
+// which are suddenly enforced in a future Landlock version. If this
+// is a concern, the versioned variant RestrictPathsV1 provides the
+// same but is guaranteed to not make use of future Landlock features
+// in the future.
+//
+// The overall set of operations that RestrictPaths can restrict are
+// specified in AccessFSRoughlyReadWrite.
+//
 // This function returns an error if the current kernel does not
 // support Landlock or if any of the given paths does not denote
 // an actual directory.
 //
 // This function implicitly sets the "no new privileges" flag on the
-// current process.
+// current thread.
 func RestrictPaths(opts ...pathOpt) error {
 	// TODO: Re-think graceful degradation on old kernels
 	// and kernels without compiled-in Landlock support.
@@ -102,6 +144,16 @@ func RestrictPaths(opts ...pathOpt) error {
 		return err
 	}
 	return nil
+}
+
+// RestrictPathsV1 is like RestrictPaths, but only disables file
+// system accesses as supported by Landlock up to ABI V1.
+//
+// This variant is guaranteed to enforce the exact same rules in
+// future versions of this library, but does not automatically benefit
+// from new Landlock features in the future.
+func RestrictPathsV1(opts ...pathOpt) error {
+	return RestrictPaths(opts...)
 }
 
 // XXX: Should file descriptors be int or int32?
