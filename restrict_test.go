@@ -21,6 +21,8 @@ func TestAccessingPasswordFile(t *testing.T) {
 	err = golandlock.Restrict(roDirs, nil, nil, nil)
 	if errors.Is(err, syscall.ENOSYS) {
 		t.Skipf("kernel does not support Landlock; tests cannot be run: %v", err)
+	} else if errors.Is(err, syscall.EOPNOTSUPP) {
+		t.Skipf("landlock not enabled in kernel; tests cannot be run: %v", err)
 	}
 
 	_, err = os.ReadFile("/etc/passwd")
