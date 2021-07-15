@@ -72,46 +72,37 @@ import (
 // Landlocker exposes the Landlock interface for a specific ABI
 // version or set of ABI versions. The desired Landlocker can be
 // selected by using the Landlock ABI version constants.
+//
+// RestrictPaths restricts the current thread to only "see" the files
+// provided as inputs. After this call successfully returns, the same
+// thread will only be able to use files in the ways as they were
+// specified in advance in the call to RestrictPaths.
+//
+// Example: The following invocation will restrict the current thread
+// so that it can only read from /usr, /bin and /tmp, and only write
+// to /tmp.
+//
+//   err := golandlock.V1.RestrictPaths(
+//       golandlock.RODirs("/usr", "/bin"),
+//       golandlock.RWDirs("/tmp"),
+//   )
+//   if err != nil {
+//       log.Fatalf("golandlock.V1.RestrictPaths(): %v", err)
+//   }
+//
+// The notions of what reading and writing means are limited by what
+// Landlock can restrict to and are defined in constants in this module.
+//
+// The overall set of operations that RestrictPaths can restrict are
+// specified in AccessFSRoughlyReadWrite.
+//
+// This function returns an error if any of the given paths does not
+// denote an actual directory or if Landlock can't be enforced using
+// the ABI versions selected through the Landlocker object.
+//
+// This function implicitly sets the "no new privileges" flag on the
+// current thread.
 type Landlocker interface {
-	// RestrictPaths restricts the current thread to only "see" the files
-	// provided as inputs. After this call successfully returns, the same
-	// thread will only be able to use files in the ways as they were
-	// specified in advance in the call to RestrictPaths.
-	//
-	// Example: The following invocation will restrict the current thread
-	// so that it can only read from /usr, /bin and /tmp, and only write
-	// to /tmp.
-	//
-	//   err := golandlock.V1.RestrictPaths(
-	//       golandlock.RODirs("/usr", "/bin"),
-	//       golandlock.RWDirs("/tmp"),
-	//   )
-	//   if err != nil {
-	//       log.Fatalf("golandlock.V1.RestrictPaths(): %v", err)
-	//   }
-	//
-	// The notions of what reading and writing means are limited by what
-	// Landlock can restrict to and are defined in constants in this module.
-	//
-	// Callers to RestrictPaths need to declare broadly the file
-	// hierarchies that they need to access for roughly-reading and
-	// -writing. This should be sufficient for most use cases, but there
-	// is a theoretical risk that such programs might break after a
-	// golandlock upgrade if they have missed to declare file operations
-	// which are suddenly enforced in a future Landlock version. If this
-	// is a concern, the versioned variant RestrictPathsV1 provides the
-	// same but is guaranteed to not make use of future Landlock features
-	// in the future.
-	//
-	// The overall set of operations that RestrictPaths can restrict are
-	// specified in AccessFSRoughlyReadWrite.
-	//
-	// This function returns an error if the current kernel does not
-	// support Landlock or if any of the given paths does not denote
-	// an actual directory.
-	//
-	// This function implicitly sets the "no new privileges" flag on the
-	// current thread.
 	RestrictPaths(opts ...pathOpt) error
 }
 
