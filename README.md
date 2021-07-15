@@ -3,8 +3,6 @@
 The Go landlock library restricts a thread's ability to use files,
 using Linux 5.13's Landlock feature.
 
-The library provides access to Landlock on two levels:
-
 ## High level interface
 
 To restrict the current process to only see a given set of paths and
