@@ -9,8 +9,11 @@ import (
 	"unsafe"
 )
 
-// Syscall numbers for Landlock syscalls. (These syscall numbers will
-// probably soon show up in the x/sys/unix package.)
+// Syscall numbers for Landlock syscalls.
+//
+// Note: These syscall numbers will probably soon show up in the
+// x/sys/unix package. Please do not depend on these variables to
+// exist.
 const (
 	SYS_LANDLOCK_CREATE_RULESET = 444
 	SYS_LANDLOCK_ADD_RULE       = 445
