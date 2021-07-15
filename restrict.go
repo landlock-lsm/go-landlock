@@ -176,6 +176,11 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 		// success immediately.
 		return nil
 	}
+	if v < 0 || v > 1 {
+		return fmt.Errorf("golandlock does not support ABI version %d", v)
+	}
+	// TODO(gnoack): handledAccessFs will need to be different for
+	// other ABI versions.
 	handledAccessFs := uint64(AccessFSRoughlyReadWrite)
 	rulesetAttr := ll.RulesetAttr{
 		HandledAccessFs: handledAccessFs,
@@ -221,9 +226,9 @@ type gracefulABI int
 // callers need to check this result if they want to be sure that the
 // enforcement has happened as expected.
 func (g gracefulABI) RestrictPaths(opts ...pathOpt) error {
-	// TODO: Retrieve the best supported Landlock ABI version from
-	// the kernel using landlock_create_ruleset, instead of trying
-	// it out.
+	// TODO(gnoack): Retrieve the best supported Landlock ABI
+	// version from the kernel using landlock_create_ruleset,
+	// instead of trying it out.
 	for v := ABI(g); v > 0; v-- {
 		err := v.RestrictPaths(opts...)
 		if errors.Is(err, syscall.ENOSYS) {
@@ -246,7 +251,7 @@ func (g gracefulABI) RestrictPaths(opts ...pathOpt) error {
 	return nil
 }
 
-// XXX: Should file descriptors be int or int32?
+// TODO(gnoack): Should file descriptors be int or int32?
 // I believe in C they are only int32, but the Go syscalls package uses int,
 // which I think is 64 bit on 64 bit architectures.
 func populateRuleset(rulesetFd int, paths []string, access uint64) error {
