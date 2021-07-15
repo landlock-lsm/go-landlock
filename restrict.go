@@ -1,10 +1,29 @@
 // Package golandlock restricts a thread's ability to use files.
 //
-// RestrictPaths restricts a thread's access to a given set to file
-// system hierarchies, so that only a subset of file system operations
-// continues to work.
+// The following invocation will restrict the current thread so that
+// it can only read from /usr, /bin and /tmp, and only write to /tmp:
 //
-// Landlock ABI versioning:
+//     err := golandlock.V1.BestEffort().RestrictPaths(
+//         golandlock.RODirs("/usr", "/bin"),
+//         golandlock.RWDirs("/tmp"),
+//     )
+//
+// This will restrict file access using Landlock V1 if available. If
+// unavailable, it will attempt using earlier Landlock versions than
+// the one requested. If no Landlock version is available, it will
+// still succeed, without restricting file accesses.
+//
+// More possible invocations
+//
+// golandlock.VMax.BestEffort().RestrictPaths(...) enforces the given
+// rules as strongly as possible with the newest Landlock version
+// known to golandlock. It downgrades transparently.
+//
+// golandlock.V1.RestrictPaths(...) enforces the given rules using the
+// capabilities of Landlock V1, but returns an error if that is not
+// available.
+//
+// Landlock ABI versioning
 //
 // Callers need to identify at which ABI level they want to use
 // Landlock and call RestrictPaths on the corresponding ABI constant.
@@ -23,35 +42,11 @@
 // features, they will manually have to change to a variant of the
 // call with a higher version number in future releases.
 //
-// Graceful degradation on older kernels:
+// Graceful degradation on older kernels
 //
 // Programs that get run on different kernel versions will want to use
 // the ABI.BestEffort() method to gracefully degrade to using the best
 // available Landlock version on the current kernel.
-//
-// Example:
-//
-// The following invocation will restrict the current thread so that
-// it can only read from /usr, /bin and /tmp, and only write to /tmp:
-//
-//     err := golandlock.V1.BestEffort().RestrictPaths(
-//         golandlock.RODirs("/usr", "/bin"),
-//         golandlock.RWDirs("/tmp"),
-//     )
-//
-// The above invocation will restrict file access as it is supported
-// with Landlock V1, and transparently downgrade without error to no
-// enforcement, if Landlock is unavailable on the current kernel.
-//
-// More possible invocations include:
-//
-// golandlock.VMax.BestEffort().RestrictPaths(...) enforces the given
-// rules as strongly as possible with the newest Landlock version
-// known to golandlock. It downgrades transparently.
-//
-// golandlock.V1.RestrictPaths(...) enforces the given rules using the
-// capabilities of Landlock V1, but returns an error if that is not
-// available.
 package golandlock
 
 import (
@@ -63,12 +58,17 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// Access permission constants for filesystem access.
+// Access permission sets for filesystem access.
 //
-// In Landlock, filesystem access permissions are represented using bits in a uint64,
-// so these constants each represent a group of filesystem access permissions.
+// In Landlock, filesystem access permissions are represented using
+// bits in a uint64, so these constants each represent a group of
+// filesystem access permissions.
 //
 // Individual permissions are available in the golandlock/syscall package.
+//
+// The meaning of access rights and the full list of available flags
+// is documented at
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 const (
 	// AccessFile is the set of permissions that only apply to files.
 	AccessFile uint64 = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
@@ -89,19 +89,27 @@ const (
 // more operations.
 type ABI int
 
-// Known Landlock ABI versions.
+// A list of known Landlock ABI versions.
 var (
 	V1   ABI = 1  // Landlock V1 support (basic file operations).
 	VMax ABI = V1 // The highest known ABI version.
 )
 
-type pathOpt func(rulesetFd int) error
+type pathOpt struct {
+	paths    []string
+	accessFS uint64
+}
 
 // PathAccess is a RestrictPaths() option that restricts the given path
 // to the access permissions given by accessFS.
+//
+// When accessFS is larger than what is permitted by the Landlock
+// version in use, only the applicable subset of accessFS will be
+// used.
 func PathAccess(accessFS uint64, paths ...string) pathOpt {
-	return func(fd int) error {
-		return populateRuleset(fd, paths, accessFS)
+	return pathOpt{
+		paths:    paths,
+		accessFS: accessFS,
 	}
 }
 
@@ -168,8 +176,9 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 		// success immediately.
 		return nil
 	}
+	handledAccessFs := uint64(AccessFSRoughlyReadWrite)
 	rulesetAttr := ll.RulesetAttr{
-		HandledAccessFs: uint64(AccessFSRoughlyReadWrite),
+		HandledAccessFs: handledAccessFs,
 	}
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
@@ -178,7 +187,9 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		opt(fd)
+		if err := populateRuleset(fd, opt.paths, opt.accessFS); err != nil {
+			return err
+		}
 	}
 
 	if err := unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
@@ -265,11 +276,11 @@ func populate(rulesetFd int, path string, access uint64) error {
 	return nil
 }
 
-// Restrict is a deprecated shortcut for RestrictPaths().
+// Restrict is a deprecated shortcut for VMax.Besteffort().RestrictPaths().
 //
-// It's recommended to use RestrictPaths() instead, as it is more
-// flexible and it's harder to mix up the different parameters.
-// Restrict() will be removed in future versions of golandlock.
+// Deprecated: Use RestrictPaths() instead, which is more flexible and
+// it's harder to mix up the different parameters. Restrict() will be
+// removed in future versions of golandlock.
 //
 // Calling Restrict() is equivalent to:
 //

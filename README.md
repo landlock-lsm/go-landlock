@@ -1,14 +1,14 @@
 # Go landlock library
 
-The Go landlock library provides an interface to Linux 5.13's Landlock
-kernel sandboxing features.
+The Go landlock library restricts a thread's ability to use files,
+using Linux 5.13's Landlock feature.
 
 The library provides access to Landlock on two levels:
 
 ## High level interface
 
 To restrict the current process to only see a given set of paths and
-subdirectories, use `golandlock.VMax.RestrictPaths`.
+subdirectories, use `golandlock.V1.RestrictPaths`.
 
 **Example:** The following invocation will restrict the current thread
 so that it can only read from `/usr`, `/bin` and `/tmp`, and only
@@ -20,6 +20,10 @@ err := golandlock.V1.RestrictPaths(
     golandlock.RWDirs("/tmp"),
 )
 ```
+
+Please see the [package
+documentation](https://pkg.go.dev/github.com/gnoack/golandlock) for
+details.
 
 ## Low level interface
 
