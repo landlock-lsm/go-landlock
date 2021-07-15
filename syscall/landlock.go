@@ -6,14 +6,18 @@ import (
 	"unsafe"
 )
 
-// TODO: These syscall numbers will soon show up in the x/sys/unix package.
+// Syscall numbers for Landlock syscalls. (These syscall numbers will
+// probably soon show up in the x/sys/unix package.)
 const (
 	SYS_LANDLOCK_CREATE_RULESET = 444
 	SYS_LANDLOCK_ADD_RULE       = 445
 	SYS_LANDLOCK_RESTRICT_SELF  = 446
 )
 
-// Landlock access permissions, for use in "access" bit fields:
+// Landlock access rights, for use in "access" bit fields.
+//
+// Please see the full documentation at
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights.
 const (
 	AccessFSExecute    = (1 << 0)
 	AccessFSWriteFile  = (1 << 1)

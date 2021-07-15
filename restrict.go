@@ -47,6 +47,18 @@
 // Programs that get run on different kernel versions will want to use
 // the ABI.BestEffort() method to gracefully degrade to using the best
 // available Landlock version on the current kernel.
+//
+// Caveats
+//
+// Some filesystem operations can't currently be restricted with
+// Landlock. Quoting the Landlock documentation:
+//
+//   It is currently not possible to restrict some file-related actions
+//   accessible through these syscall families: chdir(2),
+//   truncate(2), stat(2), flock(2), chmod(2), chown(2),
+//   setxattr(2), utime(2), ioctl(2), fcntl(2), access(2).
+//   Future Landlock evolutions will enable to restrict them.
+
 package golandlock
 
 import (
