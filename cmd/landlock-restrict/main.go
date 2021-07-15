@@ -63,7 +63,7 @@ func main() {
 		log.Fatalf("Need absolute binary path, got %q", cmdArgs[0])
 	}
 
-	err := golandlock.RestrictPaths(
+	err := golandlock.V1.BestEffort().RestrictPaths(
 		golandlock.RODirs(roPaths...),
 		golandlock.RWDirs(rwPaths...),
 	)

@@ -4,31 +4,58 @@
 // system hierarchies, so that only a subset of file system operations
 // continues to work.
 //
-// RestrictPaths comes in two flavours:
+// Landlock ABI versioning:
 //
-// RestrictPaths itself is going to restrict more file system
-// operations in future versions of this library, and is meant for use
-// in programs that are confident that they have specified all
-// relevant file hierarchies broadly enough using the helpers RODirs,
-// RWDirs, ROFiles and RWFiles. Callers of RestrictPaths will benefit
-// from additional future Landlock capabilities, at the slight risk of
-// breaking their program when these capabilities are introduced.
+// Callers need to identify at which ABI level they want to use
+// Landlock and call RestrictPaths on the corresponding ABI constant.
+// Currently the only available ABI variant is V1, which restricts
+// basic file system operations.
 //
-// Example: If a program does an os.Stat syscall on a file, but that
-// file is not covered in the invocation to RestrictPaths, the os.Stat
-// syscall might fail at some point in the future, when the golandlock
-// library starts restricting this syscall. (os.Stat can't be
-// restricted with Landlock ABI V1)
+// The constant VMax will be updated to reflect the highest possible
+// Landlock version. Users of VMax will transparently benefit from
+// additional future Landlock capabilities, at the slight risk of
+// breaking their program when these capabilities are introduced and
+// golandlock is updated.
 //
-// RestrictPathsV1 is a guaranteed future-compatible variant of
-// RestrictPaths. Callers of RestrictPathsV1 get the guarantee that
-// their programs continue working after an upgrade of the golandlock
-// library. In order to still benefit from new Landlock features, they
-// will have to change to a variant of the call with a higher version
-// number in future releases.
+// Users of specific ABI versions other than VMax get the guarantee
+// that their programs continue working after an upgrade of the
+// golandlock library. In order to still benefit from new Landlock
+// features, they will manually have to change to a variant of the
+// call with a higher version number in future releases.
+//
+// Graceful degradation on older kernels:
+//
+// Programs that get run on different kernel versions will want to use
+// the ABI.BestEffort() method to gracefully degrade to using the best
+// available Landlock version on the current kernel.
+//
+// Example:
+//
+// The following invocation will restrict the current thread so that
+// it can only read from /usr, /bin and /tmp, and only write to /tmp:
+//
+//     err := golandlock.V1.BestEffort().RestrictPaths(
+//         golandlock.RODirs("/usr", "/bin"),
+//         golandlock.RWDirs("/tmp"),
+//     )
+//
+// The above invocation will restrict file access as it is supported
+// with Landlock V1, and transparently downgrade without error to no
+// enforcement, if Landlock is unavailable on the current kernel.
+//
+// More possible invocations include:
+//
+// golandlock.VMax.BestEffort().RestrictPaths(...) enforces the given
+// rules as strongly as possible with the newest Landlock version
+// known to golandlock. It downgrades transparently.
+//
+// golandlock.V1.RestrictPaths(...) enforces the given rules using the
+// capabilities of Landlock V1, but returns an error if that is not
+// available.
 package golandlock
 
 import (
+	"errors"
 	"fmt"
 	"syscall"
 
@@ -54,6 +81,18 @@ const (
 
 	// AccessFSRoughlyReadWrite are the set of access permissions associated with read and write access to files and directories.
 	AccessFSRoughlyReadWrite uint64 = AccessFSRoughlyRead | AccessFSRoughlyWrite
+)
+
+// ABI represents the Landlock ABI version.
+//
+// With increasing ABI versions, Landlock will be able to restrict
+// more operations.
+type ABI int
+
+// Known Landlock ABI versions.
+var (
+	V1   ABI = 1  // Landlock V1 support (basic file operations).
+	VMax ABI = V1 // The highest known ABI version.
 )
 
 type pathOpt func(rulesetFd int) error
@@ -93,10 +132,13 @@ func RWFiles(paths ...string) pathOpt {
 // so that it can only read from /usr, /bin and /tmp, and only write
 // to /tmp.
 //
-//   err := golandlock.RestrictPaths(
+//   err := golandlock.V1.RestrictPaths(
 //       golandlock.RODirs("/usr", "/bin"),
 //       golandlock.RWDirs("/tmp"),
 //   )
+//   if err != nil {
+//       log.Fatalf("golandlock.V1.RestrictPaths(): %v", err)
+//   }
 //
 // The notions of what reading and writing means are limited by what
 // Landlock can restrict to and are defined in constants in this module.
@@ -120,9 +162,12 @@ func RWFiles(paths ...string) pathOpt {
 //
 // This function implicitly sets the "no new privileges" flag on the
 // current thread.
-func RestrictPaths(opts ...pathOpt) error {
-	// TODO: Re-think graceful degradation on old kernels
-	// and kernels without compiled-in Landlock support.
+func (v ABI) RestrictPaths(opts ...pathOpt) error {
+	if v == 0 {
+		// ABI v0 is "no Landlock support" and always returns
+		// success immediately.
+		return nil
+	}
 	rulesetAttr := ll.RulesetAttr{
 		HandledAccessFs: uint64(AccessFSRoughlyReadWrite),
 	}
@@ -146,14 +191,48 @@ func RestrictPaths(opts ...pathOpt) error {
 	return nil
 }
 
-// RestrictPathsV1 is like RestrictPaths, but only disables file
-// system accesses as supported by Landlock up to ABI V1.
+// BestEffort returns an object whose RestrictPaths() method will
+// opportunistically enforce the strongest rules it can, up to the
+// given ABI version, working with the level of Landlock support
+// available in the running kernel.
 //
-// This variant is guaranteed to enforce the exact same rules in
-// future versions of this library, but does not automatically benefit
-// from new Landlock features in the future.
-func RestrictPathsV1(opts ...pathOpt) error {
-	return RestrictPaths(opts...)
+// Warning: A best-effort call to RestrictPaths() will succeed without
+// error even when Landlock is not available at all on the current kernel.
+func (v ABI) BestEffort() gracefulABI {
+	return gracefulABI(v)
+}
+
+type gracefulABI int
+
+// RestrictPaths degrades gracefully on older kernels and returns the
+// ABI version of Landlock which was used to enforce the rules. ABI
+// version 0 is an alias for "no Landlock support", which means that
+// callers need to check this result if they want to be sure that the
+// enforcement has happened as expected.
+func (g gracefulABI) RestrictPaths(opts ...pathOpt) error {
+	// TODO: Retrieve the best supported Landlock ABI version from
+	// the kernel using landlock_create_ruleset, instead of trying
+	// it out.
+	for v := ABI(g); v > 0; v-- {
+		err := v.RestrictPaths(opts...)
+		if errors.Is(err, syscall.ENOSYS) {
+			break // Kernel doesn't have Landlock.
+		}
+		if errors.Is(err, syscall.EOPNOTSUPP) {
+			break // Kernel is new enough, but Landlock is disabled.
+		}
+		if errors.Is(err, syscall.EINVAL) {
+			// EINVAL: The kernel probably only supports lower
+			// Landlock versions. Degrade gracefully to the next
+			// version
+			continue
+		} else {
+			// Success or other failure, return.
+			return err
+		}
+	}
+	// No Landlock support, returning
+	return nil
 }
 
 // XXX: Should file descriptors be int or int32?
@@ -194,7 +273,7 @@ func populate(rulesetFd int, path string, access uint64) error {
 //
 // Calling Restrict() is equivalent to:
 //
-// 	RestrictPaths(
+// 	VMax.BestEffort().RestrictPaths(
 // 		RODirs(roDirs...),
 // 		ROFiles(roFiles...),
 // 		RWDirs(rwDirs...),
@@ -202,7 +281,7 @@ func populate(rulesetFd int, path string, access uint64) error {
 // 	)
 //
 func Restrict(roDirs, roFiles, rwDirs, rwFiles []string) error {
-	return RestrictPaths(
+	return VMax.BestEffort().RestrictPaths(
 		RODirs(roDirs...),
 		ROFiles(roFiles...),
 		RWDirs(rwDirs...),
