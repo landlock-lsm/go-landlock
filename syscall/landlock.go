@@ -1,5 +1,9 @@
 // Package syscall provides a low-level interface to the Linux Landlock sandboxing feature.
 //
+// The syscall package is a stopgap solution while there is no
+// Landlock support in x/sys/unix. The syscall package is considered
+// highly unstable and may change or disappear without warning.
+//
 // The full documentation can be found at
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html.
 package syscall
