@@ -217,10 +217,9 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	return nil
 }
 
-// BestEffort returns an object whose RestrictPaths() method will
-// opportunistically enforce the strongest rules it can, up to the
-// given ABI version, working with the level of Landlock support
-// available in the running kernel.
+// BestEffort returns a Landlocker that will opportunistically enforce
+// the strongest rules it can, up to the given ABI version, working
+// with the level of Landlock support available in the running kernel.
 //
 // Warning: A best-effort call to RestrictPaths() will succeed without
 // error even when Landlock is not available at all on the current kernel.
