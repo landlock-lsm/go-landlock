@@ -58,7 +58,6 @@
 //   truncate(2), stat(2), flock(2), chmod(2), chown(2),
 //   setxattr(2), utime(2), ioctl(2), fcntl(2), access(2).
 //   Future Landlock evolutions will enable to restrict them.
-
 package golandlock
 
 import (
