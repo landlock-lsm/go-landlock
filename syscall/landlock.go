@@ -1,4 +1,7 @@
 // Package syscall provides a low-level interface to the Linux Landlock sandboxing feature.
+//
+// The full documentation can be found at
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html.
 package syscall
 
 import (
@@ -57,10 +60,8 @@ func LandlockCreateRuleset(attr *RulesetAttr, flags int) (fd int, err error) {
 	return
 }
 
-// The Landlock rule types:
-const (
-	RuleTypePathBeneath = 1
-)
+// There is currently only one Landlock rule type.
+const RuleTypePathBeneath = 1
 
 // PathBeneathAttr references a file hierarchy and defines the desired
 // extent to which it should be usable when the rule is enforced.
