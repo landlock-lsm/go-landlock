@@ -280,27 +280,3 @@ func populate(rulesetFd int, path string, access uint64) error {
 	}
 	return nil
 }
-
-// Restrict is a deprecated shortcut for VMax.Besteffort().RestrictPaths().
-//
-// Deprecated: Use RestrictPaths() instead, which is more flexible and
-// it's harder to mix up the different parameters. Restrict() will be
-// removed in future versions of golandlock.
-//
-// Calling Restrict() is equivalent to:
-//
-// 	VMax.BestEffort().RestrictPaths(
-// 		RODirs(roDirs...),
-// 		ROFiles(roFiles...),
-// 		RWDirs(rwDirs...),
-// 		RWFiles(rwFiles...),
-// 	)
-//
-func Restrict(roDirs, roFiles, rwDirs, rwFiles []string) error {
-	return VMax.BestEffort().RestrictPaths(
-		RODirs(roDirs...),
-		ROFiles(roFiles...),
-		RWDirs(rwDirs...),
-		RWFiles(rwFiles...),
-	)
-}
