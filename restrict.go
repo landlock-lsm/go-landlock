@@ -70,6 +70,52 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// Landlocker exposes the Landlock interface for a specific ABI
+// version or set of ABI versions. The desired Landlocker can be
+// selected by using the Landlock ABI version constants.
+type Landlocker interface {
+	// RestrictPaths restricts the current thread to only "see" the files
+	// provided as inputs. After this call successfully returns, the same
+	// thread will only be able to use files in the ways as they were
+	// specified in advance in the call to RestrictPaths.
+	//
+	// Example: The following invocation will restrict the current thread
+	// so that it can only read from /usr, /bin and /tmp, and only write
+	// to /tmp.
+	//
+	//   err := golandlock.V1.RestrictPaths(
+	//       golandlock.RODirs("/usr", "/bin"),
+	//       golandlock.RWDirs("/tmp"),
+	//   )
+	//   if err != nil {
+	//       log.Fatalf("golandlock.V1.RestrictPaths(): %v", err)
+	//   }
+	//
+	// The notions of what reading and writing means are limited by what
+	// Landlock can restrict to and are defined in constants in this module.
+	//
+	// Callers to RestrictPaths need to declare broadly the file
+	// hierarchies that they need to access for roughly-reading and
+	// -writing. This should be sufficient for most use cases, but there
+	// is a theoretical risk that such programs might break after a
+	// golandlock upgrade if they have missed to declare file operations
+	// which are suddenly enforced in a future Landlock version. If this
+	// is a concern, the versioned variant RestrictPathsV1 provides the
+	// same but is guaranteed to not make use of future Landlock features
+	// in the future.
+	//
+	// The overall set of operations that RestrictPaths can restrict are
+	// specified in AccessFSRoughlyReadWrite.
+	//
+	// This function returns an error if the current kernel does not
+	// support Landlock or if any of the given paths does not denote
+	// an actual directory.
+	//
+	// This function implicitly sets the "no new privileges" flag on the
+	// current thread.
+	RestrictPaths(opts ...pathOpt) error
+}
+
 // Access permission sets for filesystem access.
 //
 // In Landlock, filesystem access permissions are represented using
@@ -95,10 +141,10 @@ const (
 	AccessFSRoughlyReadWrite uint64 = AccessFSRoughlyRead | AccessFSRoughlyWrite
 )
 
-// ABI represents the Landlock ABI version.
+// ABI represents a specific Landlock ABI version.
 //
-// With increasing ABI versions, Landlock will be able to restrict
-// more operations.
+// The higher the ABI version, the more operations Landlock will be
+// able to restrict.
 type ABI int
 
 // A list of known Landlock ABI versions.
@@ -143,45 +189,7 @@ func RWFiles(paths ...string) pathOpt {
 	return PathAccess(AccessFSRoughlyReadWrite&AccessFile, paths...)
 }
 
-// RestrictPaths restricts the current thread to only "see" the files
-// provided as inputs. After this call successfully returns, the same
-// thread will only be able to use files in the ways as they were
-// specified in advance in the call to RestrictPaths.
-//
-// Example: The following invocation will restrict the current thread
-// so that it can only read from /usr, /bin and /tmp, and only write
-// to /tmp.
-//
-//   err := golandlock.V1.RestrictPaths(
-//       golandlock.RODirs("/usr", "/bin"),
-//       golandlock.RWDirs("/tmp"),
-//   )
-//   if err != nil {
-//       log.Fatalf("golandlock.V1.RestrictPaths(): %v", err)
-//   }
-//
-// The notions of what reading and writing means are limited by what
-// Landlock can restrict to and are defined in constants in this module.
-//
-// Callers to RestrictPaths need to declare broadly the file
-// hierarchies that they need to access for roughly-reading and
-// -writing. This should be sufficient for most use cases, but there
-// is a theoretical risk that such programs might break after a
-// golandlock upgrade if they have missed to declare file operations
-// which are suddenly enforced in a future Landlock version. If this
-// is a concern, the versioned variant RestrictPathsV1 provides the
-// same but is guaranteed to not make use of future Landlock features
-// in the future.
-//
-// The overall set of operations that RestrictPaths can restrict are
-// specified in AccessFSRoughlyReadWrite.
-//
-// This function returns an error if the current kernel does not
-// support Landlock or if any of the given paths does not denote
-// an actual directory.
-//
-// This function implicitly sets the "no new privileges" flag on the
-// current thread.
+// RestrictPaths restricts file accesses for a specific Landlock ABI version.
 func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	if v == 0 {
 		// ABI v0 is "no Landlock support" and always returns
@@ -226,17 +234,17 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 //
 // Warning: A best-effort call to RestrictPaths() will succeed without
 // error even when Landlock is not available at all on the current kernel.
-func (v ABI) BestEffort() gracefulABI {
+func (v ABI) BestEffort() Landlocker {
 	return gracefulABI(v)
 }
 
 type gracefulABI int
 
-// RestrictPaths degrades gracefully on older kernels and returns the
-// ABI version of Landlock which was used to enforce the rules. ABI
-// version 0 is an alias for "no Landlock support", which means that
-// callers need to check this result if they want to be sure that the
-// enforcement has happened as expected.
+// RestrictPaths restricts file system accesses on a specific Landlock
+// ABI version or a lower ABI version (including "no Landlock").
+//
+// This degrades gracefully on older kernels and may return
+// successfully without restricting anything, if needed.
 func (g gracefulABI) RestrictPaths(opts ...pathOpt) error {
 	// TODO(gnoack): Retrieve the best supported Landlock ABI
 	// version from the kernel using landlock_create_ruleset,
