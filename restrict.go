@@ -192,7 +192,7 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		if err := populateRuleset(fd, opt.paths, opt.accessFS); err != nil {
+		if err := populateRuleset(fd, opt.paths, opt.accessFS&handledAccessFs); err != nil {
 			return err
 		}
 	}
