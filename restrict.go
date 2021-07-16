@@ -8,16 +8,12 @@
 //         golandlock.RWDirs("/tmp"),
 //     )
 //
-// This will restrict file access using Landlock V1 if available. If
+// This will restrict file access using Landlock V1, if available. If
 // unavailable, it will attempt using earlier Landlock versions than
 // the one requested. If no Landlock version is available, it will
 // still succeed, without restricting file accesses.
 //
 // More possible invocations
-//
-// golandlock.VMax.BestEffort().RestrictPaths(...) enforces the given
-// rules as strongly as possible with the newest Landlock version
-// known to golandlock. It downgrades transparently.
 //
 // golandlock.V1.RestrictPaths(...) enforces the given rules using the
 // capabilities of Landlock V1, but returns an error if that is not
@@ -30,17 +26,10 @@
 // Currently the only available ABI variant is V1, which restricts
 // basic filesystem operations.
 //
-// The constant VMax will be updated to reflect the highest possible
-// Landlock version. Users of VMax will transparently benefit from
-// additional future Landlock capabilities, at the slight risk of
-// breaking their program when these capabilities are introduced and
-// golandlock is updated.
-//
-// Users of specific ABI versions other than VMax get the guarantee
-// that their programs continue working after an upgrade of the
-// golandlock library. In order to still benefit from new Landlock
-// features, they will manually have to change to a variant of the
-// call with a higher version number in future releases.
+// When new Landlock versions become available in golandlock, users
+// will need to upgrade their usages manually to higher Landlock
+// versions, as there is a risk that new Landlock versions will break
+// operations that their programs rely on.
 //
 // Graceful degradation on older kernels
 //
@@ -129,8 +118,7 @@ type ABI int
 
 // A list of known Landlock ABI versions.
 var (
-	V1   ABI = 1  // Landlock V1 support (basic file operations).
-	VMax ABI = V1 // The highest known ABI version.
+	V1 ABI = 1 // Landlock V1 support (basic file operations).
 )
 
 type pathOpt struct {
