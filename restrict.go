@@ -36,17 +36,6 @@
 // Programs that get run on different kernel versions will want to use
 // the ABI.BestEffort() method to gracefully degrade to using the best
 // available Landlock version on the current kernel.
-//
-// Caveats
-//
-// Some filesystem operations can't currently be restricted with
-// Landlock. Quoting the Landlock documentation:
-//
-//   It is currently not possible to restrict some file-related actions
-//   accessible through these syscall families: chdir(2),
-//   truncate(2), stat(2), flock(2), chmod(2), chown(2),
-//   setxattr(2), utime(2), ioctl(2), fcntl(2), access(2).
-//   Future Landlock evolutions will enable to restrict them.
 package golandlock
 
 import (
@@ -67,9 +56,8 @@ import (
 // thread will only be able to use files in the ways as they were
 // specified in advance in the call to RestrictPaths.
 //
-// Example: The following invocation will restrict the current thread
-// so that it can only read from /usr, /bin and /tmp, and only write
-// to /tmp.
+// Example: The following invocation will restrict the current thread so
+// that it can only read from /usr, /bin and /tmp, and only write to /tmp:
 //
 //   err := golandlock.V1.RestrictPaths(
 //       golandlock.RODirs("/usr", "/bin"),
@@ -79,18 +67,88 @@ import (
 //       log.Fatalf("golandlock.V1.RestrictPaths(): %v", err)
 //   }
 //
-// The notions of what reading and writing means are limited by what
-// Landlock can restrict to and are defined in constants in this module.
+// RestrictPaths returns an error if any of the given paths does not
+// denote an actual directory or file, or if Landlock can't be enforced
+// using the ABI versions selected through the Landlocker object.
 //
-// The overall set of operations that RestrictPaths can restrict are
-// specified in AccessFSRoughlyReadWrite.
+// RestrictPaths sets the "no new privileges" flag on the current thread.
 //
-// This function returns an error if any of the given paths does not
-// denote an actual directory or if Landlock can't be enforced using
-// the ABI versions selected through the Landlocker object.
+// Restrictable access rights
 //
-// This function implicitly sets the "no new privileges" flag on the
-// current thread.
+// The notions of what "reading" and "writing" mean are limited by what
+// the selected Landlock version supports.
+//
+// Calling RestrictPaths() with a given Landlock ABI version will
+// inhibit all future calls to the access rights supported by this ABI
+// version, unless the accessed path is in a file hierarchy that is
+// specifically allow-listed for a specific set of access rights.
+//
+// The overall set of operations that RestrictPaths can restrict are:
+//
+// For reading:
+//
+// • Executing a file (V1+)
+//
+// • Opening a file with read access (V1+)
+//
+// • Opening a directory or listing its content (V1+)
+//
+//
+// For writing:
+//
+// • Opening a file with write access (V1+)
+//
+//
+// For directory manipulation:
+//
+// • Removing an empty directory or renaming one (V1+)
+//
+// • Removing (or renaming) a file (V1+)
+//
+// • Creating (or renaming or linking) a character device (V1+)
+//
+// • Creating (or renaming) a directory (V1+)
+//
+// • Creating (or renaming or linking) a regular file (V1+)
+//
+// • Creating (or renaming or linking) a UNIX domain socket (V1+)
+//
+// • Creating (or renaming or linking) a named pipe (V1+)
+//
+// • Creating (or renaming or linking) a block device (V1+)
+//
+// • Creating (or renaming or linking) a symbolic link (V1+)
+//
+// Future versions of Landlock will be able to inhibit more operations.
+// Quoting the Landlock documentation:
+//
+//   It is currently not possible to restrict some file-related
+//   actions accessible through these syscall families: chdir(2),
+//   truncate(2), stat(2), flock(2), chmod(2), chown(2), setxattr(2),
+//   utime(2), ioctl(2), fcntl(2), access(2). Future Landlock
+//   evolutions will enable to restrict them.
+//
+// The access rights are documented in more depth at:
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
+//
+// Helper functions for selecting access rights
+//
+// These helper functions help selecting common subsets of access rights:
+//
+// • RODirs() selects access rights in the group "for reading".
+// In V1, this means reading files, listing directories and executing files.
+//
+// • RWDirs() selects access rights in the group "for reading", "for writing" and
+// "for directory manipulation". In V1, this grants the full set of access rights.
+//
+// • ROFiles() is like RODirs(), but does not select directory-specific access rights.
+// In V1, this means reading and executing files.
+//
+// • RWFiles() is like RWDirs(), but does not select directory-specific access rights.
+// In V1, this means reading, writing and executing files.
+//
+// The PathAccess() option lets callers define custom subsets of these
+// access rights.
 type Landlocker interface {
 	RestrictPaths(opts ...pathOpt) error
 }
