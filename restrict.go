@@ -116,7 +116,7 @@ const (
 // able to restrict.
 type ABI int
 
-// A list of known Landlock ABI versions.
+// These are the currently supported Landlock ABI versions.
 var (
 	V1 ABI = 1 // Landlock V1 support (basic file operations).
 )
