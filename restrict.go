@@ -28,7 +28,7 @@
 // Callers need to identify at which ABI level they want to use
 // Landlock and call RestrictPaths on the corresponding ABI constant.
 // Currently the only available ABI variant is V1, which restricts
-// basic file system operations.
+// basic filesystem operations.
 //
 // The constant VMax will be updated to reflect the highest possible
 // Landlock version. Users of VMax will transparently benefit from
@@ -107,28 +107,18 @@ type Landlocker interface {
 }
 
 // Access permission sets for filesystem access.
-//
-// In Landlock, filesystem access permissions are represented using
-// bits in a uint64, so these constants each represent a group of
-// filesystem access permissions.
-//
-// Individual permissions are available in the golandlock/syscall package.
-//
-// The meaning of access rights and the full list of available flags
-// is documented at
-// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 const (
-	// AccessFile is the set of permissions that only apply to files.
-	AccessFile uint64 = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
+	// The set of access rights that only apply to files.
+	accessFile uint64 = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
 
-	// AccessFSRoughlyRead are the set of access permissions associated with read access to files and directories.
-	AccessFSRoughlyRead uint64 = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
+	// The set of access rights associated with read access to files and directories.
+	accessFSRead uint64 = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
 
-	// AccessFSRoughlyWrite are the set of access permissions associated with write access to files and directories.
-	AccessFSRoughlyWrite uint64 = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
+	// The set of access rights associated with write access to files and directories.
+	accessFSWrite uint64 = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
 
-	// AccessFSRoughlyReadWrite are the set of access permissions associated with read and write access to files and directories.
-	AccessFSRoughlyReadWrite uint64 = AccessFSRoughlyRead | AccessFSRoughlyWrite
+	// The set of access rights associated with read and write access to files and directories.
+	accessFSReadWrite uint64 = accessFSRead | accessFSWrite
 )
 
 // ABI represents a specific Landlock ABI version.
@@ -144,40 +134,49 @@ var (
 )
 
 type pathOpt struct {
-	paths    []string
 	accessFS uint64
+	paths    []string
 }
 
-// PathAccess is a RestrictPaths() option that restricts the given path
-// to the access permissions given by accessFS.
+// PathAccess is a RestrictPaths() option that grants the access right
+// specified by accessFS to the file hierarchies under the given paths.
 //
 // When accessFS is larger than what is permitted by the Landlock
-// version in use, only the applicable subset of accessFS will be
-// used.
+// version in use, only the applicable subset of accessFS will be used.
+//
+// Most users should use the functions RODirs, RWDirs, ROFiles and
+// RWFiles instead, which provide canned options for commonly used
+// values of accessFS.
+//
+// Filesystem access rights are represented using bits in a uint64.
+// The individual access rights and their meaning are defined in the
+// golandlock/syscall package and explained further in the kernel
+// documentation at
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func PathAccess(accessFS uint64, paths ...string) pathOpt {
 	return pathOpt{
-		paths:    paths,
 		accessFS: accessFS,
+		paths:    paths,
 	}
 }
 
-// RODirs is equivalent to PathAccess(AccessFSRoughlyRead, ...)
-func RODirs(paths ...string) pathOpt { return PathAccess(AccessFSRoughlyRead, paths...) }
+// RODirs is a RestrictPaths() option that grants common read-only
+// access to files and directories and permits executing files.
+func RODirs(paths ...string) pathOpt { return PathAccess(accessFSRead, paths...) }
 
-// RWDirs is equivalent to PathAccess(AccessFSRoughlyReadWrite, ...)
-func RWDirs(paths ...string) pathOpt { return PathAccess(AccessFSRoughlyReadWrite, paths...) }
+// RWDirs is a RestrictPaths() option that grants full (read and
+// write) access to files and directories under the given paths.
+func RWDirs(paths ...string) pathOpt { return PathAccess(accessFSReadWrite, paths...) }
 
-// ROFiles is equivalent to PathAccess(AccessFSRoughlyRead&AccessFile, ...)
-//
-// This can be used instead of RODirs() if listing directories is not needed.
-func ROFiles(paths ...string) pathOpt { return PathAccess(AccessFSRoughlyRead&AccessFile, paths...) }
+// ROFiles is a RestrictPaths() option that grants common read access
+// to individual files, but not to directories, for the file
+// hierarchies under the given paths.
+func ROFiles(paths ...string) pathOpt { return PathAccess(accessFSRead&accessFile, paths...) }
 
-// RWFiles is equivalent to PathAccess(AccessFSRoughlyReadWrite&AccessFile, ...)
-//
-// This can be used instead of RWDirs() if read and write access to directory entries is not needed.
-func RWFiles(paths ...string) pathOpt {
-	return PathAccess(AccessFSRoughlyReadWrite&AccessFile, paths...)
-}
+// RWFiles is a RestrictPaths() option that grants common read and
+// write access to files under the given paths, but it does not permit
+// access to directories.
+func RWFiles(paths ...string) pathOpt { return PathAccess(accessFSReadWrite&accessFile, paths...) }
 
 // RestrictPaths restricts file accesses for a specific Landlock ABI version.
 func (v ABI) RestrictPaths(opts ...pathOpt) error {
@@ -189,11 +188,9 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	if v < 0 || v > 1 {
 		return fmt.Errorf("golandlock does not support ABI version %d", v)
 	}
-	// TODO(gnoack): handledAccessFs will need to be different for
-	// other ABI versions.
-	handledAccessFs := uint64(AccessFSRoughlyReadWrite)
+	// TODO(gnoack): HandledAccessFs will need to be different for other ABI versions.
 	rulesetAttr := ll.RulesetAttr{
-		HandledAccessFs: handledAccessFs,
+		HandledAccessFs: accessFSReadWrite,
 	}
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
@@ -202,7 +199,8 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		if err := populateRuleset(fd, opt.paths, opt.accessFS&handledAccessFs); err != nil {
+		accessFS := opt.accessFS & rulesetAttr.HandledAccessFs
+		if err := populateRuleset(fd, opt.paths, accessFS); err != nil {
 			return err
 		}
 	}
@@ -229,7 +227,7 @@ func (v ABI) BestEffort() Landlocker {
 
 type gracefulABI int
 
-// RestrictPaths restricts file system accesses on a specific Landlock
+// RestrictPaths restricts filesystem accesses on a specific Landlock
 // ABI version or a lower ABI version (including "no Landlock").
 //
 // This degrades gracefully on older kernels and may return
