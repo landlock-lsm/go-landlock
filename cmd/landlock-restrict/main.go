@@ -49,8 +49,8 @@ func main() {
 	verbose, roPaths, rwPaths, cmdArgs := parseFlags(os.Args[1:])
 	if verbose {
 		fmt.Println("Landlock restricting to:")
-		fmt.Printf("  RO paths: %v\n", roPaths)
-		fmt.Printf("  RW paths: %v\n", rwPaths)
+		fmt.Printf("  RO dirs: %v\n", roPaths)
+		fmt.Printf("  RW dirs: %v\n", rwPaths)
 		fmt.Println()
 		fmt.Printf("Executing command %v\n", cmdArgs)
 	}

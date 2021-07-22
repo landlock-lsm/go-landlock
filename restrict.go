@@ -179,6 +179,12 @@ var (
 	V1 ABI = 1 // Landlock V1 support (basic file operations).
 )
 
+// Some internal errors
+var (
+	errLandlockCreateLandlockUnavailable = errors.New("Landlock is not supported by kernel or not enabled at boot time")
+	errLandlockCreateUnsupportedInput    = errors.New("unknown flags, unknown access, or too small size")
+)
+
 type pathOpt struct {
 	accessFS uint64
 	paths    []string
@@ -240,7 +246,13 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	}
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
-		return err
+		if errors.Is(err, syscall.ENOSYS) || errors.Is(err, syscall.EOPNOTSUPP) {
+			err = errLandlockCreateLandlockUnavailable
+		}
+		if errors.Is(err, syscall.EINVAL) {
+			err = errLandlockCreateUnsupportedInput
+		}
+		return fmt.Errorf("landlock_create_ruleset: %w", err)
 	}
 	defer syscall.Close(fd)
 
@@ -256,7 +268,7 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	}
 
 	if err := ll.LandlockRestrictSelf(fd, 0); err != nil {
-		return err
+		return fmt.Errorf("landlock_restrict_self: %w", err)
 	}
 	return nil
 }
@@ -284,21 +296,18 @@ func (g gracefulABI) RestrictPaths(opts ...pathOpt) error {
 	// instead of trying it out.
 	for v := ABI(g); v > 0; v-- {
 		err := v.RestrictPaths(opts...)
-		if errors.Is(err, syscall.ENOSYS) {
-			break // Kernel doesn't have Landlock.
+		if errors.Is(err, errLandlockCreateLandlockUnavailable) {
+			break // Kernel doesn't have Landlock compiled in or enabled.
 		}
-		if errors.Is(err, syscall.EOPNOTSUPP) {
-			break // Kernel is new enough, but Landlock is disabled.
-		}
-		if errors.Is(err, syscall.EINVAL) {
-			// EINVAL: The kernel probably only supports lower
-			// Landlock versions. Degrade gracefully to the next
-			// version
+		if errors.Is(err, errLandlockCreateUnsupportedInput) {
+			// The kernel probably only supports lower Landlock versions.
+			// Degrade gracefully to the next version
 			continue
-		} else {
-			// Success or other failure, return.
-			return err
 		}
+		if err != nil {
+			return fmt.Errorf("Landlock v%d: %w", v, err)
+		}
+		return nil
 	}
 	// No Landlock support, returning
 	return nil
@@ -310,7 +319,7 @@ func (g gracefulABI) RestrictPaths(opts ...pathOpt) error {
 func populateRuleset(rulesetFd int, paths []string, access uint64) error {
 	for _, p := range paths {
 		if err := populate(rulesetFd, p, access); err != nil {
-			return err
+			return fmt.Errorf("populating ruleset for %q: %w", p, err)
 		}
 	}
 	return nil
@@ -319,7 +328,7 @@ func populateRuleset(rulesetFd int, paths []string, access uint64) error {
 func populate(rulesetFd int, path string, access uint64) error {
 	fd, err := syscall.Open(path, unix.O_PATH|unix.O_CLOEXEC, 0)
 	if err != nil {
-		return err
+		return fmt.Errorf("open: %w", err)
 	}
 	defer syscall.Close(fd)
 
@@ -329,7 +338,7 @@ func populate(rulesetFd int, path string, access uint64) error {
 	}
 	err = ll.LandlockAddPathBeneathRule(rulesetFd, &pathBeneath, 0)
 	if err != nil {
-		return fmt.Errorf("failed to update ruleset: %w", err)
+		return fmt.Errorf("landlock_add_rule: %w", err)
 	}
 	return nil
 }
