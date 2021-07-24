@@ -263,11 +263,11 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 		}
 	}
 
-	if err := unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
+	if err := ll.AllThreadsPrctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
 		return err
 	}
 
-	if err := ll.LandlockRestrictSelf(fd, 0); err != nil {
+	if err := ll.AllThreadsLandlockRestrictSelf(fd, 0); err != nil {
 		return fmt.Errorf("landlock_restrict_self: %w", err)
 	}
 	return nil

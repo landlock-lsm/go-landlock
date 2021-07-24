@@ -1,29 +1,58 @@
 package golandlock_test
 
 import (
-	"errors"
 	"os"
-	"syscall"
+	"sync"
 	"testing"
 
 	"github.com/gnoack/golandlock"
 )
 
-// Make sure that after landlocking, the password file can't be read any more.
-// XXX: Landlocking in the test itself makes it difficult to compose.
-func TestAccessingPasswordFile(t *testing.T) {
+// True if the given path can be opened for reading.
+func canAccess(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	return true
+}
+
+// Verify that golandlock applies to all system threads that belong to
+// the current Go process. The raw landlock_restrict_self syscall only
+// applies to the current system thread, but these are managed by the
+// Go runtime and not easily controlled. The same issue has already
+// been discussed in the context of seccomp at
+// https://github.com/golang/go/issues/3405.
+func TestRestrictInPresenceOfThreading(t *testing.T) {
 	_, err := os.ReadFile("/etc/passwd")
 	if err != nil {
 		t.Skipf("expected normal accesses to /etc/passwd to work, got error: %v", err)
 	}
 
-	err = golandlock.V1.RestrictPaths(golandlock.RODirs("/tmp"))
+	err = golandlock.V1.RestrictPaths() // No access permitted at all.
 	if err != nil {
 		t.Skipf("kernel does not support Landlock v1; tests cannot be run.")
 	}
 
-	_, err = os.ReadFile("/etc/passwd")
-	if !errors.Is(err, syscall.EACCES) {
-		t.Errorf("expected that bar/a can't be read, got error: %v", err)
+	path := "/etc/passwd" // expected to exist and be openable
+
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	const (
+		parallelism = 3
+		attempts    = 10
+	)
+	for g := 0; g < parallelism; g++ {
+		wg.Add(1)
+		go func(grIdx int) {
+			defer wg.Done()
+			for i := 0; i < attempts; i++ {
+				if canAccess(path) {
+					t.Errorf("os.Open(%q): expected access denied, but it worked (goroutine %d, attempt %d)", path, grIdx, i)
+				}
+			}
+		}(g)
 	}
 }

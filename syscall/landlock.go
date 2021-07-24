@@ -99,9 +99,18 @@ func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags
 	return
 }
 
-// LandlockRestrictSelf enforces the given ruleset on the calling thread.
-func LandlockRestrictSelf(rulesetFd int, flags int) (err error) {
-	_, _, e1 := syscall.Syscall(SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
+// AllThreadsLandlockRestrictSelf enforces the given ruleset on the calling thread.
+func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
+	_, _, e1 := syscall.AllThreadsSyscall(SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
+	if e1 != 0 {
+		err = syscall.Errno(e1)
+	}
+	return
+}
+
+// AllThreadsPrctl is like unix.Prctl, but gets applied on all OS threads at the same time.
+func AllThreadsPrctl(option int, arg2 uintptr, arg3 uintptr, arg4 uintptr, arg5 uintptr) (err error) {
+	_, _, e1 := syscall.AllThreadsSyscall6(syscall.SYS_PRCTL, uintptr(option), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
 	}
