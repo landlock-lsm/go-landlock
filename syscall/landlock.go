@@ -99,7 +99,8 @@ func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags
 	return
 }
 
-// AllThreadsLandlockRestrictSelf enforces the given ruleset on the calling thread.
+// AllThreadsLandlockRestrictSelf enforces the given ruleset on all OS
+// threads managed by the Go runtime.
 func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
 	_, _, e1 := syscall.AllThreadsSyscall(SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
 	if e1 != 0 {

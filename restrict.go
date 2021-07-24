@@ -1,7 +1,7 @@
-// Package golandlock restricts a thread's ability to use files.
+// Package golandlock restricts a Go program's ability to use files.
 //
-// The following invocation will restrict the current thread so that
-// it can only read from /usr, /bin and /tmp, and only write to /tmp:
+// The following invocation will restrict all goroutines so that they
+// can only read from /usr, /bin and /tmp, and only write to /tmp:
 //
 //     err := golandlock.V1.BestEffort().RestrictPaths(
 //         golandlock.RODirs("/usr", "/bin"),
@@ -51,13 +51,14 @@ import (
 // version or set of ABI versions. The desired Landlocker can be
 // selected by using the Landlock ABI version constants.
 //
-// RestrictPaths restricts the current thread to only "see" the files
-// provided as inputs. After this call successfully returns, the same
-// thread will only be able to use files in the ways as they were
+// RestrictPaths restricts all goroutines to only "see" the files
+// provided as inputs. After this call successfully returns, the
+// goroutines will only be able to use files in the ways as they were
 // specified in advance in the call to RestrictPaths.
 //
-// Example: The following invocation will restrict the current thread so
-// that it can only read from /usr, /bin and /tmp, and only write to /tmp:
+// Example: The following invocation will restrict all goroutines so
+// that it can only read from /usr, /bin and /tmp, and only write to
+// /tmp:
 //
 //   err := golandlock.V1.RestrictPaths(
 //       golandlock.RODirs("/usr", "/bin"),
@@ -71,7 +72,8 @@ import (
 // denote an actual directory or file, or if Landlock can't be enforced
 // using the ABI versions selected through the Landlocker object.
 //
-// RestrictPaths sets the "no new privileges" flag on the current thread.
+// RestrictPaths also sets the "no new privileges" flag for all OS
+// threads managed by the Go runtime.
 //
 // Restrictable access rights
 //
