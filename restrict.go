@@ -266,7 +266,7 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	}
 
 	if err := ll.AllThreadsPrctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
-		return err
+		return fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err)
 	}
 
 	if err := ll.AllThreadsLandlockRestrictSelf(fd, 0); err != nil {
