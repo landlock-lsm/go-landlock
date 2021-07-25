@@ -36,6 +36,20 @@
 // Programs that get run on different kernel versions will want to use
 // the ABI.BestEffort() method to gracefully degrade to using the best
 // available Landlock version on the current kernel.
+//
+// Caveats
+//
+// This warning only applies to programs using cgo and linking C
+// libraries that start OS threads through means other than
+// pthread_create() before golandlock is called:
+//
+// When using cgo, golandlock relies on libpsx in order to apply the
+// rules across all OS threads, (rather than just the ones managed by
+// the Go runtime). psx achieves this by wrapping the C-level
+// phtread_create() API which is very commonly used on Unix to start
+// threads. However, C libraries calling clone(2) through other means
+// before golandlock is called might still create threads that won't
+// have Landlock protections.
 package golandlock
 
 import (
