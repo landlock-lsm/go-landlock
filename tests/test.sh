@@ -8,11 +8,11 @@ enter () {
 }
 
 success () {
-    echo " [OK]"
+    echo -e " \e[1;32m[ok]\e[0m"
 }
 
 fail () {
-    echo " [FAIL] "
+    echo -e " \e[1;31m[fail]\e[0m"
     echo
     echo "****************"
     echo $*
