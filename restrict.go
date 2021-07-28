@@ -280,11 +280,16 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	}
 
 	if err := ll.AllThreadsPrctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
-		return fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err)
+		// This prctl invocation should always work.
+		return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))
 	}
 
 	if err := ll.AllThreadsLandlockRestrictSelf(fd, 0); err != nil {
-		return fmt.Errorf("landlock_restrict_self: %w", err)
+		if errors.Is(err, syscall.E2BIG) {
+			// Other errors than E2BIG should never happen.
+			return fmt.Errorf("the maximum number of stacked rulesets is reached for the current thread: %w", err)
+		}
+		return bug(fmt.Errorf("landlock_restrict_self: %w", err))
 	}
 	return nil
 }
@@ -329,9 +334,6 @@ func (g gracefulABI) RestrictPaths(opts ...pathOpt) error {
 	return nil
 }
 
-// TODO(gnoack): Should file descriptors be int or int32?
-// I believe in C they are only int32, but the Go syscalls package uses int,
-// which I think is 64 bit on 64 bit architectures.
 func populateRuleset(rulesetFd int, paths []string, access uint64) error {
 	for _, p := range paths {
 		if err := populate(rulesetFd, p, access); err != nil {
@@ -354,7 +356,24 @@ func populate(rulesetFd int, path string, access uint64) error {
 	}
 	err = ll.LandlockAddPathBeneathRule(rulesetFd, &pathBeneath, 0)
 	if err != nil {
+		if errors.Is(err, syscall.EINVAL) {
+			// The ruleset access permissions must be a superset of the ones we restrict to.
+			// This should never happen because the call to populate() ensures that.
+			err = bug(fmt.Errorf("invalid flags, or inconsistent access in the rule: %w", err))
+		} else if errors.Is(err, syscall.ENOMSG) && access == 0 {
+			err = fmt.Errorf("empty access rights: %w", err)
+		} else {
+			// Other errors should never happen.
+			err = bug(err)
+		}
 		return fmt.Errorf("landlock_add_rule: %w", err)
 	}
 	return nil
+}
+
+// Denotes an error that should not have happened.
+// If such an error occurs anyway, please try upgrading the library
+// and file a bug to github.com/gnoack/golandlock if the issue persists.
+func bug(err error) error {
+	return fmt.Errorf("BUG(golandlock): This should not have happened: %w", err)
 }

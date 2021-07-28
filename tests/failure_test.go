@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -32,5 +33,17 @@ func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
 	)
 	if !errors.Is(err, syscall.EINVAL) {
 		t.Errorf("expected 'invalid argument' error, got: %v", err)
+	}
+}
+
+func TestEmptyAccessRights(t *testing.T) {
+	err := golandlock.V1.RestrictPaths(
+		golandlock.PathAccess(0, "/etc/passwd"),
+	)
+	if !errors.Is(err, syscall.ENOMSG) {
+		t.Errorf("expected ENOMSG, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "empty access rights") {
+		t.Errorf("expected error message with «empty access rights», got: %v", err)
 	}
 }
