@@ -61,10 +61,104 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// Landlocker exposes the Landlock interface for a specific ABI
-// version or set of ABI versions. The desired Landlocker can be
-// selected by using the Landlock ABI version constants.
+// Access permission sets for filesystem access.
+const (
+	// The set of access rights that only apply to files.
+	accessFile uint64 = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
+
+	// The set of access rights associated with read access to files and directories.
+	accessFSRead uint64 = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
+
+	// The set of access rights associated with write access to files and directories.
+	accessFSWrite uint64 = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
+
+	// The set of access rights associated with read and write access to files and directories.
+	accessFSReadWrite uint64 = accessFSRead | accessFSWrite
+)
+
+// These are the currently supported Landlock ABI versions.
 //
+// The higher the ABI version, the more operations Landlock will be
+// able to restrict.
+var (
+	// Landlock V1 support (basic file operations).
+	V1 = Config{
+		name:            "v1",
+		handledAccessFS: abiInfos[1].supportedAccessFS,
+	}
+)
+
+// The Landlock configuration describes the desired Landlock ABI level
+// and operations to be restricted.
+type Config struct {
+	name            string
+	handledAccessFS uint64
+	bestEffort      bool
+}
+
+// BestEffort returns a config that will opportunistically enforce
+// the strongest rules it can, up to the given ABI version, working
+// with the level of Landlock support available in the running kernel.
+//
+// Warning: A best-effort call to RestrictPaths() will succeed without
+// error even when Landlock is not available at all on the current kernel.
+func (c Config) BestEffort() Config {
+	cfg := c
+	cfg.bestEffort = true
+	return cfg
+}
+
+// Some internal errors
+var (
+	errLandlockCreateLandlockUnavailable = errors.New("Landlock is not supported by kernel or not enabled at boot time")
+	errLandlockCreateUnsupportedInput    = errors.New("unknown flags, unknown access, or too small size")
+)
+
+type pathOpt struct {
+	accessFS uint64
+	paths    []string
+}
+
+// PathAccess is a RestrictPaths() option that grants the access right
+// specified by accessFS to the file hierarchies under the given paths.
+//
+// When accessFS is larger than what is permitted by the Landlock
+// version in use, only the applicable subset of accessFS will be used.
+//
+// Most users should use the functions RODirs, RWDirs, ROFiles and
+// RWFiles instead, which provide canned options for commonly used
+// values of accessFS.
+//
+// Filesystem access rights are represented using bits in a uint64.
+// The individual access rights and their meaning are defined in the
+// golandlock/syscall package and explained further in the kernel
+// documentation at
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
+func PathAccess(accessFS uint64, paths ...string) pathOpt {
+	return pathOpt{
+		accessFS: accessFS,
+		paths:    paths,
+	}
+}
+
+// RODirs is a RestrictPaths() option that grants common read-only
+// access to files and directories and permits executing files.
+func RODirs(paths ...string) pathOpt { return PathAccess(accessFSRead, paths...) }
+
+// RWDirs is a RestrictPaths() option that grants full (read and
+// write) access to files and directories under the given paths.
+func RWDirs(paths ...string) pathOpt { return PathAccess(accessFSReadWrite, paths...) }
+
+// ROFiles is a RestrictPaths() option that grants common read access
+// to individual files, but not to directories, for the file
+// hierarchies under the given paths.
+func ROFiles(paths ...string) pathOpt { return PathAccess(accessFSRead&accessFile, paths...) }
+
+// RWFiles is a RestrictPaths() option that grants common read and
+// write access to files under the given paths, but it does not permit
+// access to directories.
+func RWFiles(paths ...string) pathOpt { return PathAccess(accessFSReadWrite&accessFile, paths...) }
+
 // RestrictPaths restricts all goroutines to only "see" the files
 // provided as inputs. After this call successfully returns, the
 // goroutines will only be able to use files in the ways as they were
@@ -165,108 +259,6 @@ import (
 //
 // The PathAccess() option lets callers define custom subsets of these
 // access rights.
-type Landlocker interface {
-	RestrictPaths(opts ...pathOpt) error
-}
-
-// Access permission sets for filesystem access.
-const (
-	// The set of access rights that only apply to files.
-	accessFile uint64 = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
-
-	// The set of access rights associated with read access to files and directories.
-	accessFSRead uint64 = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
-
-	// The set of access rights associated with write access to files and directories.
-	accessFSWrite uint64 = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
-
-	// The set of access rights associated with read and write access to files and directories.
-	accessFSReadWrite uint64 = accessFSRead | accessFSWrite
-)
-
-// These are the currently supported Landlock ABI versions.
-//
-// The higher the ABI version, the more operations Landlock will be
-// able to restrict.
-var (
-	// Landlock V1 support (basic file operations).
-	V1 = Config{
-		name:            "v1",
-		handledAccessFS: abiInfos[1].supportedAccessFS,
-	}
-)
-
-// The Landlock configuration describes the desired Landlock ABI level
-// and operations to be restricted.
-type Config struct {
-	name            string
-	handledAccessFS uint64
-	bestEffort      bool
-}
-
-// BestEffort returns a config that will opportunistically enforce
-// the strongest rules it can, up to the given ABI version, working
-// with the level of Landlock support available in the running kernel.
-//
-// Warning: A best-effort call to RestrictPaths() will succeed without
-// error even when Landlock is not available at all on the current kernel.
-func (c Config) BestEffort() Config {
-	cfg := c
-	cfg.bestEffort = true
-	return cfg
-}
-
-// Some internal errors
-var (
-	errLandlockCreateLandlockUnavailable = errors.New("Landlock is not supported by kernel or not enabled at boot time")
-	errLandlockCreateUnsupportedInput    = errors.New("unknown flags, unknown access, or too small size")
-)
-
-type pathOpt struct {
-	accessFS uint64
-	paths    []string
-}
-
-// PathAccess is a RestrictPaths() option that grants the access right
-// specified by accessFS to the file hierarchies under the given paths.
-//
-// When accessFS is larger than what is permitted by the Landlock
-// version in use, only the applicable subset of accessFS will be used.
-//
-// Most users should use the functions RODirs, RWDirs, ROFiles and
-// RWFiles instead, which provide canned options for commonly used
-// values of accessFS.
-//
-// Filesystem access rights are represented using bits in a uint64.
-// The individual access rights and their meaning are defined in the
-// golandlock/syscall package and explained further in the kernel
-// documentation at
-// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
-func PathAccess(accessFS uint64, paths ...string) pathOpt {
-	return pathOpt{
-		accessFS: accessFS,
-		paths:    paths,
-	}
-}
-
-// RODirs is a RestrictPaths() option that grants common read-only
-// access to files and directories and permits executing files.
-func RODirs(paths ...string) pathOpt { return PathAccess(accessFSRead, paths...) }
-
-// RWDirs is a RestrictPaths() option that grants full (read and
-// write) access to files and directories under the given paths.
-func RWDirs(paths ...string) pathOpt { return PathAccess(accessFSReadWrite, paths...) }
-
-// ROFiles is a RestrictPaths() option that grants common read access
-// to individual files, but not to directories, for the file
-// hierarchies under the given paths.
-func ROFiles(paths ...string) pathOpt { return PathAccess(accessFSRead&accessFile, paths...) }
-
-// RWFiles is a RestrictPaths() option that grants common read and
-// write access to files under the given paths, but it does not permit
-// access to directories.
-func RWFiles(paths ...string) pathOpt { return PathAccess(accessFSReadWrite&accessFile, paths...) }
-
 func (c Config) RestrictPaths(opts ...pathOpt) error {
 	rulesetAttr := ll.RulesetAttr{
 		HandledAccessFS: c.handledAccessFS,
