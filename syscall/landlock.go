@@ -52,7 +52,7 @@ const (
 //
 // C version is in usr/include/linux/landlock.h
 type RulesetAttr struct {
-	HandledAccessFs uint64
+	HandledAccessFS uint64
 }
 
 // The size of the RulesetAttr struct in bytes.
@@ -63,6 +63,17 @@ const rulesetAttrSize = 8
 func LandlockCreateRuleset(attr *RulesetAttr, flags int) (fd int, err error) {
 	r0, _, e1 := syscall.Syscall(SYS_LANDLOCK_CREATE_RULESET, uintptr(unsafe.Pointer(attr)), uintptr(rulesetAttrSize), uintptr(flags))
 	fd = int(r0)
+	if e1 != 0 {
+		err = syscall.Errno(e1)
+	}
+	return
+}
+
+// LandlockGetABIVersion returns the supported Landlock ABI version (starting at 1).
+func LandlockGetABIVersion() (version int, err error) {
+	const LANDLOCK_CREATE_RULESET_VERSION = 1 << 0
+	r0, _, e1 := syscall.Syscall(SYS_LANDLOCK_CREATE_RULESET, 0, 0, LANDLOCK_CREATE_RULESET_VERSION)
+	version = int(r0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
 	}

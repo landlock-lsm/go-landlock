@@ -34,8 +34,8 @@
 // Graceful degradation on older kernels
 //
 // Programs that get run on different kernel versions will want to use
-// the ABI.BestEffort() method to gracefully degrade to using the best
-// available Landlock version on the current kernel.
+// the Config.BestEffort() method to gracefully degrade to using the
+// best available Landlock version on the current kernel.
 //
 // Caveats
 //
@@ -84,7 +84,7 @@ import (
 //
 // RestrictPaths returns an error if any of the given paths does not
 // denote an actual directory or file, or if Landlock can't be enforced
-// using the ABI versions selected through the Landlocker object.
+// using the desired ABI version constraints.
 //
 // RestrictPaths also sets the "no new privileges" flag for all OS
 // threads managed by the Go runtime.
@@ -184,16 +184,37 @@ const (
 	accessFSReadWrite uint64 = accessFSRead | accessFSWrite
 )
 
-// ABI represents a specific Landlock ABI version.
+// These are the currently supported Landlock ABI versions.
 //
 // The higher the ABI version, the more operations Landlock will be
 // able to restrict.
-type ABI int
-
-// These are the currently supported Landlock ABI versions.
 var (
-	V1 ABI = 1 // Landlock V1 support (basic file operations).
+	// Landlock V1 support (basic file operations).
+	V1 = Config{
+		name:            "v1",
+		handledAccessFS: abiInfos[1].supportedAccessFS,
+	}
 )
+
+// The Landlock configuration describes the desired Landlock ABI level
+// and operations to be restricted.
+type Config struct {
+	name            string
+	handledAccessFS uint64
+	bestEffort      bool
+}
+
+// BestEffort returns a config that will opportunistically enforce
+// the strongest rules it can, up to the given ABI version, working
+// with the level of Landlock support available in the running kernel.
+//
+// Warning: A best-effort call to RestrictPaths() will succeed without
+// error even when Landlock is not available at all on the current kernel.
+func (c Config) BestEffort() Config {
+	cfg := c
+	cfg.bestEffort = true
+	return cfg
+}
 
 // Some internal errors
 var (
@@ -246,20 +267,18 @@ func ROFiles(paths ...string) pathOpt { return PathAccess(accessFSRead&accessFil
 // access to directories.
 func RWFiles(paths ...string) pathOpt { return PathAccess(accessFSReadWrite&accessFile, paths...) }
 
-// RestrictPaths restricts file accesses for a specific Landlock ABI version.
-func (v ABI) RestrictPaths(opts ...pathOpt) error {
-	if v == 0 {
-		// ABI v0 is "no Landlock support" and always returns
-		// success immediately.
-		return nil
-	}
-	if v < 0 || v > 1 {
-		return fmt.Errorf("golandlock does not support ABI version %d", v)
-	}
-	// TODO(gnoack): HandledAccessFs will need to be different for other ABI versions.
+func (c Config) RestrictPaths(opts ...pathOpt) error {
 	rulesetAttr := ll.RulesetAttr{
-		HandledAccessFs: accessFSReadWrite,
+		HandledAccessFS: c.handledAccessFS,
 	}
+	if c.bestEffort {
+		abi := getSupportedABIVersion()
+		rulesetAttr.HandledAccessFS &= abi.supportedAccessFS
+	}
+	if rulesetAttr.HandledAccessFS == 0 {
+		return nil // Success: Nothing to restrict.
+	}
+
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
 		if errors.Is(err, syscall.ENOSYS) || errors.Is(err, syscall.EOPNOTSUPP) {
@@ -273,7 +292,7 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		accessFS := opt.accessFS & rulesetAttr.HandledAccessFs
+		accessFS := opt.accessFS & rulesetAttr.HandledAccessFS
 		if err := populateRuleset(fd, opt.paths, accessFS); err != nil {
 			return err
 		}
@@ -291,46 +310,6 @@ func (v ABI) RestrictPaths(opts ...pathOpt) error {
 		}
 		return bug(fmt.Errorf("landlock_restrict_self: %w", err))
 	}
-	return nil
-}
-
-// BestEffort returns a Landlocker that will opportunistically enforce
-// the strongest rules it can, up to the given ABI version, working
-// with the level of Landlock support available in the running kernel.
-//
-// Warning: A best-effort call to RestrictPaths() will succeed without
-// error even when Landlock is not available at all on the current kernel.
-func (v ABI) BestEffort() Landlocker {
-	return gracefulABI(v)
-}
-
-type gracefulABI int
-
-// RestrictPaths restricts filesystem accesses on a specific Landlock
-// ABI version or a lower ABI version (including "no Landlock").
-//
-// This degrades gracefully on older kernels and may return
-// successfully without restricting anything, if needed.
-func (g gracefulABI) RestrictPaths(opts ...pathOpt) error {
-	// TODO(gnoack): Retrieve the best supported Landlock ABI
-	// version from the kernel using landlock_create_ruleset,
-	// instead of trying it out.
-	for v := ABI(g); v > 0; v-- {
-		err := v.RestrictPaths(opts...)
-		if errors.Is(err, errLandlockCreateLandlockUnavailable) {
-			break // Kernel doesn't have Landlock compiled in or enabled.
-		}
-		if errors.Is(err, errLandlockCreateUnsupportedInput) {
-			// The kernel probably only supports lower Landlock versions.
-			// Degrade gracefully to the next version
-			continue
-		}
-		if err != nil {
-			return fmt.Errorf("Landlock v%d: %w", v, err)
-		}
-		return nil
-	}
-	// No Landlock support, returning
 	return nil
 }
 
