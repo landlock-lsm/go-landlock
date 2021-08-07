@@ -257,9 +257,13 @@ func (c Config) RestrictPaths(opts ...pathOpt) error {
 	rulesetAttr := ll.RulesetAttr{
 		HandledAccessFS: c.handledAccessFS,
 	}
+	abi := getSupportedABIVersion()
 	if c.bestEffort {
-		abi := getSupportedABIVersion()
 		rulesetAttr.HandledAccessFS &= abi.supportedAccessFS
+	} else {
+		if !flagSubset(rulesetAttr.HandledAccessFS, abi.supportedAccessFS) {
+			return fmt.Errorf("Missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c.name)
+		}
 	}
 	if rulesetAttr.HandledAccessFS == 0 {
 		return nil // Success: Nothing to restrict.
@@ -334,6 +338,11 @@ func populate(rulesetFd int, path string, access uint64) error {
 		return fmt.Errorf("landlock_add_rule: %w", err)
 	}
 	return nil
+}
+
+// flagSubset returns true if the 1-bits in a are a subset of 1-bits in b.
+func flagSubset(a, b uint64) bool {
+	return a&b == a
 }
 
 // Denotes an error that should not have happened.
