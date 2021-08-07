@@ -277,7 +277,8 @@ func (c Config) RestrictPaths(opts ...pathOpt) error {
 		if errors.Is(err, syscall.EINVAL) {
 			err = errors.New("unknown flags, unknown access, or too small size")
 		}
-		return fmt.Errorf("landlock_create_ruleset: %w", err)
+		// Bug, because these should have been caught up front with the ABI version check.
+		return bug(fmt.Errorf("landlock_create_ruleset: %w", err))
 	}
 	defer syscall.Close(fd)
 
