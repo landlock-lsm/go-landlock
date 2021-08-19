@@ -4,7 +4,7 @@ import ll "github.com/gnoack/golandlock/syscall"
 
 type abiInfo struct {
 	version           int
-	supportedAccessFS uint64
+	supportedAccessFS AccessFSSet
 }
 
 var abiInfos = []abiInfo{

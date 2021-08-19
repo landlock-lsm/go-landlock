@@ -11,21 +11,22 @@ import (
 
 // The actual restrictPaths implementation.
 func restrictPaths(c Config, opts ...pathOpt) error {
-	rulesetAttr := ll.RulesetAttr{
-		HandledAccessFS: c.handledAccessFS,
-	}
+	handledAccessFS := c.handledAccessFS
 	abi := getSupportedABIVersion()
 	if c.bestEffort {
-		rulesetAttr.HandledAccessFS &= abi.supportedAccessFS
+		handledAccessFS = handledAccessFS.intersect(abi.supportedAccessFS)
 	} else {
-		if !flagSubset(rulesetAttr.HandledAccessFS, abi.supportedAccessFS) {
+		if !handledAccessFS.isSubset(abi.supportedAccessFS) {
 			return fmt.Errorf("Missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c.name)
 		}
 	}
-	if rulesetAttr.HandledAccessFS == 0 {
+	if handledAccessFS.isEmpty() {
 		return nil // Success: Nothing to restrict.
 	}
 
+	rulesetAttr := ll.RulesetAttr{
+		HandledAccessFS: uint64(handledAccessFS),
+	}
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
 		if errors.Is(err, syscall.ENOSYS) || errors.Is(err, syscall.EOPNOTSUPP) {
@@ -40,7 +41,7 @@ func restrictPaths(c Config, opts ...pathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		accessFS := opt.accessFS & rulesetAttr.HandledAccessFS
+		accessFS := opt.accessFS.intersect(handledAccessFS)
 		if err := populateRuleset(fd, opt.paths, accessFS); err != nil {
 			return err
 		}
@@ -61,16 +62,16 @@ func restrictPaths(c Config, opts ...pathOpt) error {
 	return nil
 }
 
-func populateRuleset(rulesetFd int, paths []string, access uint64) error {
+func populateRuleset(rulesetFd int, paths []string, access AccessFSSet) error {
 	for _, p := range paths {
 		if err := populate(rulesetFd, p, access); err != nil {
-			return fmt.Errorf("populating ruleset for %q: %w", p, err)
+			return fmt.Errorf("populating ruleset for %q with access %v: %w", p, access, err)
 		}
 	}
 	return nil
 }
 
-func populate(rulesetFd int, path string, access uint64) error {
+func populate(rulesetFd int, path string, access AccessFSSet) error {
 	fd, err := syscall.Open(path, unix.O_PATH|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return fmt.Errorf("open: %w", err)
@@ -79,7 +80,7 @@ func populate(rulesetFd int, path string, access uint64) error {
 
 	pathBeneath := ll.PathBeneathAttr{
 		ParentFd:      fd,
-		AllowedAccess: access,
+		AllowedAccess: uint64(access),
 	}
 	err = ll.LandlockAddPathBeneathRule(rulesetFd, &pathBeneath, 0)
 	if err != nil {
@@ -96,11 +97,6 @@ func populate(rulesetFd int, path string, access uint64) error {
 		return fmt.Errorf("landlock_add_rule: %w", err)
 	}
 	return nil
-}
-
-// flagSubset returns true if the 1-bits in a are a subset of 1-bits in b.
-func flagSubset(a, b uint64) bool {
-	return a&b == a
 }
 
 // Denotes an error that should not have happened.

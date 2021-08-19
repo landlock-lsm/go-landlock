@@ -5,16 +5,16 @@ import ll "github.com/gnoack/golandlock/syscall"
 // Access permission sets for filesystem access.
 const (
 	// The set of access rights that only apply to files.
-	accessFile uint64 = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
+	accessFile AccessFSSet = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
 
 	// The set of access rights associated with read access to files and directories.
-	accessFSRead uint64 = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
+	accessFSRead AccessFSSet = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
 
 	// The set of access rights associated with write access to files and directories.
-	accessFSWrite uint64 = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
+	accessFSWrite AccessFSSet = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
 
 	// The set of access rights associated with read and write access to files and directories.
-	accessFSReadWrite uint64 = accessFSRead | accessFSWrite
+	accessFSReadWrite AccessFSSet = accessFSRead | accessFSWrite
 )
 
 // These are the currently supported Landlock ABI versions.
@@ -33,7 +33,7 @@ var (
 // and operations to be restricted.
 type Config struct {
 	name            string
-	handledAccessFS uint64
+	handledAccessFS AccessFSSet
 	bestEffort      bool
 }
 
@@ -50,7 +50,7 @@ func (c Config) BestEffort() Config {
 }
 
 type pathOpt struct {
-	accessFS uint64
+	accessFS AccessFSSet
 	paths    []string
 }
 
@@ -69,7 +69,7 @@ type pathOpt struct {
 // golandlock/syscall package and explained further in the kernel
 // documentation at
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
-func PathAccess(accessFS uint64, paths ...string) pathOpt {
+func PathAccess(accessFS AccessFSSet, paths ...string) pathOpt {
 	return pathOpt{
 		accessFS: accessFS,
 		paths:    paths,
