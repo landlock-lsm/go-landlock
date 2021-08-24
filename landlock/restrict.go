@@ -101,7 +101,7 @@ func populate(rulesetFd int, path string, access AccessFSSet) error {
 
 // Denotes an error that should not have happened.
 // If such an error occurs anyway, please try upgrading the library
-// and file a bug to github.com/gnoack/golandlock if the issue persists.
+// and file a bug to github.com/landlock-lsm/go-landlock if the issue persists.
 func bug(err error) error {
-	return fmt.Errorf("BUG(golandlock): This should not have happened: %w", err)
+	return fmt.Errorf("BUG(go-landlock): This should not have happened: %w", err)
 }

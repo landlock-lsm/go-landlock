@@ -66,7 +66,7 @@ type pathOpt struct {
 //
 // Filesystem access rights are represented using bits in a uint64.
 // The individual access rights and their meaning are defined in the
-// golandlock/syscall package and explained further in the kernel
+// landlock/syscall package and explained further in the kernel
 // documentation at
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func PathAccess(accessFS AccessFSSet, paths ...string) pathOpt {
@@ -103,12 +103,12 @@ func RWFiles(paths ...string) pathOpt { return PathAccess(accessFSReadWrite&acce
 // that it can only read from /usr, /bin and /tmp, and only write to
 // /tmp:
 //
-//   err := golandlock.V1.RestrictPaths(
-//       golandlock.RODirs("/usr", "/bin"),
-//       golandlock.RWDirs("/tmp"),
+//   err := landlock.V1.RestrictPaths(
+//       landlock.RODirs("/usr", "/bin"),
+//       landlock.RWDirs("/tmp"),
 //   )
 //   if err != nil {
-//       log.Fatalf("golandlock.V1.RestrictPaths(): %v", err)
+//       log.Fatalf("landlock.V1.RestrictPaths(): %v", err)
 //   }
 //
 // RestrictPaths returns an error if any of the given paths does not

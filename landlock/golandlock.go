@@ -3,9 +3,9 @@
 // The following invocation will restrict all goroutines so that they
 // can only read from /usr, /bin and /tmp, and only write to /tmp:
 //
-//     err := golandlock.V1.BestEffort().RestrictPaths(
-//         golandlock.RODirs("/usr", "/bin"),
-//         golandlock.RWDirs("/tmp"),
+//     err := landlock.V1.BestEffort().RestrictPaths(
+//         landlock.RODirs("/usr", "/bin"),
+//         landlock.RWDirs("/tmp"),
 //     )
 //
 // This will restrict file access using Landlock V1, if available. If
@@ -15,7 +15,7 @@
 //
 // More possible invocations
 //
-// golandlock.V1.RestrictPaths(...) enforces the given rules using the
+// landlock.V1.RestrictPaths(...) enforces the given rules using the
 // capabilities of Landlock V1, but returns an error if that is not
 // available.
 //
@@ -26,7 +26,7 @@
 // Currently the only available ABI variant is V1, which restricts
 // basic filesystem operations.
 //
-// When new Landlock versions become available in golandlock, users
+// When new Landlock versions become available in landlock, users
 // will need to upgrade their usages manually to higher Landlock
 // versions, as there is a risk that new Landlock versions will break
 // operations that their programs rely on.
@@ -41,13 +41,13 @@
 //
 // This warning only applies to programs using cgo and linking C
 // libraries that start OS threads through means other than
-// pthread_create() before golandlock is called:
+// pthread_create() before landlock is called:
 //
-// When using cgo, golandlock relies on libpsx in order to apply the
-// rules across all OS threads, (rather than just the ones managed by
-// the Go runtime). psx achieves this by wrapping the C-level
-// phtread_create() API which is very commonly used on Unix to start
-// threads. However, C libraries calling clone(2) through other means
-// before golandlock is called might still create threads that won't
-// have Landlock protections.
+// When using cgo, the landlock package relies on libpsx in order to
+// apply the rules across all OS threads, (rather than just the ones
+// managed by the Go runtime). psx achieves this by wrapping the
+// C-level phtread_create() API which is very commonly used on Unix to
+// start threads. However, C libraries calling clone(2) through other
+// means before landlock is called might still create threads that
+// won't have Landlock protections.
 package landlock

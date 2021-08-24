@@ -1,5 +1,5 @@
 #!/bin/sh
-# The golandlock tests are currently just a shell script. Running
+# The go-landlock tests are currently just a shell script. Running
 # Landlock from within a regular Go test is harder to manage, as tests
 # can interfere with each other.
 
@@ -60,7 +60,7 @@ if [ ! -f "${CMD}" ]; then
     exit 1
 fi
 
-TMPDIR=$(mktemp -t -d golandlock-test.XXXXXX)
+TMPDIR=$(mktemp -t -d go-landlock-test.XXXXXX)
 echo "Running in ${TMPDIR}"
 cd "${TMPDIR}"
 trap shutdown EXIT

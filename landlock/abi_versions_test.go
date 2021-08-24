@@ -3,7 +3,7 @@ package landlock
 import (
 	"testing"
 
-	ll "github.com/gnoack/golandlock/landlock/syscall"
+	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
 func TestAbiVersionsIncrementing(t *testing.T) {
