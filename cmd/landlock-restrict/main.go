@@ -7,7 +7,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/gnoack/golandlock"
+	"github.com/landlock-lsm/go-landlock/landlock"
 )
 
 func takeArgs(args, out []string) (argsOut, outOut []string) {
@@ -83,11 +83,11 @@ func main() {
 		log.Fatalf("Need absolute binary path, got %q", cmdArgs[0])
 	}
 
-	err := golandlock.V1.BestEffort().RestrictPaths(
-		golandlock.RODirs(roDirs...),
-		golandlock.RWDirs(rwDirs...),
-		golandlock.ROFiles(roFiles...),
-		golandlock.RWFiles(rwFiles...),
+	err := landlock.V1.BestEffort().RestrictPaths(
+		landlock.RODirs(roDirs...),
+		landlock.RWDirs(rwDirs...),
+		landlock.ROFiles(roFiles...),
+		landlock.RWFiles(rwFiles...),
 	)
 	if err != nil {
 		log.Fatalf("landlock: %v", err)

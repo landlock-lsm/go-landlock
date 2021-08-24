@@ -1,4 +1,4 @@
-module github.com/gnoack/golandlock
+module github.com/landlock-lsm/go-landlock
 
 go 1.16
 

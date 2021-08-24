@@ -1,9 +1,9 @@
-package golandlock
+package landlock
 
 import (
 	"testing"
 
-	ll "github.com/gnoack/golandlock/syscall"
+	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
 func TestSubset(t *testing.T) {

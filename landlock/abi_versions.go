@@ -1,6 +1,6 @@
-package golandlock
+package landlock
 
-import ll "github.com/gnoack/golandlock/syscall"
+import ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 
 type abiInfo struct {
 	version           int

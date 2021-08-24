@@ -1,11 +1,11 @@
-package golandlock
+package landlock
 
 import (
 	"errors"
 	"fmt"
 	"syscall"
 
-	ll "github.com/gnoack/golandlock/syscall"
+	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 	"golang.org/x/sys/unix"
 )
 

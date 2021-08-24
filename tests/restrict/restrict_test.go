@@ -1,11 +1,11 @@
-package golandlock_test
+package landlock_test
 
 import (
 	"os"
 	"sync"
 	"testing"
 
-	"github.com/gnoack/golandlock"
+	"github.com/landlock-lsm/go-landlock/landlock"
 )
 
 // True if the given path can be opened for reading.
@@ -18,7 +18,7 @@ func canAccess(path string) bool {
 	return true
 }
 
-// Verify that golandlock applies to all system threads that belong to
+// Verify that Landlock applies to all system threads that belong to
 // the current Go process. The raw landlock_restrict_self syscall only
 // applies to the current system thread, but these are managed by the
 // Go runtime and not easily controlled. The same issue has already
@@ -30,7 +30,7 @@ func TestRestrictInPresenceOfThreading(t *testing.T) {
 		t.Skipf("expected normal accesses to /etc/passwd to work, got error: %v", err)
 	}
 
-	err = golandlock.V1.RestrictPaths() // No access permitted at all.
+	err = landlock.V1.RestrictPaths() // No access permitted at all.
 	if err != nil {
 		t.Skipf("kernel does not support Landlock v1; tests cannot be run.")
 	}

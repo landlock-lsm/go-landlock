@@ -1,4 +1,4 @@
-// Package golandlock restricts a Go program's ability to use files.
+// Package landlock restricts a Go program's ability to use files.
 //
 // The following invocation will restrict all goroutines so that they
 // can only read from /usr, /bin and /tmp, and only write to /tmp:
@@ -50,4 +50,4 @@
 // threads. However, C libraries calling clone(2) through other means
 // before golandlock is called might still create threads that won't
 // have Landlock protections.
-package golandlock
+package landlock

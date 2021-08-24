@@ -1,4 +1,4 @@
-package golandlock
+package landlock
 
 import "strings"
 

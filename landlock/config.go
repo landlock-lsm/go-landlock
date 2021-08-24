@@ -1,6 +1,6 @@
-package golandlock
+package landlock
 
-import ll "github.com/gnoack/golandlock/syscall"
+import ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 
 // Access permission sets for filesystem access.
 const (
