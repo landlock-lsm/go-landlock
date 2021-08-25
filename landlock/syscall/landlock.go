@@ -12,18 +12,8 @@ import (
 	"syscall"
 	"unsafe"
 
+	"golang.org/x/sys/unix"
 	"kernel.org/pub/linux/libs/security/libcap/psx"
-)
-
-// Syscall numbers for Landlock syscalls.
-//
-// Note: These syscall numbers will probably soon show up in the
-// x/sys/unix package. Please do not depend on these variables to
-// exist.
-const (
-	SYS_LANDLOCK_CREATE_RULESET = 444
-	SYS_LANDLOCK_ADD_RULE       = 445
-	SYS_LANDLOCK_RESTRICT_SELF  = 446
 )
 
 // Landlock access rights, for use in "access" bit fields.
@@ -61,7 +51,7 @@ const rulesetAttrSize = 8
 // LandlockCreateRuleset creates a ruleset file descriptor with the
 // given attributes.
 func LandlockCreateRuleset(attr *RulesetAttr, flags int) (fd int, err error) {
-	r0, _, e1 := syscall.Syscall(SYS_LANDLOCK_CREATE_RULESET, uintptr(unsafe.Pointer(attr)), uintptr(rulesetAttrSize), uintptr(flags))
+	r0, _, e1 := syscall.Syscall(unix.SYS_LANDLOCK_CREATE_RULESET, uintptr(unsafe.Pointer(attr)), uintptr(rulesetAttrSize), uintptr(flags))
 	fd = int(r0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
@@ -72,7 +62,7 @@ func LandlockCreateRuleset(attr *RulesetAttr, flags int) (fd int, err error) {
 // LandlockGetABIVersion returns the supported Landlock ABI version (starting at 1).
 func LandlockGetABIVersion() (version int, err error) {
 	const LANDLOCK_CREATE_RULESET_VERSION = 1 << 0
-	r0, _, e1 := syscall.Syscall(SYS_LANDLOCK_CREATE_RULESET, 0, 0, LANDLOCK_CREATE_RULESET_VERSION)
+	r0, _, e1 := syscall.Syscall(unix.SYS_LANDLOCK_CREATE_RULESET, 0, 0, LANDLOCK_CREATE_RULESET_VERSION)
 	version = int(r0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
@@ -105,7 +95,7 @@ func LandlockAddPathBeneathRule(rulesetFd int, attr *PathBeneathAttr, flags int)
 
 // LandlockAddRule is the generic landlock_add_rule syscall.
 func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags int) (err error) {
-	_, _, e1 := syscall.Syscall6(SYS_LANDLOCK_ADD_RULE, uintptr(rulesetFd), uintptr(ruleType), uintptr(ruleAttr), uintptr(flags), 0, 0)
+	_, _, e1 := syscall.Syscall6(unix.SYS_LANDLOCK_ADD_RULE, uintptr(rulesetFd), uintptr(ruleType), uintptr(ruleAttr), uintptr(flags), 0, 0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
 	}
@@ -115,7 +105,7 @@ func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags
 // AllThreadsLandlockRestrictSelf enforces the given ruleset on all OS
 // threads managed by the Go runtime.
 func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
-	_, _, e1 := psx.Syscall3(SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
+	_, _, e1 := psx.Syscall3(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
 	}
