@@ -1,6 +1,12 @@
 // Package syscall provides a low-level interface to the Linux Landlock sandboxing feature.
 //
-// The syscall package is a stopgap solution while there is no
+// The package contains constants and syscall wrappers. The syscall
+// wrappers whose names start with AllThreads will execute the syscall
+// on all OS threads belonging to the current process, as long as
+// these threads have been started implicitly by the Go runtime or
+// using `pthread_create`.
+//
+// This package package is a stopgap solution while there is no
 // Landlock support in x/sys/unix. The syscall package is considered
 // highly unstable and may change or disappear without warning.
 //
@@ -103,7 +109,7 @@ func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags
 }
 
 // AllThreadsLandlockRestrictSelf enforces the given ruleset on all OS
-// threads managed by the Go runtime.
+// threads belonging to the current process.
 func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
 	_, _, e1 := psx.Syscall3(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
 	if e1 != 0 {
