@@ -49,7 +49,8 @@ func (c Config) BestEffort() Config {
 	return cfg
 }
 
-type pathOpt struct {
+// PathOpt is an option value for RestrictPaths().
+type PathOpt struct {
 	accessFS AccessFSSet
 	paths    []string
 }
@@ -69,8 +70,8 @@ type pathOpt struct {
 // landlock/syscall package and explained further in the kernel
 // documentation at
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
-func PathAccess(accessFS AccessFSSet, paths ...string) pathOpt {
-	return pathOpt{
+func PathAccess(accessFS AccessFSSet, paths ...string) PathOpt {
+	return PathOpt{
 		accessFS: accessFS,
 		paths:    paths,
 	}
@@ -78,21 +79,21 @@ func PathAccess(accessFS AccessFSSet, paths ...string) pathOpt {
 
 // RODirs is a RestrictPaths() option that grants common read-only
 // access to files and directories and permits executing files.
-func RODirs(paths ...string) pathOpt { return PathAccess(accessFSRead, paths...) }
+func RODirs(paths ...string) PathOpt { return PathAccess(accessFSRead, paths...) }
 
 // RWDirs is a RestrictPaths() option that grants full (read and
 // write) access to files and directories under the given paths.
-func RWDirs(paths ...string) pathOpt { return PathAccess(accessFSReadWrite, paths...) }
+func RWDirs(paths ...string) PathOpt { return PathAccess(accessFSReadWrite, paths...) }
 
 // ROFiles is a RestrictPaths() option that grants common read access
 // to individual files, but not to directories, for the file
 // hierarchies under the given paths.
-func ROFiles(paths ...string) pathOpt { return PathAccess(accessFSRead&accessFile, paths...) }
+func ROFiles(paths ...string) PathOpt { return PathAccess(accessFSRead&accessFile, paths...) }
 
 // RWFiles is a RestrictPaths() option that grants common read and
 // write access to files under the given paths, but it does not permit
 // access to directories.
-func RWFiles(paths ...string) pathOpt { return PathAccess(accessFSReadWrite&accessFile, paths...) }
+func RWFiles(paths ...string) PathOpt { return PathAccess(accessFSReadWrite&accessFile, paths...) }
 
 // RestrictPaths restricts all goroutines to only "see" the files
 // provided as inputs. After this call successfully returns, the
@@ -194,6 +195,6 @@ func RWFiles(paths ...string) pathOpt { return PathAccess(accessFSReadWrite&acce
 //
 // The PathAccess() option lets callers define custom subsets of these
 // access rights.
-func (c Config) RestrictPaths(opts ...pathOpt) error {
+func (c Config) RestrictPaths(opts ...PathOpt) error {
 	return restrictPaths(c, opts...)
 }

@@ -10,7 +10,7 @@ import (
 )
 
 // The actual restrictPaths implementation.
-func restrictPaths(c Config, opts ...pathOpt) error {
+func restrictPaths(c Config, opts ...PathOpt) error {
 	handledAccessFS := c.handledAccessFS
 	abi := getSupportedABIVersion()
 	if c.bestEffort {
