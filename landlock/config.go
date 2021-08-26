@@ -21,7 +21,9 @@ const (
 	accessFSReadWrite AccessFSSet = accessFSRead | accessFSWrite
 )
 
-// These are the currently supported Landlock ABI versions.
+// These are Landlock configurations for the currently supported
+// Landlock ABI versions, configured to restrict the highest possible
+// set of operations possible for each version.
 //
 // The higher the ABI version, the more operations Landlock will be
 // able to restrict.
