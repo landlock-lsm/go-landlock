@@ -34,8 +34,8 @@ var (
 	}
 )
 
-// The Landlock configuration describes the desired Landlock ABI level
-// and operations to be restricted.
+// The Landlock configuration describes the desired set of
+// landlockable operations to be restricted.
 type Config struct {
 	handledAccessFS AccessFSSet
 	bestEffort      bool
