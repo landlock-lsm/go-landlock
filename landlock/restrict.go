@@ -17,7 +17,7 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 		handledAccessFS = handledAccessFS.intersect(abi.supportedAccessFS)
 	} else {
 		if !handledAccessFS.isSubset(abi.supportedAccessFS) {
-			return fmt.Errorf("Missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c.name)
+			return fmt.Errorf("missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c.String())
 		}
 	}
 	if handledAccessFS.isEmpty() {

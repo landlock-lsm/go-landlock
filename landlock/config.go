@@ -1,6 +1,10 @@
 package landlock
 
-import ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
+import (
+	"fmt"
+
+	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
+)
 
 // Access permission sets for filesystem access.
 const (
@@ -24,7 +28,6 @@ const (
 var (
 	// Landlock V1 support (basic file operations).
 	V1 = Config{
-		name:            "v1",
 		handledAccessFS: abiInfos[1].supportedAccessFS,
 	}
 )
@@ -32,9 +35,28 @@ var (
 // The Landlock configuration describes the desired Landlock ABI level
 // and operations to be restricted.
 type Config struct {
-	name            string
 	handledAccessFS AccessFSSet
 	bestEffort      bool
+}
+
+func (c Config) String() string {
+	var abi abiInfo
+	for _, a := range abiInfos {
+		if c.handledAccessFS.isSubset(a.supportedAccessFS) {
+			abi = a
+		}
+	}
+
+	var desc = c.handledAccessFS.String()
+	if abi.supportedAccessFS == c.handledAccessFS {
+		desc = "all"
+	}
+
+	var bestEffort = ""
+	if c.bestEffort {
+		bestEffort = " (best effort)"
+	}
+	return fmt.Sprintf("{Landlock V%v; HandledAccessFS: %v%v}", abi.version, desc, bestEffort)
 }
 
 // BestEffort returns a config that will opportunistically enforce
