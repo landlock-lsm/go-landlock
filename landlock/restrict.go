@@ -30,7 +30,7 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
 		if errors.Is(err, syscall.ENOSYS) || errors.Is(err, syscall.EOPNOTSUPP) {
-			err = errors.New("Landlock is not supported by kernel or not enabled at boot time")
+			err = errors.New("landlock is not supported by kernel or not enabled at boot time")
 		}
 		if errors.Is(err, syscall.EINVAL) {
 			err = errors.New("unknown flags, unknown access, or too small size")
