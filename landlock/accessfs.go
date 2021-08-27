@@ -46,10 +46,6 @@ func (a AccessFSSet) intersect(b AccessFSSet) AccessFSSet {
 	return a & b
 }
 
-func (a AccessFSSet) union(b AccessFSSet) AccessFSSet {
-	return a | b
-}
-
 func (a AccessFSSet) isEmpty() bool {
 	return a == 0
 }
