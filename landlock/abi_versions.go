@@ -18,12 +18,11 @@ var abiInfos = []abiInfo{
 	},
 }
 
-// Return the ABI version supported by the kernel,
-// as well as a flag to indicate whether golandlock
-// knows about that ABI version already. If the ABI
-// version supported by the kernel is higher than
-// the newest one known to go-landlock, the highest
-// ABI version known to go-landlock is returned.
+// getSupportedABIVersion returns the kernel-supported ABI version.
+//
+// If the ABI version supported by the kernel is higher than the
+// newest one known to go-landlock, the highest ABI version known to
+// go-landlock is returned.
 func getSupportedABIVersion() abiInfo {
 	v, err := ll.LandlockGetABIVersion()
 	if err != nil {
