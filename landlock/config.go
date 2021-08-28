@@ -1,6 +1,7 @@
 package landlock
 
 import (
+	"errors"
 	"fmt"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
@@ -41,6 +42,17 @@ type Config struct {
 	bestEffort      bool
 }
 
+// validate returns success when the given config is supported by
+// go-landlock. (It may still be unsupported by your kernel though.)
+func (c Config) validate() error {
+	safs := highestKnownABIVersion.supportedAccessFS
+	if !c.handledAccessFS.isSubset(safs) {
+		return errors.New("unsupported handledAccessFS value")
+	}
+	return nil
+}
+
+// String builds a human-readable representation of the Config.
 func (c Config) String() string {
 	var abi abiInfo
 	for _, a := range abiInfos {

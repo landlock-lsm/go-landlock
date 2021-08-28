@@ -35,3 +35,28 @@ func TestConfigString(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateSuccess(t *testing.T) {
+	for _, c := range []Config{
+		V1, V1.BestEffort(),
+		Config{handledAccessFS: ll.AccessFSWriteFile},
+		Config{handledAccessFS: 0},
+	} {
+		err := c.validate()
+		if err != nil {
+			t.Errorf("%v.validate(): expected success, got %v", c, err)
+		}
+	}
+}
+
+func TestValidateFailure(t *testing.T) {
+	for _, c := range []Config{
+		Config{handledAccessFS: 0xffffffffffffffff},
+		Config{handledAccessFS: highestKnownABIVersion.supportedAccessFS + 1},
+	} {
+		err := c.validate()
+		if err == nil {
+			t.Errorf("%v.validate(): expected error, got success", c)
+		}
+	}
+}

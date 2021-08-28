@@ -18,6 +18,8 @@ var abiInfos = []abiInfo{
 	},
 }
 
+var highestKnownABIVersion = abiInfos[len(abiInfos)-1]
+
 // getSupportedABIVersion returns the kernel-supported ABI version.
 //
 // If the ABI version supported by the kernel is higher than the

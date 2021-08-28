@@ -11,6 +11,10 @@ import (
 
 // The actual restrictPaths implementation.
 func restrictPaths(c Config, opts ...PathOpt) error {
+	err := c.validate()
+	if err != nil {
+		return fmt.Errorf("unsupported Landlock config %v (upgrade go-landlock?): %v", c, err)
+	}
 	handledAccessFS := c.handledAccessFS
 	abi := getSupportedABIVersion()
 	if c.bestEffort {
