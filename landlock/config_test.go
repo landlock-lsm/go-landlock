@@ -30,37 +30,12 @@ func TestConfigString(t *testing.T) {
 		},
 		{
 			cfg:  Config{handledAccessFS: 1 << 63},
-			want: "{Landlock V???; HandledAccessFS: {1<<63} (unsupported HandledAccessFS value)}",
+			want: "{Landlock V???; HandledAccessFS: {1<<63}}",
 		},
 	} {
 		got := tc.cfg.String()
 		if got != tc.want {
 			t.Errorf("cfg.String() = %q, want %q", got, tc.want)
-		}
-	}
-}
-
-func TestValidateSuccess(t *testing.T) {
-	for _, c := range []Config{
-		V1, V1.BestEffort(),
-		Config{handledAccessFS: ll.AccessFSWriteFile},
-		Config{handledAccessFS: 0},
-	} {
-		err := c.validate()
-		if err != nil {
-			t.Errorf("%v.validate(): expected success, got %v", c, err)
-		}
-	}
-}
-
-func TestValidateFailure(t *testing.T) {
-	for _, c := range []Config{
-		Config{handledAccessFS: 0xffffffffffffffff},
-		Config{handledAccessFS: highestKnownABIVersion.supportedAccessFS + 1},
-	} {
-		err := c.validate()
-		if err == nil {
-			t.Errorf("%v.validate(): expected error, got success", c)
 		}
 	}
 }
@@ -71,6 +46,18 @@ func TestNewConfig(t *testing.T) {
 		t.Errorf("NewConfig(): expected success, got %v", err)
 	}
 	want := AccessFSSet(ll.AccessFSWriteFile)
+	if c.handledAccessFS != want {
+		t.Errorf("c.handledAccessFS = %v, want %v", c.handledAccessFS, want)
+	}
+}
+
+func TestNewConfigEmpty(t *testing.T) {
+	// Constructing an empty config is a bit pointless, but should work.
+	c, err := NewConfig()
+	if err != nil {
+		t.Errorf("NewConfig(): expected success, got %v", err)
+	}
+	want := AccessFSSet(0)
 	if c.handledAccessFS != want {
 		t.Errorf("c.handledAccessFS = %v, want %v", c.handledAccessFS, want)
 	}

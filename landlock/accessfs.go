@@ -24,6 +24,8 @@ var flagNames = []string{
 // AccessFSSet is a set of Landlockable file system access operations.
 type AccessFSSet uint64
 
+var supportedAccessFS = AccessFSSet((1 << 13) - 1)
+
 func (a AccessFSSet) String() string {
 	if a.isEmpty() {
 		return "∅"
@@ -62,5 +64,5 @@ func (a AccessFSSet) isEmpty() bool {
 // valid returns true iff the given AccessFSSet is supported by this
 // version of go-landlock.
 func (a AccessFSSet) valid() bool {
-	return a.isSubset(highestKnownABIVersion.supportedAccessFS)
+	return a.isSubset(supportedAccessFS)
 }

@@ -2,8 +2,6 @@ package landlock
 
 import (
 	"testing"
-
-	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
 func TestAbiVersionsIncrementing(t *testing.T) {
@@ -16,7 +14,7 @@ func TestAbiVersionsIncrementing(t *testing.T) {
 
 func TestSupportedAccessFS(t *testing.T) {
 	got := abiInfos[1].supportedAccessFS
-	want := AccessFSSet(ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym | ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir)
+	want := supportedAccessFS
 
 	if got != want {
 		t.Errorf("V1 supported access FS: got %x, want %x", got, want)

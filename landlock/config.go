@@ -52,6 +52,9 @@ func NewConfig(args ...interface{}) (*Config, error) {
 	// Implementation note: This factory is written with future
 	// extensibility in mind. Only specific types are supported as
 	// input, but in the future more might be added.
+	//
+	// This constructor ensures that callers can't construct
+	// invalid Config values.
 	var c Config
 	for _, arg := range args {
 		if afs, ok := arg.(AccessFSSet); ok {
@@ -76,15 +79,6 @@ func MustConfig(args ...interface{}) Config {
 		panic(err)
 	}
 	return *c
-}
-
-// validate returns success when the given config is supported by
-// go-landlock. (It may still be unsupported by your kernel though.)
-func (c Config) validate() error {
-	if !c.handledAccessFS.valid() {
-		return errors.New("unsupported HandledAccessFS value")
-	}
-	return nil
 }
 
 // String builds a human-readable representation of the Config.
@@ -113,11 +107,7 @@ func (c Config) String() string {
 		version = fmt.Sprintf("V%v", abi.version)
 	}
 
-	errStr := ""
-	if err := c.validate(); err != nil {
-		errStr = fmt.Sprintf(" (%v)", err)
-	}
-	return fmt.Sprintf("{Landlock %v; HandledAccessFS: %v%v%v}", version, desc, bestEffort, errStr)
+	return fmt.Sprintf("{Landlock %v; HandledAccessFS: %v%v}", version, desc, bestEffort)
 }
 
 // BestEffort returns a config that will opportunistically enforce
