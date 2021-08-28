@@ -31,14 +31,17 @@ const (
 var (
 	// Landlock V1 support (basic file operations).
 	V1 = Config{
-		handledAccessFS: abiInfos[1].supportedAccessFS,
+		HandledAccessFS: abiInfos[1].supportedAccessFS,
 	}
 )
 
 // The Landlock configuration describes the desired set of
-// landlockable operations to be restricted.
+// landlockable operations to be restricted and the constraints on it
+// (e.g. best effort mode).
 type Config struct {
-	handledAccessFS AccessFSSet
+	// File system operations to restrict when enabling Landlock.
+	// Needs to stay within the bounds of what go-landlock supports.
+	HandledAccessFS AccessFSSet
 	bestEffort      bool
 }
 
@@ -46,23 +49,23 @@ type Config struct {
 // go-landlock. (It may still be unsupported by your kernel though.)
 func (c Config) validate() error {
 	safs := highestKnownABIVersion.supportedAccessFS
-	if !c.handledAccessFS.isSubset(safs) {
-		return errors.New("unsupported handledAccessFS value")
+	if !c.HandledAccessFS.isSubset(safs) {
+		return errors.New("unsupported HandledAccessFS value")
 	}
 	return nil
 }
 
 // String builds a human-readable representation of the Config.
 func (c Config) String() string {
-	var abi abiInfo
+	abi := abiInfo{version: -1} // invalid
 	for _, a := range abiInfos {
-		if c.handledAccessFS.isSubset(a.supportedAccessFS) {
+		if c.HandledAccessFS.isSubset(a.supportedAccessFS) {
 			abi = a
 		}
 	}
 
-	var desc = c.handledAccessFS.String()
-	if abi.supportedAccessFS == c.handledAccessFS {
+	var desc = c.HandledAccessFS.String()
+	if abi.supportedAccessFS == c.HandledAccessFS {
 		desc = "all"
 	}
 
@@ -70,7 +73,19 @@ func (c Config) String() string {
 	if c.bestEffort {
 		bestEffort = " (best effort)"
 	}
-	return fmt.Sprintf("{Landlock V%v; HandledAccessFS: %v%v}", abi.version, desc, bestEffort)
+
+	var version string
+	if abi.version < 0 {
+		version = "V???"
+	} else {
+		version = fmt.Sprintf("V%v", abi.version)
+	}
+
+	errStr := ""
+	if err := c.validate(); err != nil {
+		errStr = fmt.Sprintf(" (%v)", err)
+	}
+	return fmt.Sprintf("{Landlock %v; HandledAccessFS: %v%v%v}", version, desc, bestEffort, errStr)
 }
 
 // BestEffort returns a config that will opportunistically enforce

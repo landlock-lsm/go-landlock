@@ -1,6 +1,25 @@
 package landlock
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
+
+var flagNames = []string{
+	"Execute",
+	"WriteFile",
+	"ReadFile",
+	"ReadDir",
+	"RemoveDir",
+	"RemoveFile",
+	"MakeChar",
+	"MakeDir",
+	"MakeReg",
+	"MakeSock",
+	"MakeFifo",
+	"MakeBlock",
+	"MakeSym",
+}
 
 // AccessFSSet is a set of Landlockable file system access operations.
 type AccessFSSet uint64
@@ -11,28 +30,18 @@ func (a AccessFSSet) String() string {
 	}
 	var b strings.Builder
 	b.WriteByte('{')
-	for i, n := range []string{
-		"Execute",
-		"WriteFile",
-		"ReadFile",
-		"ReadDir",
-		"RemoveDir",
-		"RemoveFile",
-		"MakeChar",
-		"MakeDir",
-		"MakeReg",
-		"MakeSock",
-		"MakeFifo",
-		"MakeBlock",
-		"MakeSym",
-	} {
+	for i := 0; i < 64; i++ {
 		if a&(1<<i) == 0 {
 			continue
 		}
 		if b.Len() > 1 {
 			b.WriteByte(',')
 		}
-		b.WriteString(n)
+		if i < len(flagNames) {
+			b.WriteString(flagNames[i])
+		} else {
+			b.WriteString(fmt.Sprintf("1<<%v", i))
+		}
 	}
 	b.WriteByte('}')
 	return b.String()

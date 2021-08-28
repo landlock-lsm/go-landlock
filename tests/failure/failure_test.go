@@ -47,3 +47,15 @@ func TestEmptyAccessRights(t *testing.T) {
 		t.Errorf("expected error message with «empty access rights», got: %v", err)
 	}
 }
+
+func TestSpecifiedTooManyFlags(t *testing.T) {
+	cfg := landlock.Config{HandledAccessFS: 1 << 13}
+	err := cfg.RestrictPaths()
+	if err == nil {
+		t.Errorf("%v.RestrictPaths(): expected error, got success", cfg)
+	}
+	want := "unsupported Landlock config"
+	if !strings.Contains(err.Error(), want) {
+		t.Errorf("%v.RestrictPaths(): expected error with %q, got %q", cfg, want, err.Error())
+	}
+}

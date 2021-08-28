@@ -13,11 +13,11 @@ func TestConfigString(t *testing.T) {
 		want string
 	}{
 		{
-			cfg:  Config{handledAccessFS: 0},
+			cfg:  Config{HandledAccessFS: 0},
 			want: fmt.Sprintf("{Landlock V1; HandledAccessFS: %v}", AccessFSSet(0)),
 		},
 		{
-			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
+			cfg:  Config{HandledAccessFS: ll.AccessFSWriteFile},
 			want: "{Landlock V1; HandledAccessFS: {WriteFile}}",
 		},
 		{
@@ -27,6 +27,10 @@ func TestConfigString(t *testing.T) {
 		{
 			cfg:  V1.BestEffort(),
 			want: "{Landlock V1; HandledAccessFS: all (best effort)}",
+		},
+		{
+			cfg:  Config{HandledAccessFS: 1<<63},
+			want: "{Landlock V???; HandledAccessFS: {1<<63} (unsupported HandledAccessFS value)}",
 		},
 	} {
 		got := tc.cfg.String()
@@ -39,8 +43,8 @@ func TestConfigString(t *testing.T) {
 func TestValidateSuccess(t *testing.T) {
 	for _, c := range []Config{
 		V1, V1.BestEffort(),
-		Config{handledAccessFS: ll.AccessFSWriteFile},
-		Config{handledAccessFS: 0},
+		Config{HandledAccessFS: ll.AccessFSWriteFile},
+		Config{HandledAccessFS: 0},
 	} {
 		err := c.validate()
 		if err != nil {
@@ -51,8 +55,8 @@ func TestValidateSuccess(t *testing.T) {
 
 func TestValidateFailure(t *testing.T) {
 	for _, c := range []Config{
-		Config{handledAccessFS: 0xffffffffffffffff},
-		Config{handledAccessFS: highestKnownABIVersion.supportedAccessFS + 1},
+		Config{HandledAccessFS: 0xffffffffffffffff},
+		Config{HandledAccessFS: highestKnownABIVersion.supportedAccessFS + 1},
 	} {
 		err := c.validate()
 		if err == nil {

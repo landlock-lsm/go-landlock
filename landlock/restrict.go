@@ -15,7 +15,7 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	if err != nil {
 		return fmt.Errorf("unsupported Landlock config %v (upgrade go-landlock?): %v", c, err)
 	}
-	handledAccessFS := c.handledAccessFS
+	handledAccessFS := c.HandledAccessFS
 	abi := getSupportedABIVersion()
 	if c.bestEffort {
 		handledAccessFS = handledAccessFS.intersect(abi.supportedAccessFS)

@@ -46,6 +46,7 @@ func TestPrettyPrint(t *testing.T) {
 		{a: ll.AccessFSMakeFifo, want: "{MakeFifo}"},
 		{a: ll.AccessFSMakeBlock, want: "{MakeBlock}"},
 		{a: ll.AccessFSMakeSym, want: "{MakeSym}"},
+		{a: ll.AccessFSReadFile | 1<<63, want: "{ReadFile,1<<63}"},
 	} {
 		got := tc.a.String()
 		if got != tc.want {
