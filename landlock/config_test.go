@@ -13,11 +13,11 @@ func TestConfigString(t *testing.T) {
 		want string
 	}{
 		{
-			cfg:  Config{HandledAccessFS: 0},
+			cfg:  Config{handledAccessFS: 0},
 			want: fmt.Sprintf("{Landlock V1; HandledAccessFS: %v}", AccessFSSet(0)),
 		},
 		{
-			cfg:  Config{HandledAccessFS: ll.AccessFSWriteFile},
+			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
 			want: "{Landlock V1; HandledAccessFS: {WriteFile}}",
 		},
 		{
@@ -29,7 +29,7 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V1; HandledAccessFS: all (best effort)}",
 		},
 		{
-			cfg:  Config{HandledAccessFS: 1<<63},
+			cfg:  Config{handledAccessFS: 1 << 63},
 			want: "{Landlock V???; HandledAccessFS: {1<<63} (unsupported HandledAccessFS value)}",
 		},
 	} {
@@ -43,8 +43,8 @@ func TestConfigString(t *testing.T) {
 func TestValidateSuccess(t *testing.T) {
 	for _, c := range []Config{
 		V1, V1.BestEffort(),
-		Config{HandledAccessFS: ll.AccessFSWriteFile},
-		Config{HandledAccessFS: 0},
+		Config{handledAccessFS: ll.AccessFSWriteFile},
+		Config{handledAccessFS: 0},
 	} {
 		err := c.validate()
 		if err != nil {
@@ -55,12 +55,41 @@ func TestValidateSuccess(t *testing.T) {
 
 func TestValidateFailure(t *testing.T) {
 	for _, c := range []Config{
-		Config{HandledAccessFS: 0xffffffffffffffff},
-		Config{HandledAccessFS: highestKnownABIVersion.supportedAccessFS + 1},
+		Config{handledAccessFS: 0xffffffffffffffff},
+		Config{handledAccessFS: highestKnownABIVersion.supportedAccessFS + 1},
 	} {
 		err := c.validate()
 		if err == nil {
 			t.Errorf("%v.validate(): expected error, got success", c)
+		}
+	}
+}
+
+func TestNewConfig(t *testing.T) {
+	c, err := NewConfig(AccessFSSet(ll.AccessFSWriteFile))
+	if err != nil {
+		t.Errorf("NewConfig(): expected success, got %v", err)
+	}
+	want := AccessFSSet(ll.AccessFSWriteFile)
+	if c.handledAccessFS != want {
+		t.Errorf("c.handledAccessFS = %v, want %v", c.handledAccessFS, want)
+	}
+}
+
+func TestNewConfigFailures(t *testing.T) {
+	for _, args := range [][]interface{}{
+		{ll.AccessFSWriteFile},
+		{123},
+		{"a string"},
+		{"foo", 42},
+		// May not specify two AccessFSSets
+		{AccessFSSet(ll.AccessFSWriteFile), AccessFSSet(ll.AccessFSReadFile)},
+		// May not specify an unsupported AccessFSSet value
+		{AccessFSSet(1 << 63)},
+	} {
+		_, err := NewConfig(args...)
+		if err == nil {
+			t.Errorf("NewConfig(%v) success, expected error", args)
 		}
 	}
 }

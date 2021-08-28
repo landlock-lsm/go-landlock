@@ -25,12 +25,11 @@ func canAccess(path string) bool {
 // been discussed in the context of seccomp at
 // https://github.com/golang/go/issues/3405.
 func TestRestrictInPresenceOfThreading(t *testing.T) {
-	_, err := os.ReadFile("/etc/passwd")
-	if err != nil {
-		t.Skipf("expected normal accesses to /etc/passwd to work, got error: %v", err)
+	if !canAccess("/etc/passwd") {
+		t.Skipf("expected normal accesses to /etc/passwd to work")
 	}
 
-	err = landlock.V1.RestrictPaths() // No access permitted at all.
+	err := landlock.V1.RestrictPaths() // No access permitted at all.
 	if err != nil {
 		t.Skipf("kernel does not support Landlock v1; tests cannot be run.")
 	}

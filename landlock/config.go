@@ -31,7 +31,7 @@ const (
 var (
 	// Landlock V1 support (basic file operations).
 	V1 = Config{
-		HandledAccessFS: abiInfos[1].supportedAccessFS,
+		handledAccessFS: abiInfos[1].supportedAccessFS,
 	}
 )
 
@@ -39,16 +39,49 @@ var (
 // landlockable operations to be restricted and the constraints on it
 // (e.g. best effort mode).
 type Config struct {
-	// File system operations to restrict when enabling Landlock.
-	// Needs to stay within the bounds of what go-landlock supports.
-	HandledAccessFS AccessFSSet
+	handledAccessFS AccessFSSet
 	bestEffort      bool
+}
+
+// NewConfig creates a new Landlock configuration with the given parameters.
+//
+// Passing an AccessFSSet will set that as the set of file system
+// operations to restrict when enabling Landlock. The AccessFSSet
+// needs to stay within the bounds of what go-landlock supports.
+func NewConfig(args ...interface{}) (*Config, error) {
+	// Implementation note: This factory is written with future
+	// extensibility in mind. Only specific types are supported as
+	// input, but in the future more might be added.
+	var c Config
+	for _, arg := range args {
+		if afs, ok := arg.(AccessFSSet); ok {
+			if !c.handledAccessFS.isEmpty() {
+				return nil, errors.New("only one AccessFSSet may be provided")
+			}
+			if !afs.valid() {
+				return nil, errors.New("unsupported AccessFSSet value; upgrade go-landlock?")
+			}
+			c.handledAccessFS = afs
+		} else {
+			return nil, fmt.Errorf("unknown argument %v; only AccessFSSet-type argument is supported", arg)
+		}
+	}
+	return &c, nil
+}
+
+// MustConfig is like NewConfig but panics on error.
+func MustConfig(args ...interface{}) Config {
+	c, err := NewConfig(args...)
+	if err != nil {
+		panic(err)
+	}
+	return *c
 }
 
 // validate returns success when the given config is supported by
 // go-landlock. (It may still be unsupported by your kernel though.)
 func (c Config) validate() error {
-	if !c.HandledAccessFS.valid() {
+	if !c.handledAccessFS.valid() {
 		return errors.New("unsupported HandledAccessFS value")
 	}
 	return nil
@@ -58,13 +91,13 @@ func (c Config) validate() error {
 func (c Config) String() string {
 	abi := abiInfo{version: -1} // invalid
 	for _, a := range abiInfos {
-		if c.HandledAccessFS.isSubset(a.supportedAccessFS) {
+		if c.handledAccessFS.isSubset(a.supportedAccessFS) {
 			abi = a
 		}
 	}
 
-	var desc = c.HandledAccessFS.String()
-	if abi.supportedAccessFS == c.HandledAccessFS {
+	var desc = c.handledAccessFS.String()
+	if abi.supportedAccessFS == c.handledAccessFS {
 		desc = "all"
 	}
 
