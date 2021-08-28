@@ -48,8 +48,7 @@ type Config struct {
 // validate returns success when the given config is supported by
 // go-landlock. (It may still be unsupported by your kernel though.)
 func (c Config) validate() error {
-	safs := highestKnownABIVersion.supportedAccessFS
-	if !c.HandledAccessFS.isSubset(safs) {
+	if !c.HandledAccessFS.valid() {
 		return errors.New("unsupported HandledAccessFS value")
 	}
 	return nil

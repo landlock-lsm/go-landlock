@@ -58,3 +58,9 @@ func (a AccessFSSet) intersect(b AccessFSSet) AccessFSSet {
 func (a AccessFSSet) isEmpty() bool {
 	return a == 0
 }
+
+// valid returns true iff the given AccessFSSet is supported by this
+// version of go-landlock.
+func (a AccessFSSet) valid() bool {
+	return a.isSubset(highestKnownABIVersion.supportedAccessFS)
+}
