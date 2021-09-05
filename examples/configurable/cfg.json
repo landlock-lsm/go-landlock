@@ -1,0 +1,7 @@
+{
+    "forbidden_access": ["read_dir"],
+    "exceptions": [{
+        "paths": ["/tmp", "/bin", "/etc"],
+        "permitted_access": ["read_dir"]
+    }]
+}
