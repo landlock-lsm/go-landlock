@@ -6,19 +6,19 @@ import (
 )
 
 var flagNames = []string{
-	"Execute",
-	"WriteFile",
-	"ReadFile",
-	"ReadDir",
-	"RemoveDir",
-	"RemoveFile",
-	"MakeChar",
-	"MakeDir",
-	"MakeReg",
-	"MakeSock",
-	"MakeFifo",
-	"MakeBlock",
-	"MakeSym",
+	"execute",
+	"write_file",
+	"read_file",
+	"read_dir",
+	"remove_dir",
+	"remove_file",
+	"make_char",
+	"make_dir",
+	"make_reg",
+	"make_sock",
+	"make_fifo",
+	"make_block",
+	"make_sym",
 }
 
 // AccessFSSet is a set of Landlockable file system access operations.

@@ -18,7 +18,7 @@ func TestConfigString(t *testing.T) {
 		},
 		{
 			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
-			want: "{Landlock V1; HandledAccessFS: {WriteFile}}",
+			want: "{Landlock V1; HandledAccessFS: {write_file}}",
 		},
 		{
 			cfg:  V1,
