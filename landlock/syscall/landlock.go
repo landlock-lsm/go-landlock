@@ -19,7 +19,6 @@ import (
 	"unsafe"
 
 	"golang.org/x/sys/unix"
-	"kernel.org/pub/linux/libs/security/libcap/psx"
 )
 
 // Landlock access rights, for use in "access" bit fields.
@@ -111,7 +110,7 @@ func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags
 // AllThreadsLandlockRestrictSelf enforces the given ruleset on all OS
 // threads belonging to the current process.
 func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
-	_, _, e1 := psx.Syscall3(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
+	_, _, e1 := syscall.AllThreadsSyscall(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
 	}
@@ -120,7 +119,7 @@ func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
 
 // AllThreadsPrctl is like unix.Prctl, but gets applied on all OS threads at the same time.
 func AllThreadsPrctl(option int, arg2 uintptr, arg3 uintptr, arg4 uintptr, arg5 uintptr) (err error) {
-	_, _, e1 := psx.Syscall6(syscall.SYS_PRCTL, uintptr(option), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
+	_, _, e1 := syscall.AllThreadsSyscall6(syscall.SYS_PRCTL, uintptr(option), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
 	}
