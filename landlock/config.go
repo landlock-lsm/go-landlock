@@ -48,6 +48,8 @@ type Config struct {
 // Passing an AccessFSSet will set that as the set of file system
 // operations to restrict when enabling Landlock. The AccessFSSet
 // needs to stay within the bounds of what go-landlock supports.
+// (If you are getting an error, you might need to upgrade to a newer
+// version of go-landlock.)
 func NewConfig(args ...interface{}) (*Config, error) {
 	// Implementation note: This factory is written with future
 	// extensibility in mind. Only specific types are supported as
@@ -124,8 +126,9 @@ func (c Config) BestEffort() Config {
 
 // PathOpt is an option value for RestrictPaths().
 type PathOpt struct {
-	accessFS AccessFSSet
-	paths    []string
+	accessFS      AccessFSSet
+	enforceSubset bool // enforce that accessFS is a subset of cfg.handledAccessFS
+	paths         []string
 }
 
 // PathAccess is a RestrictPaths() option that grants the access right
@@ -143,30 +146,58 @@ type PathOpt struct {
 // landlock/syscall package and explained further in the kernel
 // documentation at
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
+//
+// accessFS must be a subset of the permissions that the Config
+// restricts.
 func PathAccess(accessFS AccessFSSet, paths ...string) PathOpt {
 	return PathOpt{
-		accessFS: accessFS,
-		paths:    paths,
+		accessFS:      accessFS,
+		paths:         paths,
+		enforceSubset: true,
 	}
 }
 
 // RODirs is a RestrictPaths() option that grants common read-only
 // access to files and directories and permits executing files.
-func RODirs(paths ...string) PathOpt { return PathAccess(accessFSRead, paths...) }
+func RODirs(paths ...string) PathOpt {
+	return PathOpt{
+		accessFS:      accessFSRead,
+		paths:         paths,
+		enforceSubset: false,
+	}
+}
 
 // RWDirs is a RestrictPaths() option that grants full (read and
 // write) access to files and directories under the given paths.
-func RWDirs(paths ...string) PathOpt { return PathAccess(accessFSReadWrite, paths...) }
+func RWDirs(paths ...string) PathOpt {
+	return PathOpt{
+		accessFS:      accessFSReadWrite,
+		paths:         paths,
+		enforceSubset: false,
+	}
+}
 
 // ROFiles is a RestrictPaths() option that grants common read access
 // to individual files, but not to directories, for the file
 // hierarchies under the given paths.
-func ROFiles(paths ...string) PathOpt { return PathAccess(accessFSRead&accessFile, paths...) }
+func ROFiles(paths ...string) PathOpt {
+	return PathOpt{
+		accessFS:      accessFSRead & accessFile,
+		paths:         paths,
+		enforceSubset: false,
+	}
+}
 
 // RWFiles is a RestrictPaths() option that grants common read and
 // write access to files under the given paths, but it does not permit
 // access to directories.
-func RWFiles(paths ...string) PathOpt { return PathAccess(accessFSReadWrite&accessFile, paths...) }
+func RWFiles(paths ...string) PathOpt {
+	return PathOpt{
+		accessFS:      accessFSReadWrite & accessFile,
+		paths:         paths,
+		enforceSubset: false,
+	}
+}
 
 // RestrictPaths restricts all goroutines to only "see" the files
 // provided as inputs. After this call successfully returns, the
@@ -267,7 +298,8 @@ func RWFiles(paths ...string) PathOpt { return PathAccess(accessFSReadWrite&acce
 // In V1, this means reading, writing and executing files.
 //
 // The PathAccess() option lets callers define custom subsets of these
-// access rights.
+// access rights. AccessFSSets permitted using PathAccess() must be a
+// subset of the AccessFSSet that the Config restricts.
 func (c Config) RestrictPaths(opts ...PathOpt) error {
 	return restrictPaths(c, opts...)
 }

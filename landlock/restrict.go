@@ -12,6 +12,12 @@ import (
 // The actual restrictPaths implementation.
 func restrictPaths(c Config, opts ...PathOpt) error {
 	handledAccessFS := c.handledAccessFS
+	for _, opt := range opts {
+		if opt.enforceSubset && !opt.accessFS.isSubset(handledAccessFS) {
+			return fmt.Errorf("too broad option %v: %w", opt.accessFS, unix.EINVAL)
+		}
+	}
+
 	abi := getSupportedABIVersion()
 	if c.bestEffort {
 		handledAccessFS = handledAccessFS.intersect(abi.supportedAccessFS)
