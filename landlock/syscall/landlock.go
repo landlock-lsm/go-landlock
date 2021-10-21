@@ -27,19 +27,19 @@ import (
 // Please see the full documentation at
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights.
 const (
-	AccessFSExecute    = (1 << 0)
-	AccessFSWriteFile  = (1 << 1)
-	AccessFSReadFile   = (1 << 2)
-	AccessFSReadDir    = (1 << 3)
-	AccessFSRemoveDir  = (1 << 4)
-	AccessFSRemoveFile = (1 << 5)
-	AccessFSMakeChar   = (1 << 6)
-	AccessFSMakeDir    = (1 << 7)
-	AccessFSMakeReg    = (1 << 8)
-	AccessFSMakeSock   = (1 << 9)
-	AccessFSMakeFifo   = (1 << 10)
-	AccessFSMakeBlock  = (1 << 11)
-	AccessFSMakeSym    = (1 << 12)
+	AccessFSExecute    = unix.LANDLOCK_ACCESS_FS_EXECUTE
+	AccessFSWriteFile  = unix.LANDLOCK_ACCESS_FS_WRITE_FILE
+	AccessFSReadFile   = unix.LANDLOCK_ACCESS_FS_READ_FILE
+	AccessFSReadDir    = unix.LANDLOCK_ACCESS_FS_READ_DIR
+	AccessFSRemoveDir  = unix.LANDLOCK_ACCESS_FS_REMOVE_DIR
+	AccessFSRemoveFile = unix.LANDLOCK_ACCESS_FS_REMOVE_FILE
+	AccessFSMakeChar   = unix.LANDLOCK_ACCESS_FS_MAKE_CHAR
+	AccessFSMakeDir    = unix.LANDLOCK_ACCESS_FS_MAKE_DIR
+	AccessFSMakeReg    = unix.LANDLOCK_ACCESS_FS_MAKE_REG
+	AccessFSMakeSock   = unix.LANDLOCK_ACCESS_FS_MAKE_SOCK
+	AccessFSMakeFifo   = unix.LANDLOCK_ACCESS_FS_MAKE_FIFO
+	AccessFSMakeBlock  = unix.LANDLOCK_ACCESS_FS_MAKE_BLOCK
+	AccessFSMakeSym    = unix.LANDLOCK_ACCESS_FS_MAKE_SYM
 )
 
 // RulesetAttr is the Landlock ruleset definition.
@@ -67,8 +67,7 @@ func LandlockCreateRuleset(attr *RulesetAttr, flags int) (fd int, err error) {
 
 // LandlockGetABIVersion returns the supported Landlock ABI version (starting at 1).
 func LandlockGetABIVersion() (version int, err error) {
-	const LANDLOCK_CREATE_RULESET_VERSION = 1 << 0
-	r0, _, e1 := syscall.Syscall(unix.SYS_LANDLOCK_CREATE_RULESET, 0, 0, LANDLOCK_CREATE_RULESET_VERSION)
+	r0, _, e1 := syscall.Syscall(unix.SYS_LANDLOCK_CREATE_RULESET, 0, 0, unix.LANDLOCK_CREATE_RULESET_VERSION)
 	version = int(r0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
@@ -77,7 +76,7 @@ func LandlockGetABIVersion() (version int, err error) {
 }
 
 // There is currently only one Landlock rule type.
-const RuleTypePathBeneath = 1
+const RuleTypePathBeneath = unix.LANDLOCK_RULE_PATH_BENEATH
 
 // PathBeneathAttr references a file hierarchy and defines the desired
 // extent to which it should be usable when the rule is enforced.
