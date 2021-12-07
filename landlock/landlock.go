@@ -37,7 +37,22 @@
 // the Config.BestEffort() method to gracefully degrade to using the
 // best available Landlock version on the current kernel.
 //
-// Caveats
+// Current limitations
+//
+// Enabling Landlock implicitly turns off the following file system
+// features:
+//
+// - File reparenting: renaming or linking a file to a different
+//   parent directory is always denied.
+//
+// - Filesystem topology modification: arbitrary mounts are always
+//   denied.
+//
+// These are Landlock limitations that will be resolved in future
+// versions. See
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#current-limitations
+//
+// Caveat: Multithreading
 //
 // This warning only applies to programs using cgo and linking C
 // libraries that start OS threads through means other than
