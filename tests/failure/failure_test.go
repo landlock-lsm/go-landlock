@@ -59,3 +59,23 @@ func TestOverlyBroadPathOpt(t *testing.T) {
 		t.Errorf("expected 'invalid argument' error, got: %v", err)
 	}
 }
+
+func TestReferNotPermittedInStrictV1(t *testing.T) {
+	// 'refer' is incompatible with Landlock ABI V1.
+	// Users should use Landlock V2 instead or construct a custom
+	// config that handles the 'refer' access right.
+	// You can technically also just enable V1 best-effort mode,
+	// but that combination always falls back to "no enforcement".
+	for _, opt := range []landlock.PathOpt{
+		landlock.RWDirs("/etc").WithRefer(),
+		landlock.PathAccess(0, "/etc").WithRefer(),
+	}{
+		err := landlock.V1.RestrictPaths(opt)
+		if !errors.Is(err, unix.EINVAL) {
+			t.Errorf("expected 'invalid argument' error, got: %v", err)
+		}
+		if !strings.Contains(err.Error(), "too broad option") {
+			t.Errorf("expected a 'too broad option' error, got: %v", err)
+		}
+	}
+}

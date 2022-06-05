@@ -33,6 +33,10 @@ var (
 	V1 = Config{
 		handledAccessFS: abiInfos[1].supportedAccessFS,
 	}
+	// Landlock V2 support (V1 + file reparenting between different directories)
+	V2 = Config{
+		handledAccessFS: abiInfos[2].supportedAccessFS,
+	}
 )
 
 // The Landlock configuration describes the desired set of
@@ -86,14 +90,15 @@ func MustConfig(args ...interface{}) Config {
 // String builds a human-readable representation of the Config.
 func (c Config) String() string {
 	abi := abiInfo{version: -1} // invalid
-	for _, a := range abiInfos {
+	for i := len(abiInfos) - 1; i >= 0; i-- {
+		a := abiInfos[i]
 		if c.handledAccessFS.isSubset(a.supportedAccessFS) {
 			abi = a
 		}
 	}
 
 	var desc = c.handledAccessFS.String()
-	if abi.supportedAccessFS == c.handledAccessFS {
+	if abi.supportedAccessFS == c.handledAccessFS && c.handledAccessFS != 0 {
 		desc = "all"
 	}
 
@@ -129,6 +134,35 @@ type PathOpt struct {
 	accessFS      AccessFSSet
 	enforceSubset bool // enforce that accessFS is a subset of cfg.handledAccessFS
 	paths         []string
+}
+
+// WithRights adds the given access rights to the right enforced in the path option
+// and returns the result as a new PathOpt.
+func (p PathOpt) WithRights(a AccessFSSet) PathOpt {
+	return PathOpt{
+		accessFS:      p.accessFS.union(a),
+		enforceSubset: p.enforceSubset,
+		paths:         p.paths,
+	}
+}
+
+// WithRefer is a shortcut for WithRights with the refer access right.
+func (p PathOpt) WithRefer() PathOpt {
+	return p.WithRights(ll.AccessFSRefer)
+}
+
+func (p PathOpt) String() string {
+	return fmt.Sprintf("REQUIRE %v for paths %v", p.accessFS, p.paths)
+}
+
+func (p PathOpt) compatibleWithHandledAccessFS(handledAccessFS AccessFSSet) bool {
+	a := p.accessFS
+	if !p.enforceSubset {
+		// Even when we are lax about enforcing flag subsets,
+		// the "refer" flag always gets checked.
+		a = a.intersect(ll.AccessFSRefer)
+	}
+	return a.isSubset(handledAccessFS)
 }
 
 // PathAccess is a RestrictPaths() option that grants the access right
@@ -208,12 +242,12 @@ func RWFiles(paths ...string) PathOpt {
 // that it can only read from /usr, /bin and /tmp, and only write to
 // /tmp:
 //
-//   err := landlock.V1.RestrictPaths(
+//   err := landlock.V2.RestrictPaths(
 //       landlock.RODirs("/usr", "/bin"),
 //       landlock.RWDirs("/tmp"),
 //   )
 //   if err != nil {
-//       log.Fatalf("landlock.V1.RestrictPaths(): %v", err)
+//       log.Fatalf("landlock.V2.RestrictPaths(): %v", err)
 //   }
 //
 // RestrictPaths returns an error if any of the given paths does not
@@ -269,6 +303,8 @@ func RWFiles(paths ...string) PathOpt {
 //
 // • Creating (or renaming or linking) a symbolic link (V1+)
 //
+// • Renaming or linking a file between directories (V2+)
+//
 // Future versions of Landlock will be able to inhibit more operations.
 // Quoting the Landlock documentation:
 //
@@ -289,7 +325,8 @@ func RWFiles(paths ...string) PathOpt {
 // In V1, this means reading files, listing directories and executing files.
 //
 // • RWDirs() selects access rights in the group "for reading", "for writing" and
-// "for directory manipulation". In V1, this grants the full set of access rights.
+// "for directory manipulation". This grants the full set of access rights which are
+// available within the configuration.
 //
 // • ROFiles() is like RODirs(), but does not select directory-specific access rights.
 // In V1, this means reading and executing files.

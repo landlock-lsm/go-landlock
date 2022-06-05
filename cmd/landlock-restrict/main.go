@@ -10,70 +10,114 @@ import (
 	"github.com/landlock-lsm/go-landlock/landlock"
 )
 
-func takeArgs(args, out []string) (argsOut, outOut []string) {
-	for len(args) > 0 && !strings.HasPrefix(args[0], "-") {
-		out = append(out, args[0])
-		args = args[1:]
-	}
-	return args, out
-}
 
-func parseFlags(args []string) (verbose bool, roDirs, rwDirs, roFiles, rwFiles, cmd []string) {
+func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlock.PathOpt, cmd []string) {
+	cfg = landlock.V2
+
+	takeArgs := func(makeOpt func(...string) landlock.PathOpt) landlock.PathOpt {
+		var paths []string
+		needRefer := false
+		for len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+			if args[0] == "+refer" {
+				needRefer = true
+			} else {
+				paths = append(paths, args[0])
+			}
+			args = args[1:]
+		}
+		opt := makeOpt(paths...)
+		if verbose {
+			fmt.Println("Path option:", opt)
+		}
+		if needRefer {
+			opt = opt.WithRefer()
+		}
+		if verbose {
+			fmt.Println("Path option:", opt)
+		}
+		return opt
+	}
+
+	bestEffort := true
+ArgParsing:
 	for len(args) > 0 {
 		switch args[0] {
+		case "-2":
+			cfg = landlock.V2
+			args = args[1:]
+			continue
+		case "-1":
+			cfg = landlock.V1
+			args = args[1:]
+			continue
+		case "-strict":
+			bestEffort=false
+			args = args[1:]
+			continue
 		case "-v":
 			verbose = true
 			args = args[1:]
 			continue
 		case "-ro":
 			args = args[1:]
-			args, roDirs = takeArgs(args, roDirs)
+			opts = append(opts, takeArgs(landlock.RODirs))
 			continue
 		case "-rw":
 			args = args[1:]
-			args, rwDirs = takeArgs(args, rwDirs)
+			opts = append(opts, takeArgs(landlock.RWDirs))
 			continue
 		case "-rofiles":
 			args = args[1:]
-			args, roFiles = takeArgs(args, roFiles)
+			opts = append(opts, takeArgs(landlock.ROFiles))
 			continue
 		case "-rwfiles":
 			args = args[1:]
-			args, rwFiles = takeArgs(args, rwFiles)
+			opts = append(opts, takeArgs(landlock.RWFiles))
 			continue
 		case "--":
 			args = args[1:]
 			// Remaining args are the command
-			cmd = args
-			return verbose, roDirs, rwDirs, roFiles, rwFiles, cmd
+			break ArgParsing
 		default:
 			log.Fatalf("Unrecognized option %q", args[0])
 		}
 	}
 
 	cmd = args
-	return verbose, roDirs, rwDirs, roFiles, rwFiles, cmd
+	if bestEffort {
+		cfg = cfg.BestEffort()
+	}
+	return verbose, cfg, opts, cmd
 }
 
 func main() {
-	verbose, roDirs, rwDirs, roFiles, rwFiles, cmdArgs := parseFlags(os.Args[1:])
+	verbose, cfg, opts, cmdArgs := parseFlags(os.Args[1:])
 	if verbose {
-		fmt.Println("Landlock restricting to:")
-		fmt.Printf("  RO dirs : %v\n", roDirs)
-		fmt.Printf("  RW dirs : %v\n", rwDirs)
-		fmt.Printf("  RO files: %v\n", roFiles)
-		fmt.Printf("  RW files: %v\n", rwFiles)
+		fmt.Println("Args: ", os.Args)
+		fmt.Println()
+		fmt.Printf("Config: %v\n", cfg)
 		fmt.Println()
 		fmt.Printf("Executing command %v\n", cmdArgs)
 	}
 
 	if len(cmdArgs) < 1 {
 		fmt.Println("Usage:")
-		fmt.Println("  landlock-restrict [-ro PATH...] [-rw PATH...] [-rofiles PATH] [-rwfiles PATH] -- COMMAND...")
+		fmt.Println("  landlock-restrict")
+		fmt.Println("     [-verbose]")
+		fmt.Println("     [-1] [-2] [-strict]")
+		fmt.Println("     [-ro [+refer] PATH...] [-rw [+refer] PATH...]")
+		fmt.Println("     [-rofiles [+refer] PATH] [-rwfiles [+refer] PATH]")
+		fmt.Println("       -- COMMAND...")
 		fmt.Println()
 		fmt.Println("Options:")
 		fmt.Println("  -ro, -rw, -rofiles, -rwfiles   paths to restrict to")
+		fmt.Println("  -1, -2                         select Landlock version")
+		fmt.Println("  -strict                        use strict mode (instead of best effort)")
 		fmt.Println("  -verbose                       verbose logging")
+		fmt.Println()
+		fmt.Println("A path list that contains the word '+refer' will additionally grant the refer access right.")
+		fmt.Println()
+		fmt.Println("Default mode for Landlock is V2 in best effort mode (best compatibility)")
 		fmt.Println()
 
 		log.Fatalf("Need proper command, got %v", cmdArgs)
@@ -83,12 +127,7 @@ func main() {
 		log.Fatalf("Need absolute binary path, got %q", cmdArgs[0])
 	}
 
-	err := landlock.V1.BestEffort().RestrictPaths(
-		landlock.RODirs(roDirs...),
-		landlock.RWDirs(rwDirs...),
-		landlock.ROFiles(roFiles...),
-		landlock.RWFiles(rwFiles...),
-	)
+	err := cfg.RestrictPaths(opts...)
 	if err != nil {
 		log.Fatalf("landlock: %v", err)
 	}

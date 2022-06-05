@@ -14,7 +14,7 @@ func TestConfigString(t *testing.T) {
 	}{
 		{
 			cfg:  Config{handledAccessFS: 0},
-			want: fmt.Sprintf("{Landlock V1; HandledAccessFS: %v}", AccessFSSet(0)),
+			want: fmt.Sprintf("{Landlock V0; HandledAccessFS: %v}", AccessFSSet(0)),
 		},
 		{
 			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
