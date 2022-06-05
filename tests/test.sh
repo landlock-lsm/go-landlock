@@ -90,10 +90,13 @@ enter "Read permissions on dir (full path), read works"
 run -ro "${TMPDIR}/foo" -- /bin/cat foo/lolcat.txt
 expect_success "should have read the file"
 
-# XXX: Find out why this fails! Needs non-directory flags?
-# enter "Read permissions on file, read works"
-# run -ro "foo/lolcat.txt" -- /bin/cat foo/lolcat.txt
-# expect_success "should have read the file"
+enter "File-read permissions on file, read works"
+run -rofiles "foo/lolcat.txt" -- /bin/cat foo/lolcat.txt
+expect_success "should have read the file"
+
+enter "File-read permissions on dir, read works"
+run -rofiles "foo" -- /bin/cat foo/lolcat.txt
+expect_success "should have read the file"
 
 enter "Read-only permissions on dir, creating file fails"
 run -ro "foo" -- /bin/touch foo/fail
