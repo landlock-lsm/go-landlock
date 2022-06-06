@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # The go-landlock tests are currently just a shell script. Running
 # Landlock from within a regular Go test is harder to manage, as tests
 # can interfere with each other.
@@ -52,12 +52,16 @@ run() {
     "${CMD}" -v -ro /bin /usr $* >stdout.txt 2>stderr.txt
 }
 
-CMD="$(pwd)/main"
+CMD="$(pwd)/bin/landlock-restrict"
+
+if [ ! -f "go.mod" ] || [ "$(head -n1 go.mod)" != "module github.com/landlock-lsm/go-landlock" ]; then
+    echo "Need to run from go-landlock directory"
+    exit 1
+fi
 
 if [ ! -f "${CMD}" ]; then
-    echo "Sandboxing command does not exist: ${CMD}"
-    echo "Cannot run the tests."
-    exit 1
+    echo "Rebuilding Sandboxing command"
+    go build -o "${CMD}" cmd/landlock-restrict/main.go
 fi
 
 TMPDIR=$(mktemp -t -d go-landlock-test.XXXXXX)
