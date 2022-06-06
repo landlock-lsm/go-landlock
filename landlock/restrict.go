@@ -9,9 +9,21 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func downgrade(handledAccessFS AccessFSSet, opts []PathOpt, abi abiInfo) (AccessFSSet, []PathOpt) {
+	handledAccessFS = handledAccessFS.intersect(abi.supportedAccessFS)
+
+	resOpts := make([]PathOpt, len(opts))
+	copy(resOpts, opts)
+	for i := 0; i < len(resOpts); i++ {
+		resOpts[i].accessFS = resOpts[i].accessFS.intersect(handledAccessFS)
+	}
+	return handledAccessFS, resOpts
+}
+
 // The actual restrictPaths implementation.
 func restrictPaths(c Config, opts ...PathOpt) error {
 	handledAccessFS := c.handledAccessFS
+	// Check validity of options early.
 	for _, opt := range opts {
 		if opt.enforceSubset && !opt.accessFS.isSubset(handledAccessFS) {
 			return fmt.Errorf("too broad option %v: %w", opt.accessFS, unix.EINVAL)
@@ -20,12 +32,13 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 
 	abi := getSupportedABIVersion()
 	if c.bestEffort {
-		handledAccessFS = handledAccessFS.intersect(abi.supportedAccessFS)
-	} else {
-		if !handledAccessFS.isSubset(abi.supportedAccessFS) {
-			return fmt.Errorf("missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c.String())
-		}
+		handledAccessFS, opts = downgrade(handledAccessFS, opts, abi)
 	}
+
+	if !handledAccessFS.isSubset(abi.supportedAccessFS) {
+		return fmt.Errorf("missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c.String())
+	}
+
 	if handledAccessFS.isEmpty() {
 		return nil // Success: Nothing to restrict.
 	}
@@ -47,8 +60,7 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		accessFS := opt.accessFS.intersect(handledAccessFS)
-		if err := populateRuleset(fd, opt.paths, accessFS); err != nil {
+		if err := populateRuleset(fd, opt.paths, opt.accessFS); err != nil {
 			return err
 		}
 	}
