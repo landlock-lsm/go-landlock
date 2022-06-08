@@ -10,6 +10,7 @@ func main() {
 	v, err := ll.LandlockGetABIVersion()
 	if err != nil {
 		fmt.Println("0")
+	} else { // success
+		fmt.Println(v)
 	}
-	fmt.Println(v)
 }
