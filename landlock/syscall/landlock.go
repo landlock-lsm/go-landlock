@@ -86,7 +86,7 @@ type PathBeneathAttr struct {
 	// be a subset of the bits defined in the ruleset.
 	AllowedAccess uint64
 
-	// ParentFd is a file descriptor, open with `O_PATH`, which identifies
+	// ParentFd is a file descriptor, opened with `O_PATH`, which identifies
 	// the parent directory of a file hierarchy, or just a file.
 	ParentFd int
 }
