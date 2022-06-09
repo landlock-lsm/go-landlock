@@ -13,10 +13,15 @@ import (
 	"testing"
 
 	"github.com/landlock-lsm/go-landlock/landlock"
+	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 	"golang.org/x/sys/unix"
 )
 
 func TestPathDoesNotExist(t *testing.T) {
+	if v, err := ll.LandlockGetABIVersion(); err != nil || v < 1 {
+		t.Skip("Requires Landlock V1")
+	}
+
 	doesNotExistPath := filepath.Join(t.TempDir(), "does_not_exist")
 
 	err := landlock.V1.RestrictPaths(
@@ -28,6 +33,10 @@ func TestPathDoesNotExist(t *testing.T) {
 }
 
 func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
+	if v, err := ll.LandlockGetABIVersion(); err != nil || v < 1 {
+		t.Skip("Requires Landlock V1")
+	}
+
 	err := landlock.V1.RestrictPaths(
 		landlock.RODirs("/etc/passwd"),
 	)
@@ -37,6 +46,10 @@ func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
 }
 
 func TestEmptyAccessRights(t *testing.T) {
+	if v, err := ll.LandlockGetABIVersion(); err != nil || v < 1 {
+		t.Skip("Requires Landlock V1")
+	}
+
 	err := landlock.V1.RestrictPaths(
 		landlock.PathAccess(0, "/etc/passwd"),
 	)
@@ -50,6 +63,10 @@ func TestEmptyAccessRights(t *testing.T) {
 }
 
 func TestOverlyBroadPathOpt(t *testing.T) {
+	if v, err := ll.LandlockGetABIVersion(); err != nil || v < 1 {
+		t.Skip("Requires Landlock V1")
+	}
+
 	handled := landlock.AccessFSSet(0b011)
 	excempt := landlock.AccessFSSet(0b111) // superset of handled!
 	err := landlock.MustConfig(handled).RestrictPaths(

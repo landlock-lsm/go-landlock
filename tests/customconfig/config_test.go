@@ -19,6 +19,10 @@ func canAccess(path string) bool {
 }
 
 func TestCustomConfig(t *testing.T) {
+	if v, err := ll.LandlockGetABIVersion(); err != nil || v < 1 {
+		t.Skip("Requires Landlock V1")
+	}
+
 	if !canAccess("/etc/passwd") {
 		t.Skipf("expected normal accesses to /etc/passwd to work")
 	}
