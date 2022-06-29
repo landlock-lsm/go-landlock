@@ -1,6 +1,8 @@
 package landlock
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestDowngrade(t *testing.T) {
 	for _, tc := range []struct {

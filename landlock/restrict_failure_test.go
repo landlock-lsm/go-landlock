@@ -1,9 +1,4 @@
-// Package failure_test tests scenarios where landlock can't enforce anything.
-//
-// The beauty with these tests is that they don't enforce anything, so
-// it's somewhat safe to put them into the same package - at least as
-// long as they work.
-package failure_test
+package landlock_test
 
 import (
 	"errors"
