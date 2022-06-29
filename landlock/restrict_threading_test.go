@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/landlock-lsm/go-landlock/landlock"
-	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
 // True if the given path can be opened for reading.
@@ -32,9 +31,7 @@ func canAccess(path string) bool {
 // https://github.com/golang/go/issues/3405.
 func TestRestrictInPresenceOfThreading(t *testing.T) {
 	RunInSubprocess(t, func() {
-		if v, err := ll.LandlockGetABIVersion(); err != nil || v < 1 {
-			t.Skip("Requires Landlock V1")
-		}
+		RequireLandlockABI(t, 1)
 
 		if !canAccess("/etc/passwd") {
 			t.Skipf("expected normal accesses to /etc/passwd to work")

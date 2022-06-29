@@ -9,9 +9,7 @@ import (
 
 func TestCustomConfig(t *testing.T) {
 	RunInSubprocess(t, func() {
-		if v, err := ll.LandlockGetABIVersion(); err != nil || v < 1 {
-			t.Skip("Requires Landlock V1")
-		}
+		RequireLandlockABI(t, 1)
 
 		if !canAccess("/etc/passwd") {
 			t.Skipf("expected normal accesses to /etc/passwd to work")
