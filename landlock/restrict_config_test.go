@@ -11,26 +11,21 @@ func TestCustomConfig(t *testing.T) {
 	RunInSubprocess(t, func() {
 		RequireLandlockABI(t, 1)
 
-		if !canAccess("/etc/passwd") {
-			t.Skipf("expected normal accesses to /etc/passwd to work")
-		}
-
-		if !canAccess("/etc/group") {
-			t.Skipf("expected normal accesses to /etc/group to work")
-		}
+		pathRO := MakeSomeFile(t)
+		pathNoAccess := MakeSomeFile(t)
 
 		readFile := landlock.AccessFSSet(ll.AccessFSReadFile)
 		if err := landlock.MustConfig(readFile).RestrictPaths(
-			landlock.PathAccess(readFile, "/etc/passwd"),
+			landlock.PathAccess(readFile, pathRO),
 		); err != nil {
 			t.Fatalf("Could not restrict paths: %v", err)
 		}
 
-		if !canAccess("/etc/passwd") {
-			t.Error("expected to have read access to /etc/passwd, but didn't")
+		if !canAccess(pathRO) {
+			t.Errorf("expected to have read access to %q, but didn't", pathRO)
 		}
-		if canAccess("/etc/group") {
-			t.Error("expected to have NO read access to /etc/group, but did")
+		if canAccess(pathNoAccess) {
+			t.Errorf("expected to have NO read access to %q, but did", pathNoAccess)
 		}
 	})
 }

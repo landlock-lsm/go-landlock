@@ -12,12 +12,46 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func RequireLandlockABI(t *testing.T, want int) {
+func RequireLandlockABI(t testing.TB, want int) {
 	t.Helper()
 
 	if v, err := ll.LandlockGetABIVersion(); err != nil || v < want {
 		t.Skipf("Requires Landlock >= V%v, got V%v (err=%v)", want, v, err)
 	}
+}
+
+func MustWriteFile(t testing.TB, path string) {
+	t.Helper()
+
+	if err := os.WriteFile(path, []byte("somecontent"), 0600); err != nil {
+		t.Fatalf("os.WriteFile(%q, ...): %v", path, err)
+	}
+}
+
+// TempDir is a replacement for t.TempDir() to be used in Landlock tests.
+// If we were using t.TempDir(), the test framework would try to remove it
+// after the test, even in Landlocked subprocess tests where this fails.
+//
+// TODO: It would be nicer if all tests could just use t.TempDir()
+// without the test framework trying to delete these later in the subprocesses.
+func TempDir(t testing.TB) string {
+	t.Helper()
+
+	if IsRunningInSubprocess {
+		dir, err := os.MkdirTemp("", "LandlockTestTempDir")
+		if err != nil {
+			t.Fatalf("os.MkdirTemp: %v", err)
+		}
+		return dir
+	}
+	return t.TempDir()
+}
+
+func MakeSomeFile(t testing.TB) string {
+	t.Helper()
+	fpath := filepath.Join(TempDir(t), "somefile")
+	MustWriteFile(t, fpath)
+	return fpath
 }
 
 func TestPathDoesNotExist(t *testing.T) {
@@ -36,8 +70,10 @@ func TestPathDoesNotExist(t *testing.T) {
 func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
 	RequireLandlockABI(t, 1)
 
+	fpath := MakeSomeFile(t)
+
 	err := landlock.V1.RestrictPaths(
-		landlock.RODirs("/etc/passwd"),
+		landlock.RODirs(fpath),
 	)
 	if !errors.Is(err, unix.EINVAL) {
 		t.Errorf("expected 'invalid argument' error, got: %v", err)
@@ -47,8 +83,10 @@ func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
 func TestEmptyAccessRights(t *testing.T) {
 	RequireLandlockABI(t, 1)
 
+	fpath := MakeSomeFile(t)
+
 	err := landlock.V1.RestrictPaths(
-		landlock.PathAccess(0, "/etc/passwd"),
+		landlock.PathAccess(0, fpath),
 	)
 	if !errors.Is(err, unix.ENOMSG) {
 		t.Errorf("expected ENOMSG, got: %v", err)

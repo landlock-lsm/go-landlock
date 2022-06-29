@@ -33,16 +33,12 @@ func TestRestrictInPresenceOfThreading(t *testing.T) {
 	RunInSubprocess(t, func() {
 		RequireLandlockABI(t, 1)
 
-		if !canAccess("/etc/passwd") {
-			t.Skipf("expected normal accesses to /etc/passwd to work")
-		}
+		fpath := MakeSomeFile(t)
 
 		err := landlock.V1.RestrictPaths() // No access permitted at all.
 		if err != nil {
 			t.Skipf("kernel does not support Landlock v1; tests cannot be run.")
 		}
-
-		path := "/etc/passwd" // expected to exist and be openable
 
 		var wg sync.WaitGroup
 		defer wg.Wait()
@@ -56,8 +52,8 @@ func TestRestrictInPresenceOfThreading(t *testing.T) {
 			go func(grIdx int) {
 				defer wg.Done()
 				for i := 0; i < attempts; i++ {
-					if canAccess(path) {
-						t.Errorf("os.Open(%q): expected access denied, but it worked (goroutine %d, attempt %d)", path, grIdx, i)
+					if canAccess(fpath) {
+						t.Errorf("os.Open(%q): expected access denied, but it worked (goroutine %d, attempt %d)", fpath, grIdx, i)
 					}
 				}
 			}(g)
@@ -65,15 +61,22 @@ func TestRestrictInPresenceOfThreading(t *testing.T) {
 	})
 }
 
+var IsRunningInSubprocess = false
+
 // RunInSubprocess runs the given test function in a subprocess
 // and forwards its output.
 func RunInSubprocess(t *testing.T, f func()) {
 	if os.Getenv("IS_SUBPROCESS") != "" {
+		IsRunningInSubprocess = true
 		f()
 		return
 	}
 
 	args := append(os.Args[1:], "-test.run="+regexp.QuoteMeta(t.Name()))
+
+	// Make sure that the parent process cleans up the actual TempDir.
+	// If the child process uses t.TempDir(), it'll create it in $TMPDIR.
+	t.Setenv("TMPDIR", t.TempDir())
 
 	t.Setenv("IS_SUBPROCESS", "yes")
 	buf, err := exec.Command(os.Args[0], args...).Output()
