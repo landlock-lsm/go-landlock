@@ -21,7 +21,11 @@ func TestCustomConfig(t *testing.T) {
 			t.Fatalf("Could not restrict paths: %v", err)
 		}
 
-		assertOK(t, openForRead(pathRO), "os.Open()")
-		assertEacces(t, openForRead(pathNoAccess), "os.Open()")
+		if err := openForRead(pathRO); err != nil {
+			t.Errorf("openForRead(%q): %v", pathRO, err)
+		}
+		if err := openForRead(pathNoAccess); err == nil {
+			t.Errorf("openForRead(%q) successful, want error", pathNoAccess)
+		}
 	})
 }

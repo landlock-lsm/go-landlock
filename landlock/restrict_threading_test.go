@@ -42,7 +42,9 @@ func TestRestrictInPresenceOfThreading(t *testing.T) {
 			go func(grIdx int) {
 				defer wg.Done()
 				for i := 0; i < attempts; i++ {
-					assertEacces(t, openForRead(fpath), "os.Open()")
+					if err := openForRead(fpath); err == nil {
+						t.Errorf("openForRead(%q) successful, want error", fpath)
+					}
 				}
 			}(g)
 		}
