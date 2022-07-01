@@ -21,11 +21,7 @@ func TestCustomConfig(t *testing.T) {
 			t.Fatalf("Could not restrict paths: %v", err)
 		}
 
-		if !canAccess(pathRO) {
-			t.Errorf("expected to have read access to %q, but didn't", pathRO)
-		}
-		if canAccess(pathNoAccess) {
-			t.Errorf("expected to have NO read access to %q, but did", pathNoAccess)
-		}
+		assertOK(t, openForRead(pathRO), "os.Open()")
+		assertEacces(t, openForRead(pathNoAccess), "os.Open()")
 	})
 }

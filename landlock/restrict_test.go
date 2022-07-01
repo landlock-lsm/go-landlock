@@ -1,64 +1,151 @@
-package landlock
+package landlock_test
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
+	"syscall"
 	"testing"
+
+	"github.com/landlock-lsm/go-landlock/landlock"
+	"golang.org/x/sys/unix"
 )
 
-func TestDowngrade(t *testing.T) {
-	for _, tc := range []struct {
-		Name string
+func TestNoPermissions(t *testing.T) {
+	RequireLandlockABI(t, 1)
+	RunInSubprocess(t, func() {
+		dir := TempDir(t)
+		fpath := filepath.Join(dir, "lolcat.txt")
+		MustWriteFile(t, fpath)
 
-		Handled      AccessFSSet
-		Requested    AccessFSSet
-		SupportedABI int
+		must(t, landlock.V1.RestrictPaths()) // no permissions
 
-		WantHandled   AccessFSSet
-		WantRequested AccessFSSet
-	}{
-		{
-			Name:          "RestrictHandledToSupported",
-			SupportedABI:  1,
-			Handled:       0b1111,
-			Requested:     0b111111,
-			WantHandled:   0b1111,
-			WantRequested: 0b1111,
-		},
-		{
-			Name:          "RestrictPathAccessToHandled",
-			SupportedABI:  1,
-			Handled:       0b1,
-			Requested:     0b11,
-			WantHandled:   0b1,
-			WantRequested: 0b1,
-		},
-		{
-			Name:          "DowngradeToV0IfKernelDoesNotSupportV1",
-			SupportedABI:  0,
-			Handled:       0b1,
-			Requested:     0b11,
-			WantHandled:   0b0,
-			WantRequested: 0b0,
-		},
-	} {
-		t.Run(tc.Name, func(t *testing.T) {
-			abi := abiInfos[tc.SupportedABI]
+		assertEacces(t, openForRead(fpath), "os.Open()")
+		assertEacces(t, readDir(dir), "os.ReadDir()")
+		assertEacces(t, openForWrite(fpath+".2"), "os.Create()")
+		assertEacces(t, os.Mkdir(filepath.Join(dir, "subdir"), 0600), "mkdir")
+		assertEacces(t, os.Remove(fpath), "unlink")
+		assertEacces(t, unix.Mkfifo(filepath.Join(dir, "fifo"), 0600), "mkfifo")
+	})
+}
 
-			opts := []PathOpt{PathAccess(tc.Requested, "foo")}
-			gotHandled, gotOpts := downgrade(tc.Handled, opts, abi)
+func TestFileReadPermissionsOnFile(t *testing.T) {
+	RequireLandlockABI(t, 1)
+	RunInSubprocess(t, func() {
+		dir := TempDir(t)
+		fpath := filepath.Join(dir, "lolcat.txt")
+		MustWriteFile(t, fpath)
 
-			if len(gotOpts) != 1 {
-				t.Fatalf("wrong number of opts returned: got %d, want 1", len(gotOpts))
-			}
-			gotRequested := gotOpts[0].accessFS
+		must(t, landlock.V1.RestrictPaths(landlock.ROFiles(fpath)))
 
-			if gotHandled != tc.WantHandled || gotRequested != tc.WantRequested {
-				t.Errorf(
-					"Unexpected result\ndowngrade(%v, %v, ABIv%d)\n        = %v, %v\n     want %v, %v",
-					tc.Handled, tc.Requested, tc.SupportedABI,
-					gotHandled, gotRequested,
-					tc.WantHandled, tc.WantRequested,
-				)
-			}
-		})
+		assertOK(t, openForRead(fpath), "os.Open()")
+		assertEacces(t, readDir(dir), "os.ReadDir()")
+		assertEacces(t, openForWrite(fpath+".2"), "os.Create()")
+		assertEacces(t, os.Mkdir(filepath.Join(dir, "subdir"), 0600), "mkdir")
+		assertEacces(t, os.Remove(fpath), "unlink")
+		assertEacces(t, unix.Mkfifo(filepath.Join(dir, "fifo"), 0600), "mkfifo")
+	})
+}
+
+func TestFileReadPermissionsOnDir(t *testing.T) {
+	RequireLandlockABI(t, 1)
+	RunInSubprocess(t, func() {
+		dir := TempDir(t)
+		fpath := filepath.Join(dir, "lolcat.txt")
+		MustWriteFile(t, fpath)
+
+		must(t, landlock.V1.RestrictPaths(landlock.ROFiles(dir)))
+
+		assertOK(t, openForRead(fpath), "os.Open()")
+		assertEacces(t, readDir(dir), "os.ReadDir()")
+		assertEacces(t, openForWrite(fpath+".2"), "os.Create()")
+		assertEacces(t, os.Mkdir(filepath.Join(dir, "subdir"), 0600), "mkdir")
+		assertEacces(t, os.Remove(fpath), "unlink")
+		assertEacces(t, unix.Mkfifo(filepath.Join(dir, "fifo"), 0600), "mkfifo")
+	})
+}
+
+func TestDirReadPermissionsOnDir(t *testing.T) {
+	RequireLandlockABI(t, 1)
+	RunInSubprocess(t, func() {
+		dir := TempDir(t)
+		fpath := filepath.Join(dir, "lolcat.txt")
+		MustWriteFile(t, fpath)
+
+		must(t, landlock.V1.RestrictPaths(landlock.RODirs(dir)))
+
+		assertOK(t, openForRead(fpath), "os.Open()")
+		assertOK(t, readDir(dir), "os.ReadDir()")
+		assertEacces(t, openForWrite(fpath+".2"), "os.Create()")
+		assertEacces(t, os.Mkdir(filepath.Join(dir, "subdir"), 0600), "mkdir")
+		assertEacces(t, os.Remove(fpath), "unlink")
+		assertEacces(t, unix.Mkfifo(filepath.Join(dir, "fifo"), 0600), "mkfifo")
+	})
+}
+
+func TestReadWritePermissionsOnDir(t *testing.T) {
+	RequireLandlockABI(t, 1)
+	RunInSubprocess(t, func() {
+		dir := TempDir(t)
+		fpath := filepath.Join(dir, "lolcat.txt")
+		MustWriteFile(t, fpath)
+
+		must(t, landlock.V1.RestrictPaths(landlock.RWDirs(dir)))
+
+		assertOK(t, openForRead(fpath), "os.Open()")
+		assertOK(t, readDir(dir), "os.ReadDir()")
+		assertOK(t, openForWrite(fpath+".2"), "os.Create()")
+		assertOK(t, os.Mkdir(filepath.Join(dir, "subdir"), 0600), "mkdir")
+		assertOK(t, os.Remove(fpath), "unlink")
+		assertOK(t, unix.Mkfifo(filepath.Join(dir, "fifo"), 0600), "mkfifo")
+	})
+}
+
+func openForRead(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return nil
+}
+
+func openForWrite(path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return nil
+}
+
+func readDir(path string) error {
+	_, err := os.ReadDir(path)
+	return err
+}
+
+func assertOK(t testing.TB, e error, msg string) {
+	t.Helper()
+	if e != nil {
+		t.Errorf("%v: want success, got: %v", msg, e)
+	}
+}
+
+func assertErr(t testing.TB, e error, want error, msg string) {
+	t.Helper()
+	if !errors.Is(e, want) {
+		t.Errorf("%s; got %v, want %v", msg, want, e)
+	}
+}
+
+func assertEacces(t testing.TB, e error, msg string) {
+	t.Helper()
+	assertErr(t, e, syscall.EACCES, msg)
+}
+
+func must(t testing.TB, e error) {
+	t.Helper()
+	if e != nil {
+		t.Fatalf("Landlock error: %v", e)
 	}
 }

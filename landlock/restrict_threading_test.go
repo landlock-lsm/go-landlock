@@ -13,16 +13,6 @@ import (
 	"github.com/landlock-lsm/go-landlock/landlock"
 )
 
-// True if the given path can be opened for reading.
-func canAccess(path string) bool {
-	f, err := os.Open(path)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-	return true
-}
-
 // Verify that Landlock applies to all system threads that belong to
 // the current Go process. The raw landlock_restrict_self syscall only
 // applies to the current system thread, but these are managed by the
@@ -52,9 +42,7 @@ func TestRestrictInPresenceOfThreading(t *testing.T) {
 			go func(grIdx int) {
 				defer wg.Done()
 				for i := 0; i < attempts; i++ {
-					if canAccess(fpath) {
-						t.Errorf("os.Open(%q): expected access denied, but it worked (goroutine %d, attempt %d)", fpath, grIdx, i)
-					}
+					assertEacces(t, openForRead(fpath), "os.Open()")
 				}
 			}(g)
 		}
