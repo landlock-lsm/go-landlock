@@ -39,6 +39,10 @@
 //
 // Current limitations
 //
+// Landlock can not currently restrict all file system operations.
+// The operations that can and can not be restricted yet are listed at
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
+//
 // Enabling Landlock implicitly turns off the following file system
 // features:
 //
