@@ -14,7 +14,7 @@ func TestConfigString(t *testing.T) {
 	}{
 		{
 			cfg:  Config{handledAccessFS: 0},
-			want: fmt.Sprintf("{Landlock V1; HandledAccessFS: %v}", AccessFSSet(0)),
+			want: fmt.Sprintf("{Landlock V0; HandledAccessFS: %v}", AccessFSSet(0)),
 		},
 		{
 			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
@@ -41,13 +41,17 @@ func TestConfigString(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	c, err := NewConfig(AccessFSSet(ll.AccessFSWriteFile))
-	if err != nil {
-		t.Errorf("NewConfig(): expected success, got %v", err)
-	}
-	want := AccessFSSet(ll.AccessFSWriteFile)
-	if c.handledAccessFS != want {
-		t.Errorf("c.handledAccessFS = %v, want %v", c.handledAccessFS, want)
+	for _, a := range []AccessFSSet{
+		ll.AccessFSWriteFile, ll.AccessFSRefer,
+	} {
+		c, err := NewConfig(a)
+		if err != nil {
+			t.Errorf("NewConfig(): expected success, got %v", err)
+		}
+		want := a
+		if c.handledAccessFS != want {
+			t.Errorf("c.handledAccessFS = %v, want %v", c.handledAccessFS, want)
+		}
 	}
 }
 
@@ -72,6 +76,7 @@ func TestNewConfigFailures(t *testing.T) {
 		// May not specify two AccessFSSets
 		{AccessFSSet(ll.AccessFSWriteFile), AccessFSSet(ll.AccessFSReadFile)},
 		// May not specify an unsupported AccessFSSet value
+		{AccessFSSet(1 << 15)},
 		{AccessFSSet(1 << 63)},
 	} {
 		_, err := NewConfig(args...)

@@ -15,15 +15,18 @@ func TestRestrictPaths(t *testing.T) {
 	for _, tt := range []struct {
 		Name           string
 		EnableLandlock func(dir, fpath string) error
+		RequiredABI    int
 		WantOpenErr    error
 		WantReadDirErr error
 		WantCreateErr  error
 		WantMkdirErr   error
 		WantUnlinkErr  error
 		WantMkfifoErr  error
+		WantReferErr   error
 	}{
 		{
-			Name: "EverythingForbidden",
+			Name:        "EverythingForbidden",
+			RequiredABI: 1,
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths()
 			},
@@ -33,9 +36,11 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
+			WantReferErr:   syscall.EXDEV,
 		},
 		{
-			Name: "ROFilesPermissionsOnFile",
+			Name:        "ROFilesPermissionsOnFile",
+			RequiredABI: 1,
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.ROFiles(fpath))
 			},
@@ -45,9 +50,11 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
+			WantReferErr:   syscall.EXDEV,
 		},
 		{
-			Name: "RWFilesPermissionsOnFile",
+			Name:        "RWFilesPermissionsOnFile",
+			RequiredABI: 1,
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.RWFiles(fpath))
 			},
@@ -57,9 +64,11 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
+			WantReferErr:   syscall.EXDEV,
 		},
 		{
-			Name: "ROFilesPermissionsOnDir",
+			Name:        "ROFilesPermissionsOnDir",
+			RequiredABI: 1,
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.ROFiles(dir))
 			},
@@ -69,9 +78,11 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
+			WantReferErr:   syscall.EXDEV,
 		},
 		{
-			Name: "RWFilesPermissionsOnDir",
+			Name:        "RWFilesPermissionsOnDir",
+			RequiredABI: 1,
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.RWFiles(dir))
 			},
@@ -81,9 +92,11 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
+			WantReferErr:   syscall.EXDEV,
 		},
 		{
-			Name: "RODirsPermissionsOnDir",
+			Name:        "RODirsPermissionsOnDir",
+			RequiredABI: 1,
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.RODirs(dir))
 			},
@@ -93,9 +106,11 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
+			WantReferErr:   syscall.EXDEV,
 		},
 		{
-			Name: "RWDirsPermissionsOnDir",
+			Name:        "RWDirsPermissionsOnDir",
+			RequiredABI: 1,
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.RWDirs(dir))
 			},
@@ -105,15 +120,48 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   nil,
 			WantUnlinkErr:  nil,
 			WantMkfifoErr:  nil,
+			WantReferErr:   syscall.EXDEV,
+		},
+		{
+			Name:        "RWDirsWithRefer",
+			RequiredABI: 2,
+			EnableLandlock: func(dir, fpath string) error {
+				return landlock.V2.RestrictPaths(landlock.RWDirs(dir).WithRefer())
+			},
+			WantOpenErr:    nil,
+			WantReadDirErr: nil,
+			WantCreateErr:  nil,
+			WantMkdirErr:   nil,
+			WantUnlinkErr:  nil,
+			WantMkfifoErr:  nil,
+			WantReferErr:   nil,
+		},
+		{
+			Name:        "RWDirsWithoutRefer",
+			RequiredABI: 2,
+			EnableLandlock: func(dir, fpath string) error {
+				return landlock.V2.RestrictPaths(landlock.RWDirs(dir) /* without refer */)
+			},
+			WantOpenErr:    nil,
+			WantReadDirErr: nil,
+			WantCreateErr:  nil,
+			WantMkdirErr:   nil,
+			WantUnlinkErr:  nil,
+			WantMkfifoErr:  nil,
+			WantReferErr:   syscall.EXDEV,
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
 			RunInSubprocess(t, func() {
-				RequireLandlockABI(t, 1)
+				RequireLandlockABI(t, tt.RequiredABI)
 
 				dir := TempDir(t)
 				fpath := filepath.Join(dir, "lolcat.txt")
 				MustWriteFile(t, fpath)
+				renameMeFpath := filepath.Join(dir, "renameme.txt")
+				MustWriteFile(t, renameMeFpath)
+				dstDirPath := filepath.Join(dir, "dst")
+				MustMkdir(t, dstDirPath)
 
 				err := tt.EnableLandlock(dir, fpath)
 				if err != nil {
@@ -132,18 +180,23 @@ func TestRestrictPaths(t *testing.T) {
 					t.Errorf("os.Create(%q) = «%v», want «%v»", fpath, err, tt.WantCreateErr)
 				}
 
-				subdirpath := filepath.Join(dir, "subdir")
-				if err := os.Mkdir(subdirpath, 0600); !errEqual(err, tt.WantMkdirErr) {
-					t.Errorf("os.Mkdir(%q) = «%v», want «%v»", subdirpath, err, tt.WantMkdirErr)
+				subdirPath := filepath.Join(dir, "subdir")
+				if err := os.Mkdir(subdirPath, 0600); !errEqual(err, tt.WantMkdirErr) {
+					t.Errorf("os.Mkdir(%q) = «%v», want «%v»", subdirPath, err, tt.WantMkdirErr)
 				}
 
 				if err := os.Remove(fpath); !errEqual(err, tt.WantUnlinkErr) {
 					t.Errorf("os.Remove(%q) = «%v», want «%v»", fpath, err, tt.WantUnlinkErr)
 				}
 
-				fifopath := filepath.Join(dir, "fifo")
-				if err := unix.Mkfifo(fifopath, 0600); !errEqual(err, tt.WantMkfifoErr) {
-					t.Errorf("os.Mkfifo(%q, ...) = «%v», want «%v»", fifopath, err, tt.WantMkfifoErr)
+				fifoPath := filepath.Join(dir, "fifo")
+				if err := unix.Mkfifo(fifoPath, 0600); !errEqual(err, tt.WantMkfifoErr) {
+					t.Errorf("os.Mkfifo(%q, ...) = «%v», want «%v»", fifoPath, err, tt.WantMkfifoErr)
+				}
+
+				dstFpath := filepath.Join(dstDirPath, "target.txt")
+				if err := os.Rename(renameMeFpath, dstFpath); !errEqual(err, tt.WantReferErr) {
+					t.Errorf("os.Rename(%q, %q) = «%v», want «%v»", renameMeFpath, dstFpath, err, tt.WantReferErr)
 				}
 			})
 		})

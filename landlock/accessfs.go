@@ -19,12 +19,13 @@ var flagNames = []string{
 	"make_fifo",
 	"make_block",
 	"make_sym",
+	"refer",
 }
 
 // AccessFSSet is a set of Landlockable file system access operations.
 type AccessFSSet uint64
 
-var supportedAccessFS = AccessFSSet((1 << 13) - 1)
+var supportedAccessFS = AccessFSSet((1 << len(flagNames)) - 1)
 
 func (a AccessFSSet) String() string {
 	if a.isEmpty() {
@@ -55,6 +56,10 @@ func (a AccessFSSet) isSubset(b AccessFSSet) bool {
 
 func (a AccessFSSet) intersect(b AccessFSSet) AccessFSSet {
 	return a & b
+}
+
+func (a AccessFSSet) union(b AccessFSSet) AccessFSSet {
+	return a | b
 }
 
 func (a AccessFSSet) isEmpty() bool {
