@@ -16,6 +16,10 @@ var abiInfos = []abiInfo{
 		version:           1,
 		supportedAccessFS: (1 << 13) - 1,
 	},
+	{
+		version:           2,
+		supportedAccessFS: (1 << 14) - 1,
+	},
 }
 
 // getSupportedABIVersion returns the kernel-supported ABI version.
