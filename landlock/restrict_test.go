@@ -1,9 +1,12 @@
 package landlock_test
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -12,6 +15,13 @@ import (
 )
 
 func TestRestrictPaths(t *testing.T) {
+	// On kernels before 5.19.8, some refer cases returned EXDEV
+	// which now return EACCES.
+	exdevBefore5198 := syscall.EXDEV
+	if major, minor, patch := OSRelease(t); 1000*1000*major+1000*minor+patch >= 5019008 {
+		exdevBefore5198 = syscall.EACCES
+	}
+
 	for _, tt := range []struct {
 		Name           string
 		EnableLandlock func(dir, fpath string) error
@@ -36,7 +46,7 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   syscall.EXDEV,
+			WantReferErr:   exdevBefore5198,
 		},
 		{
 			Name:        "ROFilesPermissionsOnFile",
@@ -50,7 +60,7 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   syscall.EXDEV,
+			WantReferErr:   exdevBefore5198,
 		},
 		{
 			Name:        "RWFilesPermissionsOnFile",
@@ -64,7 +74,7 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   syscall.EXDEV,
+			WantReferErr:   exdevBefore5198,
 		},
 		{
 			Name:        "ROFilesPermissionsOnDir",
@@ -78,7 +88,7 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   syscall.EXDEV,
+			WantReferErr:   exdevBefore5198,
 		},
 		{
 			Name:        "RWFilesPermissionsOnDir",
@@ -92,7 +102,7 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   syscall.EXDEV,
+			WantReferErr:   exdevBefore5198,
 		},
 		{
 			Name:        "RODirsPermissionsOnDir",
@@ -106,7 +116,7 @@ func TestRestrictPaths(t *testing.T) {
 			WantMkdirErr:   syscall.EACCES,
 			WantUnlinkErr:  syscall.EACCES,
 			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   syscall.EXDEV,
+			WantReferErr:   exdevBefore5198,
 		},
 		{
 			Name:        "RWDirsPermissionsOnDir",
@@ -226,4 +236,34 @@ func openForWrite(path string) error {
 	}
 	defer f.Close()
 	return nil
+}
+
+func OSRelease(t testing.TB) (major, minor, patch int) {
+	t.Helper()
+
+	var buf unix.Utsname
+	if err := unix.Uname(&buf); err != nil {
+		t.Fatalf("Uname: %v", err)
+	}
+	release := string(buf.Release[:bytes.IndexByte(buf.Release[:], 0)])
+	release, _, _ = strings.Cut(release, "-")
+	release, _, _ = strings.Cut(release, "+")
+
+	parts := strings.SplitN(release, ".", 4)
+	if len(parts) < 3 {
+		t.Fatalf("Invalid release format %q", release)
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		t.Fatalf("strconv.Atoi(%q): %v", parts[0], err)
+	}
+	minor, err = strconv.Atoi(parts[1])
+	if err != nil {
+		t.Fatalf("strconv.Atoi(%q): %v", parts[1], err)
+	}
+	patch, err = strconv.Atoi(parts[2])
+	if err != nil {
+		t.Fatalf("strconv.Atoi(%q): %v", parts[2], err)
+	}
+	return major, minor, patch
 }
