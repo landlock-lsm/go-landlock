@@ -23,7 +23,7 @@ import (
 
 func main() {
 	if err := landlock.V2.BestEffort().RestrictPaths(); err != nil {
-		log.Fatal("Could not enable seccomp:", err)
+		log.Fatal("Could not enable Landlock:", err)
 	}
 
 	imgData, _, err := image.Decode(os.Stdin)
