@@ -96,6 +96,7 @@ func accessFSSet(names []string) (a landlock.AccessFSSet) {
 		"make_block":  llsys.AccessFSMakeBlock,
 		"make_sym":    llsys.AccessFSMakeSym,
 		"refer":       llsys.AccessFSRefer,
+		"truncate":    llsys.AccessFSTruncate,
 	}
 	for _, n := range names {
 		x, ok := table[n]
