@@ -23,16 +23,17 @@ func TestRestrictPaths(t *testing.T) {
 	}
 
 	for _, tt := range []struct {
-		Name           string
-		EnableLandlock func(dir, fpath string) error
-		RequiredABI    int
-		WantOpenErr    error
-		WantReadDirErr error
-		WantCreateErr  error
-		WantMkdirErr   error
-		WantUnlinkErr  error
-		WantMkfifoErr  error
-		WantReferErr   error
+		Name            string
+		EnableLandlock  func(dir, fpath string) error
+		RequiredABI     int
+		WantOpenErr     error
+		WantReadDirErr  error
+		WantCreateErr   error
+		WantMkdirErr    error
+		WantUnlinkErr   error
+		WantMkfifoErr   error
+		WantReferErr    error
+		WantTruncateErr error
 	}{
 		{
 			Name:        "EverythingForbidden",
@@ -40,13 +41,14 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths()
 			},
-			WantOpenErr:    syscall.EACCES,
-			WantReadDirErr: syscall.EACCES,
-			WantCreateErr:  syscall.EACCES,
-			WantMkdirErr:   syscall.EACCES,
-			WantUnlinkErr:  syscall.EACCES,
-			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   exdevBefore5198,
+			WantOpenErr:     syscall.EACCES,
+			WantReadDirErr:  syscall.EACCES,
+			WantCreateErr:   syscall.EACCES,
+			WantMkdirErr:    syscall.EACCES,
+			WantUnlinkErr:   syscall.EACCES,
+			WantMkfifoErr:   syscall.EACCES,
+			WantReferErr:    exdevBefore5198,
+			WantTruncateErr: nil,
 		},
 		{
 			Name:        "ROFilesPermissionsOnFile",
@@ -54,13 +56,14 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.ROFiles(fpath))
 			},
-			WantOpenErr:    nil,
-			WantReadDirErr: syscall.EACCES,
-			WantCreateErr:  syscall.EACCES,
-			WantMkdirErr:   syscall.EACCES,
-			WantUnlinkErr:  syscall.EACCES,
-			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   exdevBefore5198,
+			WantOpenErr:     nil,
+			WantReadDirErr:  syscall.EACCES,
+			WantCreateErr:   syscall.EACCES,
+			WantMkdirErr:    syscall.EACCES,
+			WantUnlinkErr:   syscall.EACCES,
+			WantMkfifoErr:   syscall.EACCES,
+			WantReferErr:    exdevBefore5198,
+			WantTruncateErr: nil,
 		},
 		{
 			Name:        "RWFilesPermissionsOnFile",
@@ -68,13 +71,14 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.RWFiles(fpath))
 			},
-			WantOpenErr:    nil,
-			WantReadDirErr: syscall.EACCES,
-			WantCreateErr:  nil,
-			WantMkdirErr:   syscall.EACCES,
-			WantUnlinkErr:  syscall.EACCES,
-			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   exdevBefore5198,
+			WantOpenErr:     nil,
+			WantReadDirErr:  syscall.EACCES,
+			WantCreateErr:   nil,
+			WantMkdirErr:    syscall.EACCES,
+			WantUnlinkErr:   syscall.EACCES,
+			WantMkfifoErr:   syscall.EACCES,
+			WantReferErr:    exdevBefore5198,
+			WantTruncateErr: nil,
 		},
 		{
 			Name:        "ROFilesPermissionsOnDir",
@@ -82,13 +86,14 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.ROFiles(dir))
 			},
-			WantOpenErr:    nil,
-			WantReadDirErr: syscall.EACCES,
-			WantCreateErr:  syscall.EACCES,
-			WantMkdirErr:   syscall.EACCES,
-			WantUnlinkErr:  syscall.EACCES,
-			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   exdevBefore5198,
+			WantOpenErr:     nil,
+			WantReadDirErr:  syscall.EACCES,
+			WantCreateErr:   syscall.EACCES,
+			WantMkdirErr:    syscall.EACCES,
+			WantUnlinkErr:   syscall.EACCES,
+			WantMkfifoErr:   syscall.EACCES,
+			WantReferErr:    exdevBefore5198,
+			WantTruncateErr: nil,
 		},
 		{
 			Name:        "RWFilesPermissionsOnDir",
@@ -96,13 +101,14 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.RWFiles(dir))
 			},
-			WantOpenErr:    nil,
-			WantReadDirErr: syscall.EACCES,
-			WantCreateErr:  nil,
-			WantMkdirErr:   syscall.EACCES,
-			WantUnlinkErr:  syscall.EACCES,
-			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   exdevBefore5198,
+			WantOpenErr:     nil,
+			WantReadDirErr:  syscall.EACCES,
+			WantCreateErr:   nil,
+			WantMkdirErr:    syscall.EACCES,
+			WantUnlinkErr:   syscall.EACCES,
+			WantMkfifoErr:   syscall.EACCES,
+			WantReferErr:    exdevBefore5198,
+			WantTruncateErr: nil,
 		},
 		{
 			Name:        "RODirsPermissionsOnDir",
@@ -110,13 +116,14 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.RODirs(dir))
 			},
-			WantOpenErr:    nil,
-			WantReadDirErr: nil,
-			WantCreateErr:  syscall.EACCES,
-			WantMkdirErr:   syscall.EACCES,
-			WantUnlinkErr:  syscall.EACCES,
-			WantMkfifoErr:  syscall.EACCES,
-			WantReferErr:   exdevBefore5198,
+			WantOpenErr:     nil,
+			WantReadDirErr:  nil,
+			WantCreateErr:   syscall.EACCES,
+			WantMkdirErr:    syscall.EACCES,
+			WantUnlinkErr:   syscall.EACCES,
+			WantMkfifoErr:   syscall.EACCES,
+			WantReferErr:    exdevBefore5198,
+			WantTruncateErr: nil,
 		},
 		{
 			Name:        "RWDirsPermissionsOnDir",
@@ -124,13 +131,14 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V1.RestrictPaths(landlock.RWDirs(dir))
 			},
-			WantOpenErr:    nil,
-			WantReadDirErr: nil,
-			WantCreateErr:  nil,
-			WantMkdirErr:   nil,
-			WantUnlinkErr:  nil,
-			WantMkfifoErr:  nil,
-			WantReferErr:   syscall.EXDEV,
+			WantOpenErr:     nil,
+			WantReadDirErr:  nil,
+			WantCreateErr:   nil,
+			WantMkdirErr:    nil,
+			WantUnlinkErr:   nil,
+			WantMkfifoErr:   nil,
+			WantReferErr:    syscall.EXDEV,
+			WantTruncateErr: nil,
 		},
 		{
 			Name:        "RWDirsWithRefer",
@@ -138,13 +146,14 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V2.RestrictPaths(landlock.RWDirs(dir).WithRefer())
 			},
-			WantOpenErr:    nil,
-			WantReadDirErr: nil,
-			WantCreateErr:  nil,
-			WantMkdirErr:   nil,
-			WantUnlinkErr:  nil,
-			WantMkfifoErr:  nil,
-			WantReferErr:   nil,
+			WantOpenErr:     nil,
+			WantReadDirErr:  nil,
+			WantCreateErr:   nil,
+			WantMkdirErr:    nil,
+			WantUnlinkErr:   nil,
+			WantMkfifoErr:   nil,
+			WantReferErr:    nil,
+			WantTruncateErr: nil,
 		},
 		{
 			Name:        "RWDirsWithoutRefer",
@@ -152,13 +161,44 @@ func TestRestrictPaths(t *testing.T) {
 			EnableLandlock: func(dir, fpath string) error {
 				return landlock.V2.RestrictPaths(landlock.RWDirs(dir) /* without refer */)
 			},
-			WantOpenErr:    nil,
-			WantReadDirErr: nil,
-			WantCreateErr:  nil,
-			WantMkdirErr:   nil,
-			WantUnlinkErr:  nil,
-			WantMkfifoErr:  nil,
-			WantReferErr:   syscall.EXDEV,
+			WantOpenErr:     nil,
+			WantReadDirErr:  nil,
+			WantCreateErr:   nil,
+			WantMkdirErr:    nil,
+			WantUnlinkErr:   nil,
+			WantMkfifoErr:   nil,
+			WantReferErr:    syscall.EXDEV,
+			WantTruncateErr: nil,
+		},
+		{
+			Name:        "RWDirsV3",
+			RequiredABI: 3,
+			EnableLandlock: func(dir, fpath string) error {
+				return landlock.V3.RestrictPaths(landlock.RWDirs(dir))
+			},
+			WantOpenErr:     nil,
+			WantReadDirErr:  nil,
+			WantCreateErr:   nil,
+			WantMkdirErr:    nil,
+			WantUnlinkErr:   nil,
+			WantMkfifoErr:   nil,
+			WantReferErr:    syscall.EXDEV,
+			WantTruncateErr: nil,
+		},
+		{
+			Name:        "EverythingForbiddenV3",
+			RequiredABI: 3,
+			EnableLandlock: func(dir, fpath string) error {
+				return landlock.V3.RestrictPaths()
+			},
+			WantOpenErr:     syscall.EACCES,
+			WantReadDirErr:  syscall.EACCES,
+			WantCreateErr:   syscall.EACCES,
+			WantMkdirErr:    syscall.EACCES,
+			WantUnlinkErr:   syscall.EACCES,
+			WantMkfifoErr:   syscall.EACCES,
+			WantReferErr:    exdevBefore5198,
+			WantTruncateErr: syscall.EACCES,
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
@@ -188,6 +228,10 @@ func TestRestrictPaths(t *testing.T) {
 
 				if err := openForWrite(fpath); !errEqual(err, tt.WantCreateErr) {
 					t.Errorf("os.Create(%q) = «%v», want «%v»", fpath, err, tt.WantCreateErr)
+				}
+
+				if err := os.Truncate(fpath, 3); !errEqual(err, tt.WantTruncateErr) {
+					t.Errorf("os.Truncate(%q, ...) = «%v», want «%v»", fpath, err, tt.WantTruncateErr)
 				}
 
 				subdirPath := filepath.Join(dir, "subdir")

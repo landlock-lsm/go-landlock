@@ -16,7 +16,7 @@ const (
 	accessFSRead AccessFSSet = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
 
 	// The set of access rights associated with write access to files and directories.
-	accessFSWrite AccessFSSet = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym
+	accessFSWrite AccessFSSet = ll.AccessFSWriteFile | ll.AccessFSRemoveDir | ll.AccessFSRemoveFile | ll.AccessFSMakeChar | ll.AccessFSMakeDir | ll.AccessFSMakeReg | ll.AccessFSMakeSock | ll.AccessFSMakeFifo | ll.AccessFSMakeBlock | ll.AccessFSMakeSym | ll.AccessFSTruncate
 
 	// The set of access rights associated with read and write access to files and directories.
 	accessFSReadWrite AccessFSSet = accessFSRead | accessFSWrite
@@ -36,6 +36,10 @@ var (
 	// Landlock V2 support (V1 + file reparenting between different directories)
 	V2 = Config{
 		handledAccessFS: abiInfos[2].supportedAccessFS,
+	}
+	// Landlock V3 support (V2 + file truncation)
+	V3 = Config{
+		handledAccessFS: abiInfos[3].supportedAccessFS,
 	}
 )
 
@@ -164,11 +168,19 @@ func (p PathOpt) String() string {
 func (p PathOpt) compatibleWithHandledAccessFS(handledAccessFS AccessFSSet) bool {
 	a := p.accessFS
 	if !p.enforceSubset {
-		// Even when we are lax about enforcing flag subsets,
-		// the "refer" flag always gets checked.
+		// If !enforceSubset, this PathOpt is potentially overspecifying flags,
+		// so we should not check the subset property. We make an exception
+		// for the "refer" flag, which should still get checked though.
 		a = a.intersect(ll.AccessFSRefer)
 	}
 	return a.isSubset(handledAccessFS)
+}
+
+func (p PathOpt) effectiveAccessFS(handledAccessFS AccessFSSet) AccessFSSet {
+	if !p.enforceSubset {
+		return handledAccessFS.intersect(p.accessFS)
+	}
+	return p.accessFS
 }
 
 // PathAccess is a RestrictPaths() option that grants the access right
@@ -248,13 +260,13 @@ func RWFiles(paths ...string) PathOpt {
 // that it can only read from /usr, /bin and /tmp, and only write to
 // /tmp:
 //
-//   err := landlock.V2.RestrictPaths(
-//       landlock.RODirs("/usr", "/bin"),
-//       landlock.RWDirs("/tmp"),
-//   )
-//   if err != nil {
-//       log.Fatalf("landlock.V2.RestrictPaths(): %v", err)
-//   }
+//	err := landlock.V3.RestrictPaths(
+//	    landlock.RODirs("/usr", "/bin"),
+//	    landlock.RWDirs("/tmp"),
+//	)
+//	if err != nil {
+//	    log.Fatalf("landlock.V3.RestrictPaths(): %v", err)
+//	}
 //
 // RestrictPaths returns an error if any of the given paths does not
 // denote an actual directory or file, or if Landlock can't be enforced
@@ -263,7 +275,7 @@ func RWFiles(paths ...string) PathOpt {
 // RestrictPaths also sets the "no new privileges" flag for all OS
 // threads managed by the Go runtime.
 //
-// Restrictable access rights
+// # Restrictable access rights
 //
 // The notions of what "reading" and "writing" mean are limited by what
 // the selected Landlock version supports.
@@ -283,11 +295,11 @@ func RWFiles(paths ...string) PathOpt {
 //
 // • Opening a directory or listing its content (V1+)
 //
-//
 // For writing:
 //
 // • Opening a file with write access (V1+)
 //
+// • Truncating file contents (V3+)
 //
 // For directory manipulation:
 //
@@ -314,16 +326,16 @@ func RWFiles(paths ...string) PathOpt {
 // Future versions of Landlock will be able to inhibit more operations.
 // Quoting the Landlock documentation:
 //
-//   It is currently not possible to restrict some file-related
-//   actions accessible through these syscall families: chdir(2),
-//   truncate(2), stat(2), flock(2), chmod(2), chown(2), setxattr(2),
-//   utime(2), ioctl(2), fcntl(2), access(2). Future Landlock
-//   evolutions will enable to restrict them.
+//	It is currently not possible to restrict some file-related
+//	actions accessible through these syscall families: chdir(2),
+//	stat(2), flock(2), chmod(2), chown(2), setxattr(2), utime(2),
+//	ioctl(2), fcntl(2), access(2). Future Landlock evolutions will
+//	enable to restrict them.
 //
 // The access rights are documented in more depth at:
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 //
-// Helper functions for selecting access rights
+// # Helper functions for selecting access rights
 //
 // These helper functions help selecting common subsets of access rights:
 //

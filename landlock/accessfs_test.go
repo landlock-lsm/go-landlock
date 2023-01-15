@@ -47,6 +47,7 @@ func TestPrettyPrint(t *testing.T) {
 		{a: ll.AccessFSMakeBlock, want: "{make_block}"},
 		{a: ll.AccessFSMakeSym, want: "{make_sym}"},
 		{a: ll.AccessFSRefer, want: "{refer}"},
+		{a: ll.AccessFSTruncate, want: "{truncate}"},
 		{a: ll.AccessFSReadFile | 1<<63, want: "{read_file,1<<63}"},
 	} {
 		got := tc.a.String()

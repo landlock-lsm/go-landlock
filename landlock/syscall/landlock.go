@@ -41,6 +41,7 @@ const (
 	AccessFSMakeBlock  = unix.LANDLOCK_ACCESS_FS_MAKE_BLOCK
 	AccessFSMakeSym    = unix.LANDLOCK_ACCESS_FS_MAKE_SYM
 	AccessFSRefer      = unix.LANDLOCK_ACCESS_FS_REFER
+	AccessFSTruncate   = AccessFSRefer << 1
 )
 
 // RulesetAttr is the Landlock ruleset definition.

@@ -78,7 +78,8 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		if err := populateRuleset(fd, opt.paths, opt.accessFS); err != nil {
+		accessFS := opt.effectiveAccessFS(handledAccessFS)
+		if err := populateRuleset(fd, opt.paths, accessFS); err != nil {
 			return err
 		}
 	}

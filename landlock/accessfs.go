@@ -20,6 +20,7 @@ var flagNames = []string{
 	"make_block",
 	"make_sym",
 	"refer",
+	"truncate",
 }
 
 // AccessFSSet is a set of Landlockable file system access operations.
