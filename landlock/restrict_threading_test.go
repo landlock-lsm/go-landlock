@@ -62,7 +62,7 @@ func RunInSubprocess(t *testing.T, f func()) {
 		return
 	}
 
-	args := append(os.Args[1:], "-test.run="+regexp.QuoteMeta(t.Name()))
+	args := append(os.Args[1:], "-test.run="+regexp.QuoteMeta(t.Name())+"$")
 
 	// Make sure that the parent process cleans up the actual TempDir.
 	// If the child process uses t.TempDir(), it'll create it in $TMPDIR.
