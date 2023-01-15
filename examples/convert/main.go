@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	if err := landlock.V2.BestEffort().RestrictPaths(); err != nil {
+	if err := landlock.V3.BestEffort().RestrictPaths(); err != nil {
 		log.Fatal("Could not enable Landlock:", err)
 	}
 
