@@ -183,24 +183,26 @@ func (p PathOpt) effectiveAccessFS(handledAccessFS AccessFSSet) AccessFSSet {
 	return p.accessFS
 }
 
-// PathAccess is a RestrictPaths() option that grants the access right
-// specified by accessFS to the file hierarchies under the given paths.
+// PathAccess is a [Config.RestrictPaths] option which grants the
+// access right specified by accessFS to the file hierarchies under
+// the given paths.
 //
 // When accessFS is larger than what is permitted by the Landlock
 // version in use, only the applicable subset of accessFS will be used.
 //
-// Most users should use the functions RODirs, RWDirs, ROFiles and
-// RWFiles instead, which provide canned options for commonly used
-// values of accessFS.
+// Most users should use the functions [RODirs], [RWDirs], [ROFiles]
+// and [RWFiles] instead, which provide canned options for commonly
+// used values of accessFS.
 //
 // Filesystem access rights are represented using bits in a uint64.
 // The individual access rights and their meaning are defined in the
-// landlock/syscall package and explained further in the kernel
-// documentation at
-// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
+// landlock/syscall package and explained further in the
+// [Kernel Documentation about Access Rights].
 //
 // accessFS must be a subset of the permissions that the Config
 // restricts.
+//
+// [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func PathAccess(accessFS AccessFSSet, paths ...string) PathOpt {
 	return PathOpt{
 		accessFS:      accessFS,
@@ -209,8 +211,9 @@ func PathAccess(accessFS AccessFSSet, paths ...string) PathOpt {
 	}
 }
 
-// RODirs is a RestrictPaths() option that grants common read-only
-// access to files and directories and permits executing files.
+// RODirs is a [Config.RestrictPaths] option which grants common
+// read-only access to files and directories and permits executing
+// files.
 func RODirs(paths ...string) PathOpt {
 	return PathOpt{
 		accessFS:      accessFSRead,
@@ -219,8 +222,8 @@ func RODirs(paths ...string) PathOpt {
 	}
 }
 
-// RWDirs is a RestrictPaths() option that grants full (read and
-// write) access to files and directories under the given paths.
+// RWDirs is a [Config.RestrictPaths] option which grants full (read
+// and write) access to files and directories under the given paths.
 func RWDirs(paths ...string) PathOpt {
 	return PathOpt{
 		accessFS:      accessFSReadWrite,
@@ -229,8 +232,8 @@ func RWDirs(paths ...string) PathOpt {
 	}
 }
 
-// ROFiles is a RestrictPaths() option that grants common read access
-// to individual files, but not to directories, for the file
+// ROFiles is a [Config.RestrictPaths] option which grants common read
+// access to individual files, but not to directories, for the file
 // hierarchies under the given paths.
 func ROFiles(paths ...string) PathOpt {
 	return PathOpt{
@@ -240,9 +243,9 @@ func ROFiles(paths ...string) PathOpt {
 	}
 }
 
-// RWFiles is a RestrictPaths() option that grants common read and
-// write access to files under the given paths, but it does not permit
-// access to directories.
+// RWFiles is a [Config.RestrictPaths] option which grants common read
+// and write access to files under the given paths, but it does not
+// permit access to directories.
 func RWFiles(paths ...string) PathOpt {
 	return PathOpt{
 		accessFS:      accessFSReadWrite & accessFile,
@@ -280,7 +283,7 @@ func RWFiles(paths ...string) PathOpt {
 // The notions of what "reading" and "writing" mean are limited by what
 // the selected Landlock version supports.
 //
-// Calling RestrictPaths() with a given Landlock ABI version will
+// Calling RestrictPaths with a given Landlock ABI version will
 // inhibit all future calls to the access rights supported by this ABI
 // version, unless the accessed path is in a file hierarchy that is
 // specifically allow-listed for a specific set of access rights.
@@ -289,39 +292,27 @@ func RWFiles(paths ...string) PathOpt {
 //
 // For reading:
 //
-// • Executing a file (V1+)
-//
-// • Opening a file with read access (V1+)
-//
-// • Opening a directory or listing its content (V1+)
+//   - Executing a file (V1+)
+//   - Opening a file with read access (V1+)
+//   - Opening a directory or listing its content (V1+)
 //
 // For writing:
 //
-// • Opening a file with write access (V1+)
-//
-// • Truncating file contents (V3+)
+//   - Opening a file with write access (V1+)
+//   - Truncating file contents (V3+)
 //
 // For directory manipulation:
 //
-// • Removing an empty directory or renaming one (V1+)
-//
-// • Removing (or renaming) a file (V1+)
-//
-// • Creating (or renaming or linking) a character device (V1+)
-//
-// • Creating (or renaming) a directory (V1+)
-//
-// • Creating (or renaming or linking) a regular file (V1+)
-//
-// • Creating (or renaming or linking) a UNIX domain socket (V1+)
-//
-// • Creating (or renaming or linking) a named pipe (V1+)
-//
-// • Creating (or renaming or linking) a block device (V1+)
-//
-// • Creating (or renaming or linking) a symbolic link (V1+)
-//
-// • Renaming or linking a file between directories (V2+)
+//   - Removing an empty directory or renaming one (V1+)
+//   - Removing (or renaming) a file (V1+)
+//   - Creating (or renaming or linking) a character device (V1+)
+//   - Creating (or renaming) a directory (V1+)
+//   - Creating (or renaming or linking) a regular file (V1+)
+//   - Creating (or renaming or linking) a UNIX domain socket (V1+)
+//   - Creating (or renaming or linking) a named pipe (V1+)
+//   - Creating (or renaming or linking) a block device (V1+)
+//   - Creating (or renaming or linking) a symbolic link (V1+)
+//   - Renaming or linking a file between directories (V2+)
 //
 // Future versions of Landlock will be able to inhibit more operations.
 // Quoting the Landlock documentation:
@@ -332,29 +323,28 @@ func RWFiles(paths ...string) PathOpt {
 //	ioctl(2), fcntl(2), access(2). Future Landlock evolutions will
 //	enable to restrict them.
 //
-// The access rights are documented in more depth at:
-// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
+// The access rights are documented in more depth in the
+// [Kernel Documentation about Access Rights].
 //
 // # Helper functions for selecting access rights
 //
 // These helper functions help selecting common subsets of access rights:
 //
-// • RODirs() selects access rights in the group "for reading".
-// In V1, this means reading files, listing directories and executing files.
+//   - [RODirs] selects access rights in the group "for reading".
+//     In V1, this means reading files, listing directories and executing files.
+//   - [RWDirs] selects access rights in the group "for reading", "for writing" and
+//     "for directory manipulation". This grants the full set of access rights which are
+//     available within the configuration.
+//   - [ROFiles] is like [RODirs], but does not select directory-specific access rights.
+//     In V1, this means reading and executing files.
+//   - [RWFiles] is like [RWDirs], but does not select directory-specific access rights.
+//     In V1, this means reading, writing and executing files.
 //
-// • RWDirs() selects access rights in the group "for reading", "for writing" and
-// "for directory manipulation". This grants the full set of access rights which are
-// available within the configuration.
+// The [PathAccess] option lets callers define custom subsets of these
+// access rights. AccessFSSets permitted using [PathAccess] must be a
+// subset of the [AccessFSSet] that the Config restricts.
 //
-// • ROFiles() is like RODirs(), but does not select directory-specific access rights.
-// In V1, this means reading and executing files.
-//
-// • RWFiles() is like RWDirs(), but does not select directory-specific access rights.
-// In V1, this means reading, writing and executing files.
-//
-// The PathAccess() option lets callers define custom subsets of these
-// access rights. AccessFSSets permitted using PathAccess() must be a
-// subset of the AccessFSSet that the Config restricts.
+// [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func (c Config) RestrictPaths(opts ...PathOpt) error {
 	return restrictPaths(c, opts...)
 }

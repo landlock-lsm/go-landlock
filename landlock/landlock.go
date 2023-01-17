@@ -15,31 +15,34 @@
 //
 // # More possible invocations
 //
-// landlock.V3.RestrictPaths(...) enforces the given rules using the
-// capabilities of Landlock V3, but returns an error if that is not
-// available.
+// landlock.V3.RestrictPaths(...) (without the call to
+// [Config.BestEffort]) enforces the given rules using the
+// capabilities of Landlock V3, but returns an error if that
+// functionality is not available on the system that the program is
+// running on.
 //
 // # Landlock ABI versioning
 //
 // Callers need to identify at which ABI level they want to use
-// Landlock and call RestrictPaths on the corresponding ABI constant.
+// Landlock and call [Config.RestrictPaths] on the corresponding ABI
+// constant.
 //
-// When new Landlock versions become available in landlock, users
-// will need to upgrade their usages manually to higher Landlock
-// versions, as there is a risk that new Landlock versions will break
-// operations that their programs rely on.
+// When new Landlock versions become available in landlock, users will
+// manually need to upgrade their usages to higher Landlock versions,
+// as there is a risk that new Landlock versions will break operations
+// that their programs rely on.
 //
 // # Graceful degradation on older kernels
 //
 // Programs that get run on different kernel versions will want to use
-// the Config.BestEffort() method to gracefully degrade to using the
+// the [Config.BestEffort] method to gracefully degrade to using the
 // best available Landlock version on the current kernel.
 //
 // # Current limitations
 //
 // Landlock can not currently restrict all file system operations.
-// The operations that can and can not be restricted yet are listed at
-// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
+// The operations that can and can not be restricted yet are listed in
+// the [Kernel Documentation about Access Rights].
 //
 // Enabling Landlock implicitly turns off the following file system
 // features:
@@ -48,12 +51,11 @@
 //     unless it is explicitly enabled on both directories with the "Refer" access modifier,
 //     and the new target directory does not grant the file additional rights through its
 //     Landlock access rules.
-//
 //   - Filesystem topology modification: arbitrary mounts are always denied.
 //
 // These are Landlock limitations that will be resolved in future
-// versions. See
-// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#current-limitations
+// versions. See the [Kernel Documentation about Current Limitations]
+// for more details.
 //
 // # Multithreading Limitations
 //
@@ -68,4 +70,7 @@
 // start threads. However, C libraries calling clone(2) through other
 // means before landlock is called might still create threads that
 // won't have Landlock protections.
+//
+// [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
+// [Kernel Documentation about Current Limitations]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#current-limitations
 package landlock
