@@ -8,7 +8,7 @@ import (
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
-func TestDowngrade(t *testing.T) {
+func TestDowngradeAccessFS(t *testing.T) {
 	for _, tc := range []struct {
 		Name string
 

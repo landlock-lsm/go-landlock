@@ -1,7 +1,6 @@
 package landlock
 
 import (
-	"fmt"
 	"testing"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
@@ -13,24 +12,28 @@ func TestConfigString(t *testing.T) {
 		want string
 	}{
 		{
-			cfg:  Config{handledAccessFS: 0},
-			want: fmt.Sprintf("{Landlock V0; FS: %v}", AccessFSSet(0)),
+			cfg:  Config{handledAccessFS: 0, handledAccessNet: 0},
+			want: "{Landlock V0; FS: ∅; Net: ∅}",
 		},
 		{
 			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
-			want: "{Landlock V1; FS: {write_file}}",
+			want: "{Landlock V1; FS: {write_file}; Net: ∅}",
+		},
+		{
+			cfg:  Config{handledAccessNet: ll.AccessNetBindTCP},
+			want: "{Landlock V4; FS: ∅; Net: {bind_tcp}}",
 		},
 		{
 			cfg:  V1,
-			want: "{Landlock V1; FS: all}",
+			want: "{Landlock V1; FS: all; Net: ∅}",
 		},
 		{
 			cfg:  V1.BestEffort(),
-			want: "{Landlock V1; FS: all (best effort)}",
+			want: "{Landlock V1; FS: all; Net: ∅ (best effort)}",
 		},
 		{
 			cfg:  Config{handledAccessFS: 1 << 63},
-			want: "{Landlock V???; FS: {1<<63}}",
+			want: "{Landlock V???; FS: {1<<63}; Net: ∅}",
 		},
 	} {
 		got := tc.cfg.String()

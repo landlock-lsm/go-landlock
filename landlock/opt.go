@@ -12,7 +12,8 @@ type Rule interface {
 	//
 	// It establishes that:
 	//
-	//   - rule.accessFS ⊆ handledAccessFS
+	//   - rule.accessFS ⊆ handledAccessFS for PathRules
+	//   - rule.accessNet ⊆ handledAccessNet for NetRules
 	//
 	// If the rule is unsupportable under the given Config at
 	// all, ok is false. This happens when c represents a Landlock

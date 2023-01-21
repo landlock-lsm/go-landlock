@@ -35,6 +35,8 @@ var (
 	V2 = abiInfos[2].asConfig()
 	// Landlock V3 support (V2 + file truncation)
 	V3 = abiInfos[3].asConfig()
+	// Landlock V4 support (V3 + networking)
+	V4 = abiInfos[4].asConfig()
 )
 
 // v0 denotes "no Landlock support". Only used internally.
@@ -44,8 +46,9 @@ var v0 = Config{}
 // landlockable operations to be restricted and the constraints on it
 // (e.g. best effort mode).
 type Config struct {
-	handledAccessFS AccessFSSet
-	bestEffort      bool
+	handledAccessFS  AccessFSSet
+	handledAccessNet AccessNetSet
+	bestEffort       bool
 }
 
 // NewConfig creates a new Landlock configuration with the given parameters.
@@ -64,15 +67,24 @@ func NewConfig(args ...interface{}) (*Config, error) {
 	// invalid Config values.
 	var c Config
 	for _, arg := range args {
-		if afs, ok := arg.(AccessFSSet); ok {
+		switch arg := arg.(type) {
+		case AccessFSSet:
 			if !c.handledAccessFS.isEmpty() {
 				return nil, errors.New("only one AccessFSSet may be provided")
 			}
-			if !afs.valid() {
+			if !arg.valid() {
 				return nil, errors.New("unsupported AccessFSSet value; upgrade go-landlock?")
 			}
-			c.handledAccessFS = afs
-		} else {
+			c.handledAccessFS = arg
+		case AccessNetSet:
+			if !c.handledAccessNet.isEmpty() {
+				return nil, errors.New("only one AccessNetSet may be provided")
+			}
+			if !arg.valid() {
+				return nil, errors.New("unsupported AccessNetSet value; upgrade go-landlock?")
+			}
+			c.handledAccessNet = arg
+		default:
 			return nil, fmt.Errorf("unknown argument %v; only AccessFSSet-type argument is supported", arg)
 		}
 	}
@@ -103,6 +115,11 @@ func (c Config) String() string {
 		fsDesc = "all"
 	}
 
+	var netDesc = c.handledAccessNet.String()
+	if abi.supportedAccessNet == c.handledAccessNet && c.handledAccessNet != 0 {
+		fsDesc = "all"
+	}
+
 	var bestEffort = ""
 	if c.bestEffort {
 		bestEffort = " (best effort)"
@@ -115,7 +132,7 @@ func (c Config) String() string {
 		version = fmt.Sprintf("V%v", abi.version)
 	}
 
-	return fmt.Sprintf("{Landlock %v; FS: %v%v}", version, fsDesc, bestEffort)
+	return fmt.Sprintf("{Landlock %v; FS: %v; Net: %v%v}", version, fsDesc, netDesc, bestEffort)
 }
 
 // BestEffort returns a config that will opportunistically enforce
@@ -222,6 +239,38 @@ func (c Config) BestEffort() Config {
 //
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func (c Config) RestrictPaths(rules ...Rule) error {
+	c.handledAccessNet = 0 // clear out everything but file system access
+	return restrict(c, rules...)
+}
+
+// RestrictNet restricts network access in goroutines.
+//
+// Using Landlock V4, this function will disallow the use of bind(2)
+// and connect(2) for TCP ports, unless those TCP ports are
+// specifically permitted using these rules:
+//
+//   - [DialTCP] permits connect(2) operations to a given TCP port.
+//   - [BindTCP] permits bind(2) operations on a given TCP port.
+//
+// These network access rights are documented in more depth in the
+// [Kernel Documentation about Network flags].
+//
+// [Kernel Documentation about Network flags]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#network-flags
+func (c Config) RestrictNet(rules ...Rule) error {
+	c.handledAccessFS = 0 // clear out everything but network access
+	return restrict(c, rules...)
+}
+
+// Restrict restricts all types of access which is restrictable with the Config.
+//
+// Using Landlock V4, this is equivalent to calling both
+// [RestrictPaths] and [RestrictNet] with the subset of arguments that
+// apply to it.
+//
+// In future Landlock versions, this function might restrict
+// additional kinds of operations outside of file system access and
+// networking, provided that the [Config] specifies these.
+func (c Config) Restrict(rules ...Rule) error {
 	return restrict(c, rules...)
 }
 
@@ -231,7 +280,8 @@ type PathOpt = Rule
 
 // compatibleWith is true if c is compatible to work at the given Landlock ABI level.
 func (c Config) compatibleWithABI(abi abiInfo) bool {
-	return c.handledAccessFS.isSubset(abi.supportedAccessFS)
+	return (c.handledAccessFS.isSubset(abi.supportedAccessFS) &&
+		c.handledAccessNet.isSubset(abi.supportedAccessNet))
 }
 
 // restrictTo returns a config that is a subset of c and which is compatible with the given ABI.

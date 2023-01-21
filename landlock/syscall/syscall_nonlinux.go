@@ -23,6 +23,10 @@ func LandlockAddPathBeneathRule(rulesetFd int, attr *PathBeneathAttr, flags int)
 	return syscall.ENOSYS
 }
 
+func LandlockAddNetServiceRule(rulesetFD int, attr *NetServiceAttr, flags int) error {
+	return syscall.ENOSYS
+}
+
 func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
 	return syscall.ENOSYS
 }

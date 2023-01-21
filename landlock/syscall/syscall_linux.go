@@ -31,14 +31,23 @@ func LandlockGetABIVersion() (version int, err error) {
 	return
 }
 
-// There is currently only one Landlock rule type.
-const RuleTypePathBeneath = unix.LANDLOCK_RULE_PATH_BENEATH
+// Landlock rule types.
+const (
+	RuleTypePathBeneath = unix.LANDLOCK_RULE_PATH_BENEATH
+	RuleTypeNetService  = 2 // TODO: Use it from sys/unix when available.
+)
 
 // LandlockAddPathBeneathRule adds a rule of type "path beneath" to
 // the given ruleset fd. attr defines the rule parameters. flags must
 // currently be 0.
 func LandlockAddPathBeneathRule(rulesetFd int, attr *PathBeneathAttr, flags int) error {
 	return LandlockAddRule(rulesetFd, RuleTypePathBeneath, unsafe.Pointer(attr), flags)
+}
+
+// LandlockAddNetServiceRule adds a rule of type "net service" to the given ruleset FD.
+// attr defines the rule parameters. flags must currently be 0.
+func LandlockAddNetServiceRule(rulesetFD int, attr *NetServiceAttr, flags int) error {
+	return LandlockAddRule(rulesetFD, RuleTypeNetService, unsafe.Pointer(attr), flags)
 }
 
 // LandlockAddRule is the generic landlock_add_rule syscall.

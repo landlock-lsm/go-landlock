@@ -14,10 +14,10 @@
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html.
 package syscall
 
-// Landlock file system access rights, for use in "access" bit fields.
+// Landlock file system access rights.
 //
 // Please see the full documentation at
-// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights.
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#filesystem-flags.
 const (
 	AccessFSExecute = 1 << iota
 	AccessFSWriteFile
@@ -36,17 +36,28 @@ const (
 	AccessFSTruncate
 )
 
+// Landlock network access rights.
+//
+// Please see the full documentation at
+// https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#network-flags.
+const (
+	// TODO: Use these from sys/unix when available.
+	AccessNetBindTCP    = 1 << 0
+	AccessNetConnectTCP = 1 << 1
+)
+
 // RulesetAttr is the Landlock ruleset definition.
 //
 // Argument of LandlockCreateRuleset(). This structure can grow in future versions of Landlock.
 //
 // C version is in usr/include/linux/landlock.h
 type RulesetAttr struct {
-	HandledAccessFS uint64
+	HandledAccessFS  uint64
+	HandledAccessNet uint64
 }
 
 // The size of the RulesetAttr struct in bytes.
-const rulesetAttrSize = 8
+const rulesetAttrSize = 16
 
 // PathBeneathAttr references a file hierarchy and defines the desired
 // extent to which it should be usable when the rule is enforced.
@@ -59,4 +70,10 @@ type PathBeneathAttr struct {
 	// ParentFd is a file descriptor, opened with `O_PATH`, which identifies
 	// the parent directory of a file hierarchy, or just a file.
 	ParentFd int
+}
+
+// NetServiceAttr specifies which ports can be used for what.
+type NetServiceAttr struct {
+	AllowedAccess uint64
+	Port          uint16
 }

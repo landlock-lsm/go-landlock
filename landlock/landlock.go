@@ -1,31 +1,62 @@
-// Package landlock restricts a Go program's ability to use files.
+// Package landlock restricts a Go program's ability to use files and networking.
+//
+// # Restricting file access
 //
 // The following invocation will restrict all goroutines so that they
 // can only read from /usr, /bin and /tmp, and only write to /tmp:
 //
-//	err := landlock.V3.BestEffort().RestrictPaths(
+//	err := landlock.V4.BestEffort().RestrictPaths(
 //	    landlock.RODirs("/usr", "/bin"),
 //	    landlock.RWDirs("/tmp"),
 //	)
 //
-// This will restrict file access using Landlock V3, if available. If
+// This will restrict file access using Landlock V4, if available. If
 // unavailable, it will attempt using earlier Landlock versions than
 // the one requested. If no Landlock version is available, it will
 // still succeed, without restricting file accesses.
 //
+// # Restricting networking
+//
+// The following invocation will restrict all goroutines so that they
+// can only bind to TCP port 8080 and only connect to TCP port 53:
+//
+//	err := landlock.V4.BestEffort().RestrictNet(
+//	    landlock.BindTCP(8080),
+//	    landlock.DialTCP(53),
+//	)
+//
+// This functionality is available since Landlock V4.
+//
+// # Restricting file access and networking at once
+//
+// The following invocation restricts both file and network access at
+// once.  The effect is the same as calling [Config.RestrictPaths] and
+// [Config.RestrictNet] one after another, but it happens in one step.
+//
+//	err := landlock.V4.BestEffort().Restrict(
+//	    landlock.RODirs("/usr", "/bin"),
+//	    landlock.RWDirs("/tmp"),
+//	    landlock.BindTCP(8080),
+//	    landlock.DialTCP(53),
+//	)
+//
 // # More possible invocations
 //
-// landlock.V3.RestrictPaths(...) (without the call to
+// landlock.V4.RestrictPaths(...) (without the call to
 // [Config.BestEffort]) enforces the given rules using the
-// capabilities of Landlock V3, but returns an error if that
+// capabilities of Landlock V4, but returns an error if that
 // functionality is not available on the system that the program is
 // running on.
 //
 // # Landlock ABI versioning
 //
-// Callers need to identify at which ABI level they want to use
-// Landlock and call [Config.RestrictPaths] on the corresponding ABI
-// constant.
+// The Landlock ABI is versioned, so that callers can probe for the
+// availability of different Landlock features.
+//
+// When using the Go Landlock package, callers need to identify at
+// which ABI level they want to use Landlock and call one of the
+// restriction methods (e.g. [Config.RestrictPaths]) on the
+// corresponding ABI constant.
 //
 // When new Landlock versions become available in landlock, users will
 // manually need to upgrade their usages to higher Landlock versions,
@@ -37,6 +68,10 @@
 // Programs that get run on different kernel versions will want to use
 // the [Config.BestEffort] method to gracefully degrade to using the
 // best available Landlock version on the current kernel.
+//
+// In this case, the Go Landlock library will enforce as much as
+// possible, but it will ensure that all the requested access rights
+// are permitted after Landlock enforcement.
 //
 // # Current limitations
 //

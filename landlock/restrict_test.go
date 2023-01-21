@@ -5,14 +5,18 @@ package landlock_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 
 	"github.com/landlock-lsm/go-landlock/landlock"
+	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 	"golang.org/x/sys/unix"
 )
 
@@ -259,13 +263,6 @@ func TestRestrictPaths(t *testing.T) {
 	}
 }
 
-func errEqual(got, want error) bool {
-	if got == nil && want == nil {
-		return true
-	}
-	return errors.Is(got, want)
-}
-
 func openForRead(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -282,6 +279,183 @@ func openForWrite(path string) error {
 	}
 	defer f.Close()
 	return nil
+}
+
+func TestRestrictNet(t *testing.T) {
+	const (
+		cPort = 4242
+		bPort = 4343
+	)
+
+	for _, tt := range []struct {
+		Name           string
+		EnableLandlock func() error
+		RequiredABI    int
+		WantConnectErr error
+		WantBindErr    error
+	}{
+		{
+			Name:        "ABITooOld",
+			RequiredABI: 3,
+			EnableLandlock: func() error {
+				return landlock.V3.RestrictNet()
+			},
+			WantConnectErr: nil,
+			WantBindErr:    nil,
+		},
+		{
+			Name:        "ABITooOldWithDowngrade",
+			RequiredABI: 3,
+			EnableLandlock: func() error {
+				return landlock.V3.BestEffort().RestrictNet()
+			},
+			WantConnectErr: nil,
+			WantBindErr:    nil,
+		},
+		{
+			Name:        "RestrictingPathsShouldNotBreakNetworking",
+			RequiredABI: 1,
+			EnableLandlock: func() error {
+				return landlock.V4.BestEffort().RestrictPaths(
+					landlock.ROFiles("/etc/hosts"),
+				)
+			},
+			WantConnectErr: nil,
+			WantBindErr:    nil,
+		},
+		{
+			Name:        "RestrictingBindButConnectShouldWork",
+			RequiredABI: 4,
+			EnableLandlock: func() error {
+				return landlock.MustConfig(
+					landlock.AccessNetSet(ll.AccessNetBindTCP),
+				).RestrictNet()
+			},
+			WantConnectErr: nil,
+			WantBindErr:    syscall.EACCES,
+		},
+		{
+			Name:        "RestrictingConnectButBindShouldWork",
+			RequiredABI: 4,
+			EnableLandlock: func() error {
+				return landlock.MustConfig(
+					landlock.AccessNetSet(ll.AccessNetConnectTCP),
+				).RestrictNet()
+			},
+			WantConnectErr: syscall.EACCES,
+			WantBindErr:    nil,
+		},
+		{
+			Name:        "PermitTheConnectPort",
+			RequiredABI: 4,
+			EnableLandlock: func() error {
+				return landlock.V4.RestrictNet(landlock.DialTCP(cPort))
+			},
+			WantConnectErr: nil,
+			WantBindErr:    syscall.EACCES,
+		},
+		{
+			Name:        "PermitTheBindPort",
+			RequiredABI: 4,
+			EnableLandlock: func() error {
+				return landlock.V4.RestrictNet(landlock.BindTCP(bPort))
+			},
+			WantConnectErr: syscall.EACCES,
+			WantBindErr:    nil,
+		},
+		{
+			Name:        "PermitBothPorts",
+			RequiredABI: 4,
+			EnableLandlock: func() error {
+				return landlock.V4.RestrictNet(
+					landlock.BindTCP(bPort),
+					landlock.DialTCP(cPort),
+				)
+			},
+			WantConnectErr: nil,
+			WantBindErr:    nil,
+		},
+		{
+			Name:        "PermitTheWrongPorts",
+			RequiredABI: 4,
+			EnableLandlock: func() error {
+				return landlock.V4.RestrictNet(
+					landlock.BindTCP(bPort+1),
+					landlock.DialTCP(cPort+1),
+				)
+			},
+			WantConnectErr: syscall.EACCES,
+			WantBindErr:    syscall.EACCES,
+		},
+	} {
+		t.Run(tt.Name, func(t *testing.T) {
+			RunInSubprocess(t, func() {
+				RequireLandlockABI(t, tt.RequiredABI)
+
+				// Set up a service that we can dial for the test.
+				runBackgroundService(t, "tcp", fmt.Sprintf("localhost:%v", cPort))
+
+				err := tt.EnableLandlock()
+				if err != nil {
+					t.Fatalf("Enabling Landlock: %v", err)
+				}
+
+				if err := tryDial(cPort); !errEqual(err, tt.WantConnectErr) {
+					t.Errorf("net.Dial(tcp, localhost:%v) = «%v»; want «%v»", cPort, err, tt.WantConnectErr)
+				}
+				if err := tryListen(bPort); !errEqual(err, tt.WantBindErr) {
+					t.Errorf("net.Listen(tcp, localhost:%v) = «%v»; want «%v»", bPort, err, tt.WantBindErr)
+				}
+			})
+		})
+	}
+}
+
+func runBackgroundService(t *testing.T, network, addr string) {
+	l, err := net.Listen(network, addr)
+	if err != nil {
+		t.Fatalf("net.Listen: Failed to set up local service to connect to: %v", err)
+	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				// Return on error (e.g. if l gets closed asynchronously)
+				return
+			}
+			c.Close()
+		}
+	}()
+	t.Cleanup(func() {
+		l.Close()
+		wg.Wait()
+	})
+}
+
+func tryDial(port int) error {
+	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%v", port))
+	if err == nil {
+		conn.Close()
+	}
+	return err
+}
+
+func tryListen(port int) error {
+	conn, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
+	if err == nil {
+		conn.Close()
+	}
+	return err
+}
+
+func errEqual(got, want error) bool {
+	if got == nil && want == nil {
+		return true
+	}
+	return errors.Is(got, want)
 }
 
 func OSRelease(t testing.TB) (major, minor, patch int) {
