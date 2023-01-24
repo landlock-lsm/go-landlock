@@ -16,11 +16,21 @@ type PathOpt struct {
 	paths         []string
 }
 
-// withRights adds the given access rights to the right enforced in the path option
+// withRights adds the given access rights to the rights enforced in the path option
 // and returns the result as a new PathOpt.
 func (p PathOpt) withRights(a AccessFSSet) PathOpt {
 	return PathOpt{
 		accessFS:      p.accessFS.union(a),
+		enforceSubset: p.enforceSubset,
+		paths:         p.paths,
+	}
+}
+
+// intersectRights intersects the given access rights with the rights
+// enforced in the path option and returns the result as a new PathOpt.
+func (p PathOpt) intersectRights(a AccessFSSet) PathOpt {
+	return PathOpt{
+		accessFS:      p.accessFS.intersect(a),
 		enforceSubset: p.enforceSubset,
 		paths:         p.paths,
 	}
@@ -93,6 +103,24 @@ func addPath(rulesetFd int, path string, access AccessFSSet) error {
 		return fmt.Errorf("landlock_add_rule: %w", err)
 	}
 	return nil
+}
+
+// downgrade calculates the actual ruleset to be enforced given the
+// current config (and assuming that the config is going to work under
+// the running kernel).
+//
+// It establishes that opt.accessFS ⊆ c.handledAccessFS.
+//
+// If ok is false, downgrade is impossible and we need to fall back to doing nothing.
+func (p PathOpt) downgrade(c Config) (pOut PathOpt, ok bool) {
+	// In case that "refer" is requested on a path, we
+	// require Landlock V2+, or we have to downgrade to V0.
+	// You can't get the refer capability with V1, but linking/
+	// renaming files is always implicitly restricted.
+	if hasRefer(p.accessFS) && !hasRefer(c.handledAccessFS) {
+		return PathOpt{}, false
+	}
+	return p.intersectRights(c.handledAccessFS), true
 }
 
 // PathAccess is a [Config.RestrictPaths] option which grants the

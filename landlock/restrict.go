@@ -16,17 +16,13 @@ import (
 func downgrade(c Config, opts []PathOpt, abi abiInfo) (Config, []PathOpt) {
 	c = c.restrictTo(abi)
 
-	resOpts := make([]PathOpt, len(opts))
-	copy(resOpts, opts)
-	for i := 0; i < len(resOpts); i++ {
-		// In case that "refer" is requested on a path, we
-		// require Landlock V2+, or we have to downgrade to V0.
-		// You can't get the refer capability with V1, but linking/
-		// renaming files is always implicitly restricted.
-		if hasRefer(resOpts[i].accessFS) && !hasRefer(c.handledAccessFS) {
+	resOpts := make([]PathOpt, 0, len(opts))
+	for _, opt := range opts {
+		opt, ok := opt.downgrade(c)
+		if !ok {
 			return v0, nil // Use "ABI V0" (do nothing)
 		}
-		resOpts[i].accessFS = resOpts[i].accessFS.intersect(c.handledAccessFS)
+		resOpts = append(resOpts, opt)
 	}
 	return c, resOpts
 }
