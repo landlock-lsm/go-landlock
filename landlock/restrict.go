@@ -14,7 +14,7 @@ import (
 //
 // It establishes that opt.accessFS ⊆ c.handledAccessFS ⊆ abi.supportedAccessFS.
 func downgrade(c Config, opts []PathOpt, abi abiInfo) (Config, []PathOpt) {
-	c.handledAccessFS = c.handledAccessFS.intersect(abi.supportedAccessFS)
+	c = c.restrictTo(abi)
 
 	resOpts := make([]PathOpt, len(opts))
 	copy(resOpts, opts)
@@ -48,8 +48,8 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	if c.bestEffort {
 		c, opts = downgrade(c, opts, abi)
 	}
-	if !c.handledAccessFS.isSubset(abi.supportedAccessFS) {
-		return fmt.Errorf("missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c.String())
+	if !c.compatibleWithABI(abi) {
+		return fmt.Errorf("missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c)
 	}
 
 	// TODO: This might be incorrect - the "refer" permission is

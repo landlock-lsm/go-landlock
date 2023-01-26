@@ -93,7 +93,7 @@ func (c Config) String() string {
 	abi := abiInfo{version: -1} // invalid
 	for i := len(abiInfos) - 1; i >= 0; i-- {
 		a := abiInfos[i]
-		if c.handledAccessFS.isSubset(a.supportedAccessFS) {
+		if c.compatibleWithABI(a) {
 			abi = a
 		}
 	}
@@ -223,4 +223,17 @@ func (c Config) BestEffort() Config {
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func (c Config) RestrictPaths(opts ...PathOpt) error {
 	return restrictPaths(c, opts...)
+}
+
+// compatibleWith is true if c is compatible to work at the given Landlock ABI level.
+func (c Config) compatibleWithABI(abi abiInfo) bool {
+	return c.handledAccessFS.isSubset(abi.supportedAccessFS)
+}
+
+// restrictTo returns a config that is a subset of c and which is compatible with the given ABI.
+func (c Config) restrictTo(abi abiInfo) Config {
+	return Config{
+		handledAccessFS: c.handledAccessFS.intersect(abi.supportedAccessFS),
+		bestEffort:      true,
+	}
 }
