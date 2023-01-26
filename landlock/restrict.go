@@ -12,11 +12,11 @@ import (
 // downgrade calculates the actual ruleset to be enforced given the
 // current kernel's Landlock ABI level.
 //
-// It establishes that opt.accessFS ⊆ c.handledAccessFS ⊆ abi.supportedAccessFS.
-func downgrade(c Config, opts []PathOpt, abi abiInfo) (Config, []PathOpt) {
+// It establishes that opt.compatibleWithConfig(c) and c.compatibleWithABI(abi).
+func downgrade(c Config, opts []restrictOpt, abi abiInfo) (Config, []restrictOpt) {
 	c = c.restrictTo(abi)
 
-	resOpts := make([]PathOpt, 0, len(opts))
+	resOpts := make([]restrictOpt, 0, len(opts))
 	for _, opt := range opts {
 		opt, ok := opt.downgrade(c)
 		if !ok {
@@ -31,12 +31,12 @@ func hasRefer(a AccessFSSet) bool {
 	return a&ll.AccessFSRefer != 0
 }
 
-// restrictPaths is the actual RestrictPaths implementation.
-func restrictPaths(c Config, opts ...PathOpt) error {
+// restrict is the actual implementation which sets up Landlock.
+func restrict(c Config, opts ...restrictOpt) error {
 	// Check validity of options early.
 	for _, opt := range opts {
 		if !opt.compatibleWithConfig(c) {
-			return fmt.Errorf("too broad option %v: %w", opt.accessFS, unix.EINVAL)
+			return fmt.Errorf("incompatible option %v: %w", opt, unix.EINVAL)
 		}
 	}
 

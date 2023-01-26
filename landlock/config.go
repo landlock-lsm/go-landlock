@@ -222,7 +222,11 @@ func (c Config) BestEffort() Config {
 //
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func (c Config) RestrictPaths(opts ...PathOpt) error {
-	return restrictPaths(c, opts...)
+	options := make([]restrictOpt, 0, len(opts))
+	for _, opt := range opts {
+		options = append(options, opt)
+	}
+	return restrict(c, options...)
 }
 
 // compatibleWith is true if c is compatible to work at the given Landlock ABI level.

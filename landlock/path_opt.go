@@ -112,7 +112,7 @@ func addPath(rulesetFd int, path string, access AccessFSSet) error {
 // It establishes that opt.accessFS ⊆ c.handledAccessFS.
 //
 // If ok is false, downgrade is impossible and we need to fall back to doing nothing.
-func (p PathOpt) downgrade(c Config) (pOut PathOpt, ok bool) {
+func (p PathOpt) downgrade(c Config) (out restrictOpt, ok bool) {
 	// In case that "refer" is requested on a path, we
 	// require Landlock V2+, or we have to downgrade to V0.
 	// You can't get the refer capability with V1, but linking/

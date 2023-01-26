@@ -134,8 +134,8 @@ func TestReferNotPermittedInStrictV1(t *testing.T) {
 		if !errors.Is(err, unix.EINVAL) {
 			t.Errorf("expected 'invalid argument' error, got: %v", err)
 		}
-		if !strings.Contains(err.Error(), "too broad option") {
-			t.Errorf("expected a 'too broad option' error, got: %v", err)
+		if !strings.Contains(err.Error(), "incompatible option") {
+			t.Errorf("expected a 'incompatible option' error, got: %v", err)
 		}
 	}
 }
