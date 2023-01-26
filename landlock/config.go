@@ -98,9 +98,9 @@ func (c Config) String() string {
 		}
 	}
 
-	var desc = c.handledAccessFS.String()
+	var fsDesc = c.handledAccessFS.String()
 	if abi.supportedAccessFS == c.handledAccessFS && c.handledAccessFS != 0 {
-		desc = "all"
+		fsDesc = "all"
 	}
 
 	var bestEffort = ""
@@ -115,7 +115,7 @@ func (c Config) String() string {
 		version = fmt.Sprintf("V%v", abi.version)
 	}
 
-	return fmt.Sprintf("{Landlock %v; HandledAccessFS: %v%v}", version, desc, bestEffort)
+	return fmt.Sprintf("{Landlock %v; FS: %v%v}", version, fsDesc, bestEffort)
 }
 
 // BestEffort returns a config that will opportunistically enforce

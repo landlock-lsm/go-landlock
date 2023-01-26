@@ -14,23 +14,23 @@ func TestConfigString(t *testing.T) {
 	}{
 		{
 			cfg:  Config{handledAccessFS: 0},
-			want: fmt.Sprintf("{Landlock V0; HandledAccessFS: %v}", AccessFSSet(0)),
+			want: fmt.Sprintf("{Landlock V0; FS: %v}", AccessFSSet(0)),
 		},
 		{
 			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
-			want: "{Landlock V1; HandledAccessFS: {write_file}}",
+			want: "{Landlock V1; FS: {write_file}}",
 		},
 		{
 			cfg:  V1,
-			want: "{Landlock V1; HandledAccessFS: all}",
+			want: "{Landlock V1; FS: all}",
 		},
 		{
 			cfg:  V1.BestEffort(),
-			want: "{Landlock V1; HandledAccessFS: all (best effort)}",
+			want: "{Landlock V1; FS: all (best effort)}",
 		},
 		{
 			cfg:  Config{handledAccessFS: 1 << 63},
-			want: "{Landlock V???; HandledAccessFS: {1<<63}}",
+			want: "{Landlock V???; FS: {1<<63}}",
 		},
 	} {
 		got := tc.cfg.String()
