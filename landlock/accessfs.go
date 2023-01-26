@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var flagNames = []string{
+var accessFSNames = []string{
 	"execute",
 	"write_file",
 	"read_file",
@@ -26,10 +26,10 @@ var flagNames = []string{
 // AccessFSSet is a set of Landlockable file system access operations.
 type AccessFSSet uint64
 
-var supportedAccessFS = AccessFSSet((1 << len(flagNames)) - 1)
+var supportedAccessFS = AccessFSSet((1 << len(accessFSNames)) - 1)
 
-func (a AccessFSSet) String() string {
-	if a.isEmpty() {
+func accessSetString(a uint64, names []string) string {
+	if a == 0 {
 		return "∅"
 	}
 	var b strings.Builder
@@ -41,14 +41,18 @@ func (a AccessFSSet) String() string {
 		if b.Len() > 1 {
 			b.WriteByte(',')
 		}
-		if i < len(flagNames) {
-			b.WriteString(flagNames[i])
+		if i < len(names) {
+			b.WriteString(names[i])
 		} else {
 			b.WriteString(fmt.Sprintf("1<<%v", i))
 		}
 	}
 	b.WriteByte('}')
 	return b.String()
+}
+
+func (a AccessFSSet) String() string {
+	return accessSetString(uint64(a), accessFSNames)
 }
 
 func (a AccessFSSet) isSubset(b AccessFSSet) bool {
