@@ -97,34 +97,6 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	return nil
 }
 
-func addPath(rulesetFd int, path string, access AccessFSSet) error {
-	fd, err := syscall.Open(path, unix.O_PATH|unix.O_CLOEXEC, 0)
-	if err != nil {
-		return fmt.Errorf("open: %w", err)
-	}
-	defer syscall.Close(fd)
-
-	pathBeneath := ll.PathBeneathAttr{
-		ParentFd:      fd,
-		AllowedAccess: uint64(access),
-	}
-	err = ll.LandlockAddPathBeneathRule(rulesetFd, &pathBeneath, 0)
-	if err != nil {
-		if errors.Is(err, syscall.EINVAL) {
-			// The ruleset access permissions must be a superset of the ones we restrict to.
-			// This should never happen because the call to addPath() ensures that.
-			err = bug(fmt.Errorf("invalid flags, or inconsistent access in the rule: %w", err))
-		} else if errors.Is(err, syscall.ENOMSG) && access == 0 {
-			err = fmt.Errorf("empty access rights: %w", err)
-		} else {
-			// Other errors should never happen.
-			err = bug(err)
-		}
-		return fmt.Errorf("landlock_add_rule: %w", err)
-	}
-	return nil
-}
-
 // Denotes an error that should not have happened.
 // If such an error occurs anyway, please try upgrading the library
 // and file a bug to github.com/landlock-lsm/go-landlock if the issue persists.
