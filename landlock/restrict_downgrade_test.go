@@ -63,14 +63,15 @@ func TestDowngrade(t *testing.T) {
 			abi := abiInfos[tc.SupportedABI]
 
 			opts := []PathOpt{PathAccess(tc.Requested, "foo")}
-			gotHandled, gotOpts := downgrade(tc.Handled, opts, abi)
+			cfg := Config{handledAccessFS: tc.Handled}
+			gotCfg, gotOpts := downgrade(cfg, opts, abi)
 
 			if tc.WantFallbackToV0 {
-				if gotHandled != 0 {
+				if gotCfg != v0 {
 					t.Errorf(
 						"downgrade(%v, %v, ABIv%d) = %v, %v; want fallback to V0",
-						tc.Handled, tc.Requested, tc.SupportedABI,
-						gotHandled, gotOpts,
+						cfg, tc.Requested, tc.SupportedABI,
+						gotCfg, gotOpts,
 					)
 				}
 				return
@@ -80,13 +81,14 @@ func TestDowngrade(t *testing.T) {
 				t.Fatalf("wrong number of opts returned: got %d, want 1", len(gotOpts))
 			}
 			gotRequested := gotOpts[0].accessFS
+			gotHandled := gotCfg.handledAccessFS
 
 			if gotHandled != tc.WantHandled || gotRequested != tc.WantRequested {
 				t.Errorf(
 					"Unexpected result\ndowngrade(%v, %v, ABIv%d)\n        = %v, %v\n     want %v, %v",
-					tc.Handled, tc.Requested, tc.SupportedABI,
-					gotHandled, gotRequested,
-					tc.WantHandled, tc.WantRequested,
+					cfg, tc.Requested, tc.SupportedABI,
+					gotCfg, gotRequested,
+					Config{handledAccessFS: tc.WantHandled}, tc.WantRequested,
 				)
 			}
 		})

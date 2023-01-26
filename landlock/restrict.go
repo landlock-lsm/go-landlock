@@ -12,9 +12,9 @@ import (
 // downgrade calculates the actual ruleset to be enforced given the
 // current kernel's Landlock ABI level.
 //
-// It establishes that opt.accessFS ⊆ handledAccessFS ⊆ abi.supportedAccessFS.
-func downgrade(handledAccessFS AccessFSSet, opts []PathOpt, abi abiInfo) (AccessFSSet, []PathOpt) {
-	handledAccessFS = handledAccessFS.intersect(abi.supportedAccessFS)
+// It establishes that opt.accessFS ⊆ c.handledAccessFS ⊆ abi.supportedAccessFS.
+func downgrade(c Config, opts []PathOpt, abi abiInfo) (Config, []PathOpt) {
+	c.handledAccessFS = c.handledAccessFS.intersect(abi.supportedAccessFS)
 
 	resOpts := make([]PathOpt, len(opts))
 	copy(resOpts, opts)
@@ -23,12 +23,12 @@ func downgrade(handledAccessFS AccessFSSet, opts []PathOpt, abi abiInfo) (Access
 		// require Landlock V2+, or we have to downgrade to V0.
 		// You can't get the refer capability with V1, but linking/
 		// renaming files is always implicitly restricted.
-		if hasRefer(resOpts[i].accessFS) && !hasRefer(handledAccessFS) {
-			return 0, nil // Use "ABI V0" (do nothing)
+		if hasRefer(resOpts[i].accessFS) && !hasRefer(c.handledAccessFS) {
+			return v0, nil // Use "ABI V0" (do nothing)
 		}
-		resOpts[i].accessFS = resOpts[i].accessFS.intersect(handledAccessFS)
+		resOpts[i].accessFS = resOpts[i].accessFS.intersect(c.handledAccessFS)
 	}
-	return handledAccessFS, resOpts
+	return c, resOpts
 }
 
 func hasRefer(a AccessFSSet) bool {
@@ -37,19 +37,18 @@ func hasRefer(a AccessFSSet) bool {
 
 // restrictPaths is the actual RestrictPaths implementation.
 func restrictPaths(c Config, opts ...PathOpt) error {
-	handledAccessFS := c.handledAccessFS
 	// Check validity of options early.
 	for _, opt := range opts {
-		if !opt.compatibleWithHandledAccessFS(handledAccessFS) {
+		if !opt.compatibleWithConfig(c) {
 			return fmt.Errorf("too broad option %v: %w", opt.accessFS, unix.EINVAL)
 		}
 	}
 
 	abi := getSupportedABIVersion()
 	if c.bestEffort {
-		handledAccessFS, opts = downgrade(handledAccessFS, opts, abi)
+		c, opts = downgrade(c, opts, abi)
 	}
-	if !handledAccessFS.isSubset(abi.supportedAccessFS) {
+	if !c.handledAccessFS.isSubset(abi.supportedAccessFS) {
 		return fmt.Errorf("missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c.String())
 	}
 
@@ -57,12 +56,12 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	// always implicit, even in Landlock V1. So enabling Landlock
 	// on a Landlock V1 kernel without any handled access rights
 	// will still forbid linking files between directories.
-	if handledAccessFS.isEmpty() {
+	if c.handledAccessFS.isEmpty() {
 		return nil // Success: Nothing to restrict.
 	}
 
 	rulesetAttr := ll.RulesetAttr{
-		HandledAccessFS: uint64(handledAccessFS),
+		HandledAccessFS: uint64(c.handledAccessFS),
 	}
 	fd, err := ll.LandlockCreateRuleset(&rulesetAttr, 0)
 	if err != nil {
@@ -78,7 +77,7 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		accessFS := opt.effectiveAccessFS(handledAccessFS)
+		accessFS := opt.effectiveAccessFS(c.handledAccessFS)
 		if err := populateRuleset(fd, opt.paths, accessFS); err != nil {
 			return err
 		}

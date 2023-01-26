@@ -38,7 +38,9 @@ func (p PathOpt) String() string {
 	return fmt.Sprintf("REQUIRE %v for paths %v", p.accessFS, p.paths)
 }
 
-func (p PathOpt) compatibleWithHandledAccessFS(handledAccessFS AccessFSSet) bool {
+// compatibleWithConfig returns true if the given option is compatible
+// for use with the config c.
+func (p PathOpt) compatibleWithConfig(c Config) bool {
 	a := p.accessFS
 	if !p.enforceSubset {
 		// If !enforceSubset, this PathOpt is potentially overspecifying flags,
@@ -46,7 +48,7 @@ func (p PathOpt) compatibleWithHandledAccessFS(handledAccessFS AccessFSSet) bool
 		// for the "refer" flag, which should still get checked though.
 		a = a.intersect(ll.AccessFSRefer)
 	}
-	return a.isSubset(handledAccessFS)
+	return a.isSubset(c.handledAccessFS)
 }
 
 func (p PathOpt) effectiveAccessFS(handledAccessFS AccessFSSet) AccessFSSet {

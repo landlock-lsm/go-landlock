@@ -43,6 +43,9 @@ var (
 	}
 )
 
+// v0 denotes "no Landlock support". Only used internally.
+var v0 = Config{}
+
 // The Landlock configuration describes the desired set of
 // landlockable operations to be restricted and the constraints on it
 // (e.g. best effort mode).
