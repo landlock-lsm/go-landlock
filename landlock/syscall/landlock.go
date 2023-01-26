@@ -22,7 +22,7 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/psx"
 )
 
-// Landlock access rights, for use in "access" bit fields.
+// Landlock file system access rights, for use in "access" bit fields.
 //
 // Please see the full documentation at
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights.

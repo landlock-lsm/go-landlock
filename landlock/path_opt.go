@@ -57,7 +57,7 @@ func (p PathOpt) effectiveAccessFS(handledAccessFS AccessFSSet) AccessFSSet {
 }
 
 // PathAccess is a [Config.RestrictPaths] option which grants the
-// access right specified by accessFS to the file hierarchies under
+// access rights specified by accessFS to the file hierarchies under
 // the given paths.
 //
 // When accessFS is larger than what is permitted by the Landlock
