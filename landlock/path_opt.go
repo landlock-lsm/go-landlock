@@ -51,11 +51,17 @@ func (p PathOpt) compatibleWithConfig(c Config) bool {
 	return a.isSubset(c.handledAccessFS)
 }
 
-func (p PathOpt) effectiveAccessFS(handledAccessFS AccessFSSet) AccessFSSet {
+func (p PathOpt) addToRuleset(rulesetFD int, c Config) error {
+	effectiveAccessFS := p.accessFS
 	if !p.enforceSubset {
-		return handledAccessFS.intersect(p.accessFS)
+		effectiveAccessFS = effectiveAccessFS.intersect(c.handledAccessFS)
 	}
-	return p.accessFS
+	for _, path := range p.paths {
+		if err := addPath(rulesetFD, path, effectiveAccessFS); err != nil {
+			return fmt.Errorf("populating ruleset for %q with access %v: %w", path, effectiveAccessFS, err)
+		}
+	}
+	return nil
 }
 
 // PathAccess is a [Config.RestrictPaths] option which grants the

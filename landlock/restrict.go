@@ -77,8 +77,7 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	defer syscall.Close(fd)
 
 	for _, opt := range opts {
-		accessFS := opt.effectiveAccessFS(c.handledAccessFS)
-		if err := populateRuleset(fd, opt.paths, accessFS); err != nil {
+		if err := opt.addToRuleset(fd, c); err != nil {
 			return err
 		}
 	}
@@ -98,16 +97,7 @@ func restrictPaths(c Config, opts ...PathOpt) error {
 	return nil
 }
 
-func populateRuleset(rulesetFd int, paths []string, access AccessFSSet) error {
-	for _, p := range paths {
-		if err := populate(rulesetFd, p, access); err != nil {
-			return fmt.Errorf("populating ruleset for %q with access %v: %w", p, access, err)
-		}
-	}
-	return nil
-}
-
-func populate(rulesetFd int, path string, access AccessFSSet) error {
+func addPath(rulesetFd int, path string, access AccessFSSet) error {
 	fd, err := syscall.Open(path, unix.O_PATH|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return fmt.Errorf("open: %w", err)
@@ -122,7 +112,7 @@ func populate(rulesetFd int, path string, access AccessFSSet) error {
 	if err != nil {
 		if errors.Is(err, syscall.EINVAL) {
 			// The ruleset access permissions must be a superset of the ones we restrict to.
-			// This should never happen because the call to populate() ensures that.
+			// This should never happen because the call to addPath() ensures that.
 			err = bug(fmt.Errorf("invalid flags, or inconsistent access in the rule: %w", err))
 		} else if errors.Is(err, syscall.ENOMSG) && access == 0 {
 			err = fmt.Errorf("empty access rights: %w", err)
