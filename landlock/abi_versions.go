@@ -26,6 +26,10 @@ var abiInfos = []abiInfo{
 	},
 }
 
+func (a abiInfo) asConfig() Config {
+	return Config{handledAccessFS: a.supportedAccessFS}
+}
+
 // getSupportedABIVersion returns the kernel-supported ABI version.
 //
 // If the ABI version supported by the kernel is higher than the

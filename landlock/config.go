@@ -30,17 +30,11 @@ const (
 // able to restrict.
 var (
 	// Landlock V1 support (basic file operations).
-	V1 = Config{
-		handledAccessFS: abiInfos[1].supportedAccessFS,
-	}
+	V1 = abiInfos[1].asConfig()
 	// Landlock V2 support (V1 + file reparenting between different directories)
-	V2 = Config{
-		handledAccessFS: abiInfos[2].supportedAccessFS,
-	}
+	V2 = abiInfos[2].asConfig()
 	// Landlock V3 support (V2 + file truncation)
-	V3 = Config{
-		handledAccessFS: abiInfos[3].supportedAccessFS,
-	}
+	V3 = abiInfos[3].asConfig()
 )
 
 // v0 denotes "no Landlock support". Only used internally.
