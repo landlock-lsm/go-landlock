@@ -62,25 +62,25 @@ func TestDowngrade(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			abi := abiInfos[tc.SupportedABI]
 
-			opts := []restrictOpt{PathAccess(tc.Requested, "foo")}
+			rules := []Rule{PathAccess(tc.Requested, "foo")}
 			cfg := Config{handledAccessFS: tc.Handled}
-			gotCfg, gotOpts := downgrade(cfg, opts, abi)
+			gotCfg, gotRules := downgrade(cfg, rules, abi)
 
 			if tc.WantFallbackToV0 {
 				if gotCfg != v0 {
 					t.Errorf(
 						"downgrade(%v, %v, ABIv%d) = %v, %v; want fallback to V0",
 						cfg, tc.Requested, tc.SupportedABI,
-						gotCfg, gotOpts,
+						gotCfg, gotRules,
 					)
 				}
 				return
 			}
 
-			if len(gotOpts) != 1 {
-				t.Fatalf("wrong number of opts returned: got %d, want 1", len(gotOpts))
+			if len(gotRules) != 1 {
+				t.Fatalf("wrong number of rules returned: got %d, want 1", len(gotRules))
 			}
-			gotRequested := gotOpts[0].(PathOpt).accessFS
+			gotRequested := gotRules[0].(FSRule).accessFS
 			gotHandled := gotCfg.handledAccessFS
 
 			if gotHandled != tc.WantHandled || gotRequested != tc.WantRequested {

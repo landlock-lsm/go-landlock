@@ -216,18 +216,18 @@ func (c Config) BestEffort() Config {
 //   - [RWFiles] is like [RWDirs], but does not select directory-specific access rights.
 //     In V1, this means reading, writing and executing files.
 //
-// The [PathAccess] option lets callers define custom subsets of these
+// The [PathAccess] rule lets callers define custom subsets of these
 // access rights. AccessFSSets permitted using [PathAccess] must be a
 // subset of the [AccessFSSet] that the Config restricts.
 //
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
-func (c Config) RestrictPaths(opts ...PathOpt) error {
-	options := make([]restrictOpt, 0, len(opts))
-	for _, opt := range opts {
-		options = append(options, opt)
-	}
-	return restrict(c, options...)
+func (c Config) RestrictPaths(rules ...Rule) error {
+	return restrict(c, rules...)
 }
+
+// PathOpt is a deprecated alias for [Rule].
+// This alias is only kept around for backwards compatibility.
+type PathOpt = Rule
 
 // compatibleWith is true if c is compatible to work at the given Landlock ABI level.
 func (c Config) compatibleWithABI(abi abiInfo) bool {

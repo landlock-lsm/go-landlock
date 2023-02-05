@@ -105,7 +105,7 @@ func TestEmptyAccessRights(t *testing.T) {
 	}
 }
 
-func TestOverlyBroadPathOpt(t *testing.T) {
+func TestOverlyBroadFSRule(t *testing.T) {
 	RequireLandlockABI(t, 1)
 
 	handled := landlock.AccessFSSet(0b011)
@@ -126,16 +126,16 @@ func TestReferNotPermittedInStrictV1(t *testing.T) {
 	// config that handles the 'refer' access right.
 	// You can technically also just enable V1 best-effort mode,
 	// but that combination always falls back to "no enforcement".
-	for _, opt := range []landlock.PathOpt{
+	for _, rule := range []landlock.Rule{
 		landlock.RWDirs("/etc").WithRefer(),
 		landlock.PathAccess(0, "/etc").WithRefer(),
 	} {
-		err := landlock.V1.RestrictPaths(opt)
+		err := landlock.V1.RestrictPaths(rule)
 		if !errors.Is(err, unix.EINVAL) {
 			t.Errorf("expected 'invalid argument' error, got: %v", err)
 		}
-		if !strings.Contains(err.Error(), "incompatible option") {
-			t.Errorf("expected a 'incompatible option' error, got: %v", err)
+		if !strings.Contains(err.Error(), "incompatible rule") {
+			t.Errorf("expected a 'incompatible rule' error, got: %v", err)
 		}
 	}
 }

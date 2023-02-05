@@ -12,19 +12,19 @@ import (
 // downgrade calculates the actual ruleset to be enforced given the
 // current kernel's Landlock ABI level.
 //
-// It establishes that opt.compatibleWithConfig(c) and c.compatibleWithABI(abi).
-func downgrade(c Config, opts []restrictOpt, abi abiInfo) (Config, []restrictOpt) {
+// It establishes that rule.compatibleWithConfig(c) and c.compatibleWithABI(abi).
+func downgrade(c Config, rules []Rule, abi abiInfo) (Config, []Rule) {
 	c = c.restrictTo(abi)
 
-	resOpts := make([]restrictOpt, 0, len(opts))
-	for _, opt := range opts {
-		opt, ok := opt.downgrade(c)
+	resRules := make([]Rule, 0, len(rules))
+	for _, rule := range rules {
+		rule, ok := rule.downgrade(c)
 		if !ok {
 			return v0, nil // Use "ABI V0" (do nothing)
 		}
-		resOpts = append(resOpts, opt)
+		resRules = append(resRules, rule)
 	}
-	return c, resOpts
+	return c, resRules
 }
 
 func hasRefer(a AccessFSSet) bool {
@@ -32,17 +32,17 @@ func hasRefer(a AccessFSSet) bool {
 }
 
 // restrict is the actual implementation which sets up Landlock.
-func restrict(c Config, opts ...restrictOpt) error {
-	// Check validity of options early.
-	for _, opt := range opts {
-		if !opt.compatibleWithConfig(c) {
-			return fmt.Errorf("incompatible option %v: %w", opt, unix.EINVAL)
+func restrict(c Config, rules ...Rule) error {
+	// Check validity of rules early.
+	for _, rule := range rules {
+		if !rule.compatibleWithConfig(c) {
+			return fmt.Errorf("incompatible rule %v: %w", rule, unix.EINVAL)
 		}
 	}
 
 	abi := getSupportedABIVersion()
 	if c.bestEffort {
-		c, opts = downgrade(c, opts, abi)
+		c, rules = downgrade(c, rules, abi)
 	}
 	if !c.compatibleWithABI(abi) {
 		return fmt.Errorf("missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c)
@@ -72,8 +72,8 @@ func restrict(c Config, opts ...restrictOpt) error {
 	}
 	defer syscall.Close(fd)
 
-	for _, opt := range opts {
-		if err := opt.addToRuleset(fd, c); err != nil {
+	for _, rule := range rules {
+		if err := rule.addToRuleset(fd, c); err != nil {
 			return err
 		}
 	}
