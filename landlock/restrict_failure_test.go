@@ -75,6 +75,21 @@ func TestPathDoesNotExist(t *testing.T) {
 	}
 }
 
+func TestPathDoesNotExist_Ignored(t *testing.T) {
+	RunInSubprocess(t, func() {
+		RequireLandlockABI(t, 1)
+
+		doesNotExistPath := filepath.Join(TempDir(t), "does_not_exist")
+
+		err := landlock.V1.RestrictPaths(
+			landlock.RODirs(doesNotExistPath).IgnoreIfMissing(),
+		)
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+		}
+	})
+}
+
 func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
 	RequireLandlockABI(t, 1)
 

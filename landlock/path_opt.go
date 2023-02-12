@@ -12,8 +12,9 @@ import (
 // FSRule is a Rule which permits access to file system paths.
 type FSRule struct {
 	accessFS      AccessFSSet
-	enforceSubset bool // enforce that accessFS is a subset of cfg.handledAccessFS
 	paths         []string
+	enforceSubset bool // enforce that accessFS is a subset of cfg.handledAccessFS
+	ignoreMissing bool // ignore the rule if the referenced path is missing
 }
 
 // withRights adds the given access rights to the rights enforced in the FSRule
@@ -47,6 +48,17 @@ func (r FSRule) WithRefer() FSRule {
 	return r.withRights(ll.AccessFSRefer)
 }
 
+// IgnoreIfMissing gracefully ignores missing paths.
+//
+// Under normal circumstances, referring to a non-existing path in a rule would
+// lead to a runtime error. When the rule uses the IgnoreIfMissing modifier,
+// these runtime errors are ignored. This can be useful e.g. for optional
+// configuration paths, which are only ever read by a program.
+func (r FSRule) IgnoreIfMissing() FSRule {
+	r.ignoreMissing = true
+	return r
+}
+
 func (r FSRule) String() string {
 	return fmt.Sprintf("REQUIRE %v for paths %v", r.accessFS, r.paths)
 }
@@ -71,6 +83,9 @@ func (r FSRule) addToRuleset(rulesetFD int, c Config) error {
 	}
 	for _, path := range r.paths {
 		if err := addPath(rulesetFD, path, effectiveAccessFS); err != nil {
+			if r.ignoreMissing && errors.Is(err, unix.ENOENT) {
+				continue // Skip this path.
+			}
 			return fmt.Errorf("populating ruleset for %q with access %v: %w", path, effectiveAccessFS, err)
 		}
 	}
