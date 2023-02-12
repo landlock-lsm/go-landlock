@@ -20,21 +20,15 @@ type FSRule struct {
 // withRights adds the given access rights to the rights enforced in the FSRule
 // and returns the result as a new FSRule.
 func (r FSRule) withRights(a AccessFSSet) FSRule {
-	return FSRule{
-		accessFS:      r.accessFS.union(a),
-		enforceSubset: r.enforceSubset,
-		paths:         r.paths,
-	}
+	r.accessFS = r.accessFS.union(a)
+	return r
 }
 
 // intersectRights intersects the given access rights with the rights
 // enforced in the FSRule and returns the result as a new FSRule.
 func (r FSRule) intersectRights(a AccessFSSet) FSRule {
-	return FSRule{
-		accessFS:      r.accessFS.intersect(a),
-		enforceSubset: r.enforceSubset,
-		paths:         r.paths,
-	}
+	r.accessFS = r.accessFS.intersect(a)
+	return r
 }
 
 // WithRefer adds the "refer" access right to a FSRule.
