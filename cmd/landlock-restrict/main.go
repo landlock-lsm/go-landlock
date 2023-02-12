@@ -13,7 +13,7 @@ import (
 func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlock.PathOpt, cmd []string) {
 	cfg = landlock.V3
 
-	takeArgs := func(makeOpt func(...string) landlock.PathOpt) landlock.PathOpt {
+	takeArgs := func(makeOpt func(...string) landlock.FSRule) landlock.PathOpt {
 		var paths []string
 		needRefer := false
 		for len(args) > 0 && !strings.HasPrefix(args[0], "-") {
