@@ -14,7 +14,7 @@ type FSRule struct {
 	accessFS      AccessFSSet
 	paths         []string
 	enforceSubset bool // enforce that accessFS is a subset of cfg.handledAccessFS
-	ignoreMissing bool // ignore the rule if the referenced path is missing
+	ignoreMissing bool // ignore missing paths
 }
 
 // withRights adds the given access rights to the rights enforced in the FSRule
