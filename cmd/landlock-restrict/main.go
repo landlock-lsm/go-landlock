@@ -106,7 +106,7 @@ func main() {
 	if len(cmdArgs) < 1 {
 		fmt.Println("Usage:")
 		fmt.Println("  landlock-restrict")
-		fmt.Println("     [-verbose]")
+		fmt.Println("     [-v]")
 		fmt.Println("     [-1] [-2] [-3] [-strict]")
 		fmt.Println("     [-ro [+refer] PATH...] [-rw [+refer] PATH...]")
 		fmt.Println("     [-rofiles [+refer] PATH] [-rwfiles [+refer] PATH]")
@@ -116,7 +116,7 @@ func main() {
 		fmt.Println("  -ro, -rw, -rofiles, -rwfiles   paths to restrict to")
 		fmt.Println("  -1, -2, -3                     select Landlock version")
 		fmt.Println("  -strict                        use strict mode (instead of best effort)")
-		fmt.Println("  -verbose                       verbose logging")
+		fmt.Println("  -v                             verbose logging")
 		fmt.Println()
 		fmt.Println("A path list that contains the word '+refer' will additionally grant the refer access right.")
 		fmt.Println()
