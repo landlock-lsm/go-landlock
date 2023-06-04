@@ -27,21 +27,21 @@ import (
 // Please see the full documentation at
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights.
 const (
-	AccessFSExecute    = unix.LANDLOCK_ACCESS_FS_EXECUTE
-	AccessFSWriteFile  = unix.LANDLOCK_ACCESS_FS_WRITE_FILE
-	AccessFSReadFile   = unix.LANDLOCK_ACCESS_FS_READ_FILE
-	AccessFSReadDir    = unix.LANDLOCK_ACCESS_FS_READ_DIR
-	AccessFSRemoveDir  = unix.LANDLOCK_ACCESS_FS_REMOVE_DIR
-	AccessFSRemoveFile = unix.LANDLOCK_ACCESS_FS_REMOVE_FILE
-	AccessFSMakeChar   = unix.LANDLOCK_ACCESS_FS_MAKE_CHAR
-	AccessFSMakeDir    = unix.LANDLOCK_ACCESS_FS_MAKE_DIR
-	AccessFSMakeReg    = unix.LANDLOCK_ACCESS_FS_MAKE_REG
-	AccessFSMakeSock   = unix.LANDLOCK_ACCESS_FS_MAKE_SOCK
-	AccessFSMakeFifo   = unix.LANDLOCK_ACCESS_FS_MAKE_FIFO
-	AccessFSMakeBlock  = unix.LANDLOCK_ACCESS_FS_MAKE_BLOCK
-	AccessFSMakeSym    = unix.LANDLOCK_ACCESS_FS_MAKE_SYM
-	AccessFSRefer      = unix.LANDLOCK_ACCESS_FS_REFER
-	AccessFSTruncate   = AccessFSRefer << 1
+	AccessFSExecute = 1 << iota
+	AccessFSWriteFile
+	AccessFSReadFile
+	AccessFSReadDir
+	AccessFSRemoveDir
+	AccessFSRemoveFile
+	AccessFSMakeChar
+	AccessFSMakeDir
+	AccessFSMakeReg
+	AccessFSMakeSock
+	AccessFSMakeFifo
+	AccessFSMakeBlock
+	AccessFSMakeSym
+	AccessFSRefer
+	AccessFSTruncate
 )
 
 // RulesetAttr is the Landlock ruleset definition.
