@@ -14,14 +14,6 @@
 // https://www.kernel.org/doc/html/latest/userspace-api/landlock.html.
 package syscall
 
-import (
-	"syscall"
-	"unsafe"
-
-	"golang.org/x/sys/unix"
-	"kernel.org/pub/linux/libs/security/libcap/psx"
-)
-
 // Landlock file system access rights, for use in "access" bit fields.
 //
 // Please see the full documentation at
@@ -56,30 +48,6 @@ type RulesetAttr struct {
 // The size of the RulesetAttr struct in bytes.
 const rulesetAttrSize = 8
 
-// LandlockCreateRuleset creates a ruleset file descriptor with the
-// given attributes.
-func LandlockCreateRuleset(attr *RulesetAttr, flags int) (fd int, err error) {
-	r0, _, e1 := syscall.Syscall(unix.SYS_LANDLOCK_CREATE_RULESET, uintptr(unsafe.Pointer(attr)), uintptr(rulesetAttrSize), uintptr(flags))
-	fd = int(r0)
-	if e1 != 0 {
-		err = syscall.Errno(e1)
-	}
-	return
-}
-
-// LandlockGetABIVersion returns the supported Landlock ABI version (starting at 1).
-func LandlockGetABIVersion() (version int, err error) {
-	r0, _, e1 := syscall.Syscall(unix.SYS_LANDLOCK_CREATE_RULESET, 0, 0, unix.LANDLOCK_CREATE_RULESET_VERSION)
-	version = int(r0)
-	if e1 != 0 {
-		err = syscall.Errno(e1)
-	}
-	return
-}
-
-// There is currently only one Landlock rule type.
-const RuleTypePathBeneath = unix.LANDLOCK_RULE_PATH_BENEATH
-
 // PathBeneathAttr references a file hierarchy and defines the desired
 // extent to which it should be usable when the rule is enforced.
 type PathBeneathAttr struct {
@@ -91,39 +59,4 @@ type PathBeneathAttr struct {
 	// ParentFd is a file descriptor, opened with `O_PATH`, which identifies
 	// the parent directory of a file hierarchy, or just a file.
 	ParentFd int
-}
-
-// LandlockAddPathBeneathRule adds a rule of type "path beneath" to
-// the given ruleset fd. attr defines the rule parameters. flags must
-// currently be 0.
-func LandlockAddPathBeneathRule(rulesetFd int, attr *PathBeneathAttr, flags int) error {
-	return LandlockAddRule(rulesetFd, RuleTypePathBeneath, unsafe.Pointer(attr), flags)
-}
-
-// LandlockAddRule is the generic landlock_add_rule syscall.
-func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags int) (err error) {
-	_, _, e1 := syscall.Syscall6(unix.SYS_LANDLOCK_ADD_RULE, uintptr(rulesetFd), uintptr(ruleType), uintptr(ruleAttr), uintptr(flags), 0, 0)
-	if e1 != 0 {
-		err = syscall.Errno(e1)
-	}
-	return
-}
-
-// AllThreadsLandlockRestrictSelf enforces the given ruleset on all OS
-// threads belonging to the current process.
-func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
-	_, _, e1 := psx.Syscall3(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
-	if e1 != 0 {
-		err = syscall.Errno(e1)
-	}
-	return
-}
-
-// AllThreadsPrctl is like unix.Prctl, but gets applied on all OS threads at the same time.
-func AllThreadsPrctl(option int, arg2 uintptr, arg3 uintptr, arg4 uintptr, arg5 uintptr) (err error) {
-	_, _, e1 := psx.Syscall6(syscall.SYS_PRCTL, uintptr(option), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
-	if e1 != 0 {
-		err = syscall.Errno(e1)
-	}
-	return
 }

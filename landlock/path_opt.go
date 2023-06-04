@@ -1,12 +1,9 @@
 package landlock
 
 import (
-	"errors"
 	"fmt"
-	"syscall"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
-	"golang.org/x/sys/unix"
 )
 
 // FSRule is a Rule which permits access to file system paths.
@@ -70,50 +67,6 @@ func (r FSRule) compatibleWithConfig(c Config) bool {
 	return a.isSubset(c.handledAccessFS)
 }
 
-func (r FSRule) addToRuleset(rulesetFD int, c Config) error {
-	effectiveAccessFS := r.accessFS
-	if !r.enforceSubset {
-		effectiveAccessFS = effectiveAccessFS.intersect(c.handledAccessFS)
-	}
-	for _, path := range r.paths {
-		if err := addPath(rulesetFD, path, effectiveAccessFS); err != nil {
-			if r.ignoreMissing && errors.Is(err, unix.ENOENT) {
-				continue // Skip this path.
-			}
-			return fmt.Errorf("populating ruleset for %q with access %v: %w", path, effectiveAccessFS, err)
-		}
-	}
-	return nil
-}
-
-func addPath(rulesetFd int, path string, access AccessFSSet) error {
-	fd, err := syscall.Open(path, unix.O_PATH|unix.O_CLOEXEC, 0)
-	if err != nil {
-		return fmt.Errorf("open: %w", err)
-	}
-	defer syscall.Close(fd)
-
-	pathBeneath := ll.PathBeneathAttr{
-		ParentFd:      fd,
-		AllowedAccess: uint64(access),
-	}
-	err = ll.LandlockAddPathBeneathRule(rulesetFd, &pathBeneath, 0)
-	if err != nil {
-		if errors.Is(err, syscall.EINVAL) {
-			// The ruleset access permissions must be a superset of the ones we restrict to.
-			// This should never happen because the call to addPath() ensures that.
-			err = bug(fmt.Errorf("invalid flags, or inconsistent access in the rule: %w", err))
-		} else if errors.Is(err, syscall.ENOMSG) && access == 0 {
-			err = fmt.Errorf("empty access rights: %w", err)
-		} else {
-			// Other errors should never happen.
-			err = bug(err)
-		}
-		return fmt.Errorf("landlock_add_rule: %w", err)
-	}
-	return nil
-}
-
 // downgrade calculates the actual ruleset to be enforced given the
 // current config (and assuming that the config is going to work under
 // the running kernel).
@@ -130,6 +83,10 @@ func (r FSRule) downgrade(c Config) (out Rule, ok bool) {
 		return FSRule{}, false
 	}
 	return r.intersectRights(c.handledAccessFS), true
+}
+
+func hasRefer(a AccessFSSet) bool {
+	return a&ll.AccessFSRefer != 0
 }
 
 // PathAccess is a [Rule] which grants the access rights specified by

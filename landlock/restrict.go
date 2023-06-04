@@ -1,3 +1,5 @@
+//go:build linux
+
 package landlock
 
 import (
@@ -25,10 +27,6 @@ func downgrade(c Config, rules []Rule, abi abiInfo) (Config, []Rule) {
 		resRules = append(resRules, rule)
 	}
 	return c, resRules
-}
-
-func hasRefer(a AccessFSSet) bool {
-	return a&ll.AccessFSRefer != 0
 }
 
 // restrict is the actual implementation which sets up Landlock.
