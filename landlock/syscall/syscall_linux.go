@@ -61,7 +61,7 @@ func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
 }
 
 // AllThreadsPrctl is like unix.Prctl, but gets applied on all OS threads at the same time.
-func AllThreadsPrctl(option int, arg2 uintptr, arg3 uintptr, arg4 uintptr, arg5 uintptr) (err error) {
+func AllThreadsPrctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
 	_, _, e1 := psx.Syscall6(syscall.SYS_PRCTL, uintptr(option), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
