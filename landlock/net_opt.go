@@ -11,7 +11,7 @@ type NetRule struct {
 	port   uint16
 }
 
-func DialTCP(port uint16) NetRule {
+func ConnectTCP(port uint16) NetRule {
 	return NetRule{
 		access: ll.AccessNetConnectTCP,
 		port:   port,

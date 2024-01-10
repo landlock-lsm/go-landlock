@@ -249,7 +249,7 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 // and connect(2) for TCP ports, unless those TCP ports are
 // specifically permitted using these rules:
 //
-//   - [DialTCP] permits connect(2) operations to a given TCP port.
+//   - [ConnectTCP] permits connect(2) operations to a given TCP port.
 //   - [BindTCP] permits bind(2) operations on a given TCP port.
 //
 // These network access rights are documented in more depth in the

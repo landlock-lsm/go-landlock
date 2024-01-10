@@ -22,7 +22,7 @@
 //
 //	err := landlock.V4.BestEffort().RestrictNet(
 //	    landlock.BindTCP(8080),
-//	    landlock.DialTCP(53),
+//	    landlock.ConnectTCP(53),
 //	)
 //
 // This functionality is available since Landlock V4.
@@ -37,7 +37,7 @@
 //	    landlock.RODirs("/usr", "/bin"),
 //	    landlock.RWDirs("/tmp"),
 //	    landlock.BindTCP(8080),
-//	    landlock.DialTCP(53),
+//	    landlock.ConnectTCP(53),
 //	)
 //
 // # More possible invocations

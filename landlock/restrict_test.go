@@ -349,7 +349,7 @@ func TestRestrictNet(t *testing.T) {
 			Name:        "PermitTheConnectPort",
 			RequiredABI: 4,
 			EnableLandlock: func() error {
-				return landlock.V4.RestrictNet(landlock.DialTCP(cPort))
+				return landlock.V4.RestrictNet(landlock.ConnectTCP(cPort))
 			},
 			WantConnectErr: nil,
 			WantBindErr:    syscall.EACCES,
@@ -369,7 +369,7 @@ func TestRestrictNet(t *testing.T) {
 			EnableLandlock: func() error {
 				return landlock.V4.RestrictNet(
 					landlock.BindTCP(bPort),
-					landlock.DialTCP(cPort),
+					landlock.ConnectTCP(cPort),
 				)
 			},
 			WantConnectErr: nil,
@@ -381,7 +381,7 @@ func TestRestrictNet(t *testing.T) {
 			EnableLandlock: func() error {
 				return landlock.V4.RestrictNet(
 					landlock.BindTCP(bPort+1),
-					landlock.DialTCP(cPort+1),
+					landlock.ConnectTCP(cPort+1),
 				)
 			},
 			WantConnectErr: syscall.EACCES,

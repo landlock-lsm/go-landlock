@@ -46,7 +46,7 @@ func main() {
 			return err
 		}
 		log.Println("PERMIT TCP connect to port", p)
-		rules = append(rules, landlock.DialTCP(uint16(p)))
+		rules = append(rules, landlock.ConnectTCP(uint16(p)))
 		return nil
 	})
 
