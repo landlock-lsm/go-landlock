@@ -11,6 +11,11 @@ type NetRule struct {
 	port   uint16
 }
 
+// ConnectTCP is a [Rule] which grants the right to connect a socket
+// to a given TCP port.
+//
+// In Go, the connect(2) operation is usually run as part of
+// net.Dial().
 func ConnectTCP(port uint16) NetRule {
 	return NetRule{
 		access: ll.AccessNetConnectTCP,
