@@ -275,7 +275,9 @@ func (c Config) Restrict(rules ...Rule) error {
 }
 
 // PathOpt is a deprecated alias for [Rule].
-// This alias is only kept around for backwards compatibility.
+//
+// Deprecated: This alias is only kept around for backwards
+// compatibility and will disappear with the next major release.
 type PathOpt = Rule
 
 // compatibleWith is true if c is compatible to work at the given Landlock ABI level.
