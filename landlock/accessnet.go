@@ -22,10 +22,6 @@ func (a AccessNetSet) intersect(b AccessNetSet) AccessNetSet {
 	return a & b
 }
 
-func (a AccessNetSet) union(b AccessNetSet) AccessNetSet {
-	return a | b
-}
-
 func (a AccessNetSet) isEmpty() bool {
 	return a == 0
 }
