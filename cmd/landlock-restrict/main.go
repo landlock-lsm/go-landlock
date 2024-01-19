@@ -10,10 +10,10 @@ import (
 	"github.com/landlock-lsm/go-landlock/landlock"
 )
 
-func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlock.PathOpt, cmd []string) {
+func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlock.Rule, cmd []string) {
 	cfg = landlock.V3
 
-	takeArgs := func(makeOpt func(...string) landlock.FSRule) landlock.PathOpt {
+	takeArgs := func(makeOpt func(...string) landlock.FSRule) landlock.Rule {
 		var paths []string
 		needRefer := false
 		for len(args) > 0 && !strings.HasPrefix(args[0], "-") {

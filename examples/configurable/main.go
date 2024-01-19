@@ -108,7 +108,7 @@ func accessFSSet(names []string) (a landlock.AccessFSSet) {
 	return a
 }
 
-func exceptions(es []PathException) (opts []landlock.PathOpt) {
+func exceptions(es []PathException) (opts []landlock.Rule) {
 	for _, e := range es {
 		permittedAccess := accessFSSet(e.PermittedAccess)
 		po := landlock.PathAccess(permittedAccess, e.Paths...)
