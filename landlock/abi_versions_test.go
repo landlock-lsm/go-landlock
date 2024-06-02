@@ -17,6 +17,6 @@ func TestSupportedAccessFS(t *testing.T) {
 	want := supportedAccessFS
 
 	if got != want {
-		t.Errorf("V3 supported access FS: got %x, want %x", got, want)
+		t.Errorf("V3 supported access FS: got %v, want %v", got, want)
 	}
 }
