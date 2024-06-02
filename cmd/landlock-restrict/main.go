@@ -11,15 +11,19 @@ import (
 )
 
 func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlock.Rule, cmd []string) {
-	cfg = landlock.V3
+	cfg = landlock.V5
 
 	takeArgs := func(makeOpt func(...string) landlock.FSRule) landlock.Rule {
 		var paths []string
 		needRefer := false
+		needIoctlDev := false
 		for len(args) > 0 && !strings.HasPrefix(args[0], "-") {
-			if args[0] == "+refer" {
+			switch args[0] {
+			case "+refer":
 				needRefer = true
-			} else {
+			case "+ioctl_dev":
+				needIoctlDev = true
+			default:
 				paths = append(paths, args[0])
 			}
 			args = args[1:]
@@ -31,6 +35,9 @@ func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlo
 		if needRefer {
 			opt = opt.WithRefer()
 		}
+		if needIoctlDev {
+			opt = opt.WithIoctlDev()
+		}
 		if verbose {
 			fmt.Println("Path option:", opt)
 		}
@@ -41,6 +48,14 @@ func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlo
 ArgParsing:
 	for len(args) > 0 {
 		switch args[0] {
+		case "-5":
+			cfg = landlock.V5
+			args = args[1:]
+			continue
+		case "-4":
+			cfg = landlock.V4
+			args = args[1:]
+			continue
 		case "-3":
 			cfg = landlock.V3
 			args = args[1:]
@@ -107,20 +122,20 @@ func main() {
 		fmt.Println("Usage:")
 		fmt.Println("  landlock-restrict")
 		fmt.Println("     [-v]")
-		fmt.Println("     [-1] [-2] [-3] [-strict]")
-		fmt.Println("     [-ro [+refer] PATH...] [-rw [+refer] PATH...]")
+		fmt.Println("     [-1] [-2] [-3] [-4] [-5] [-strict]")
+		fmt.Println("     [-ro [+refer] PATH...] [-rw [+refer] [+ioctl_dev] PATH...]")
 		fmt.Println("     [-rofiles [+refer] PATH] [-rwfiles [+refer] PATH]")
 		fmt.Println("       -- COMMAND...")
 		fmt.Println()
 		fmt.Println("Options:")
 		fmt.Println("  -ro, -rw, -rofiles, -rwfiles   paths to restrict to")
-		fmt.Println("  -1, -2, -3                     select Landlock version")
+		fmt.Println("  -1, -2, -3, -4, -5             select Landlock version")
 		fmt.Println("  -strict                        use strict mode (instead of best effort)")
 		fmt.Println("  -v                             verbose logging")
 		fmt.Println()
 		fmt.Println("A path list that contains the word '+refer' will additionally grant the refer access right.")
 		fmt.Println()
-		fmt.Println("Default mode for Landlock is V3 in best effort mode (best compatibility)")
+		fmt.Println("Default mode for Landlock is V5 in best effort mode (best compatibility)")
 		fmt.Println()
 
 		log.Fatalf("Need proper command, got %v", cmdArgs)

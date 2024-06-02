@@ -37,6 +37,8 @@ var (
 	V3 = abiInfos[3].asConfig()
 	// Landlock V4 support (V3 + networking)
 	V4 = abiInfos[4].asConfig()
+	// Landlock V5 support (V4 + ioctl on device files)
+	V5 = abiInfos[5].asConfig()
 )
 
 // v0 denotes "no Landlock support". Only used internally.

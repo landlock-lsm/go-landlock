@@ -34,6 +34,7 @@ const (
 	AccessFSMakeSym
 	AccessFSRefer
 	AccessFSTruncate
+	AccessFSIoctlDev
 )
 
 // Landlock network access rights.

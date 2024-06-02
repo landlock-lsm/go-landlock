@@ -79,7 +79,7 @@ func TestNewConfigFailures(t *testing.T) {
 		// May not specify two AccessFSSets
 		{AccessFSSet(ll.AccessFSWriteFile), AccessFSSet(ll.AccessFSReadFile)},
 		// May not specify an unsupported AccessFSSet value
-		{AccessFSSet(1 << 15)},
+		{AccessFSSet(1 << 16)},
 		{AccessFSSet(1 << 63)},
 	} {
 		_, err := NewConfig(args...)
