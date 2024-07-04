@@ -72,8 +72,8 @@ type PathBeneathAttr struct {
 	ParentFd int
 }
 
-// NetServiceAttr specifies which ports can be used for what.
-type NetServiceAttr struct {
+// NetPortAttr specifies which ports can be used for what.
+type NetPortAttr struct {
 	AllowedAccess uint64
 	Port          uint16
 }

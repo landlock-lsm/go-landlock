@@ -45,11 +45,11 @@ func (n NetRule) compatibleWithConfig(c Config) bool {
 
 func (n NetRule) addToRuleset(rulesetFD int, c Config) error {
 	flags := 0
-	attr := &ll.NetServiceAttr{
+	attr := &ll.NetPortAttr{
 		AllowedAccess: uint64(n.access),
 		Port:          n.port,
 	}
-	return ll.LandlockAddNetServiceRule(rulesetFD, attr, flags)
+	return ll.LandlockAddNetPortRule(rulesetFD, attr, flags)
 }
 
 func (n NetRule) downgrade(c Config) (out Rule, ok bool) {
