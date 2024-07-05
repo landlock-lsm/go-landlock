@@ -103,6 +103,13 @@ func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
 	if !errors.Is(err, unix.EINVAL) {
 		t.Errorf("expected 'invalid argument' error, got: %v", err)
 	}
+	if isGoLandlockBug(err) {
+		t.Errorf("should not be marked as a go-landlock bug, but was: %v", err)
+	}
+}
+
+func isGoLandlockBug(err error) bool {
+	return strings.Contains(err.Error(), "BUG(go-landlock)")
 }
 
 func TestEmptyAccessRights(t *testing.T) {

@@ -43,7 +43,7 @@ func addPath(rulesetFd int, path string, access AccessFSSet) error {
 		if errors.Is(err, syscall.EINVAL) {
 			// The ruleset access permissions must be a superset of the ones we restrict to.
 			// This should never happen because the call to addPath() ensures that.
-			err = bug(fmt.Errorf("invalid flags, or inconsistent access in the rule: %w", err))
+			err = fmt.Errorf("inconsistent access rights (using directory access rights on a regular file?): %w", err)
 		} else if errors.Is(err, syscall.ENOMSG) && access == 0 {
 			err = fmt.Errorf("empty access rights: %w", err)
 		} else {
