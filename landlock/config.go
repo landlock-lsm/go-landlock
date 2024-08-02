@@ -10,7 +10,7 @@ import (
 // Access permission sets for filesystem access.
 const (
 	// The set of access rights that only apply to files.
-	accessFile AccessFSSet = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile
+	accessFile AccessFSSet = ll.AccessFSExecute | ll.AccessFSWriteFile | ll.AccessFSReadFile | ll.AccessFSTruncate
 
 	// The set of access rights associated with read access to files and directories.
 	accessFSRead AccessFSSet = ll.AccessFSExecute | ll.AccessFSReadFile | ll.AccessFSReadDir
