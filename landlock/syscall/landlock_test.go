@@ -28,7 +28,8 @@ func TestAccessRights(t *testing.T) {
 		{"MakeBlock", AccessFSMakeBlock, unix.LANDLOCK_ACCESS_FS_MAKE_BLOCK},
 		{"MakeSym", AccessFSMakeSym, unix.LANDLOCK_ACCESS_FS_MAKE_SYM},
 		{"Refer", AccessFSRefer, unix.LANDLOCK_ACCESS_FS_REFER},
-		{"Truncate", AccessFSTruncate, AccessFSRefer << 1},
+		{"Truncate", AccessFSTruncate, unix.LANDLOCK_ACCESS_FS_TRUNCATE},
+		{"IoctlDev", AccessFSIoctlDev, AccessFSTruncate << 1},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
 			if tt.LandlockDef != tt.SyscallDef {
