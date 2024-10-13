@@ -75,5 +75,5 @@ type PathBeneathAttr struct {
 // NetPortAttr specifies which ports can be used for what.
 type NetPortAttr struct {
 	AllowedAccess uint64
-	Port          uint16
+	Port          uint64
 }

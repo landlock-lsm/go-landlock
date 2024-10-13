@@ -44,10 +44,15 @@ func (n NetRule) compatibleWithConfig(c Config) bool {
 }
 
 func (n NetRule) addToRuleset(rulesetFD int, c Config) error {
+	if n.access == 0 {
+		// Adding this to the ruleset would be a no-op
+		// and result in an error.
+		return nil
+	}
 	flags := 0
 	attr := &ll.NetPortAttr{
 		AllowedAccess: uint64(n.access),
-		Port:          n.port,
+		Port:          uint64(n.port),
 	}
 	return ll.LandlockAddNetPortRule(rulesetFD, attr, flags)
 }
