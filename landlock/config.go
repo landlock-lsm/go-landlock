@@ -291,7 +291,8 @@ func (c Config) compatibleWithABI(abi abiInfo) bool {
 // restrictTo returns a config that is a subset of c and which is compatible with the given ABI.
 func (c Config) restrictTo(abi abiInfo) Config {
 	return Config{
-		handledAccessFS: c.handledAccessFS.intersect(abi.supportedAccessFS),
-		bestEffort:      true,
+		handledAccessFS:  c.handledAccessFS.intersect(abi.supportedAccessFS),
+		handledAccessNet: c.handledAccessNet.intersect(abi.supportedAccessNet),
+		bestEffort:       true,
 	}
 }

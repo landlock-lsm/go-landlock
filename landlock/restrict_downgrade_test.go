@@ -96,3 +96,24 @@ func TestDowngradeAccessFS(t *testing.T) {
 		})
 	}
 }
+
+func TestDowngradeNetwork(t *testing.T) {
+	cfg := Config{handledAccessNet: ll.AccessNetConnectTCP}
+	abi := abiInfos[3] // does not have networking support
+	rules := []Rule{ConnectTCP(53)}
+	gotCfg, _ := downgrade(cfg, rules, abi)
+
+	if gotCfg.handledAccessNet != 0 {
+		t.Errorf("downgrade to v3 should remove networking support, but resulted in %v", gotCfg)
+	}
+}
+
+func TestDowngradeNoop(t *testing.T) {
+	cfg := V5.BestEffort()
+	abi := abiInfos[5]
+	gotCfg, _ := downgrade(cfg, []Rule{}, abi)
+
+	if gotCfg != cfg {
+		t.Errorf("downgrade should have been a no-op.\n got %v,\nwant %v", gotCfg, cfg)
+	}
+}
