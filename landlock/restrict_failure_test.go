@@ -88,18 +88,16 @@ func isGoLandlockBug(err error) bool {
 func TestEmptyAccessRights(t *testing.T) {
 	lltest.RequireABI(t, 1)
 
-	fpath := MakeSomeFile(t)
+	lltest.RunInSubprocess(t, func() {
+		fpath := MakeSomeFile(t)
 
-	err := landlock.V1.RestrictPaths(
-		landlock.PathAccess(0, fpath),
-	)
-	if !errors.Is(err, unix.ENOMSG) {
-		t.Errorf("expected ENOMSG, got: %v", err)
-	}
-	want := "empty access rights"
-	if !strings.Contains(err.Error(), want) {
-		t.Errorf("expected error message with %q, got: %v", want, err)
-	}
+		err := landlock.V1.RestrictPaths(
+			landlock.PathAccess(0, fpath),
+		)
+		if err != nil {
+			t.Errorf("expected success, got: %v", err)
+		}
+	})
 }
 
 func TestOverlyBroadFSRule(t *testing.T) {
