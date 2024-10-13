@@ -10,17 +10,9 @@ import (
 	"testing"
 
 	"github.com/landlock-lsm/go-landlock/landlock"
-	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
+	"github.com/landlock-lsm/go-landlock/landlock/lltest"
 	"golang.org/x/sys/unix"
 )
-
-func RequireLandlockABI(t testing.TB, want int) {
-	t.Helper()
-
-	if v, err := ll.LandlockGetABIVersion(); err != nil || v < want {
-		t.Skipf("Requires Landlock >= V%v, got V%v (err=%v)", want, v, err)
-	}
-}
 
 func MustWriteFile(t testing.TB, path string) {
 	t.Helper()
@@ -38,34 +30,15 @@ func MustMkdir(t testing.TB, path string) {
 	}
 }
 
-// TempDir is a replacement for t.TempDir() to be used in Landlock tests.
-// If we were using t.TempDir(), the test framework would try to remove it
-// after the test, even in Landlocked subprocess tests where this fails.
-//
-// TODO: It would be nicer if all tests could just use t.TempDir()
-// without the test framework trying to delete these later in the subprocesses.
-func TempDir(t testing.TB) string {
-	t.Helper()
-
-	if IsRunningInSubprocess {
-		dir, err := os.MkdirTemp("", "LandlockTestTempDir")
-		if err != nil {
-			t.Fatalf("os.MkdirTemp: %v", err)
-		}
-		return dir
-	}
-	return t.TempDir()
-}
-
 func MakeSomeFile(t testing.TB) string {
 	t.Helper()
-	fpath := filepath.Join(TempDir(t), "somefile")
+	fpath := filepath.Join(lltest.TempDir(t), "somefile")
 	MustWriteFile(t, fpath)
 	return fpath
 }
 
 func TestPathDoesNotExist(t *testing.T) {
-	RequireLandlockABI(t, 1)
+	lltest.RequireABI(t, 1)
 
 	doesNotExistPath := filepath.Join(t.TempDir(), "does_not_exist")
 
@@ -78,10 +51,10 @@ func TestPathDoesNotExist(t *testing.T) {
 }
 
 func TestPathDoesNotExist_Ignored(t *testing.T) {
-	RunInSubprocess(t, func() {
-		RequireLandlockABI(t, 1)
+	lltest.RunInSubprocess(t, func() {
+		lltest.RequireABI(t, 1)
 
-		doesNotExistPath := filepath.Join(TempDir(t), "does_not_exist")
+		doesNotExistPath := filepath.Join(lltest.TempDir(t), "does_not_exist")
 
 		err := landlock.V1.RestrictPaths(
 			landlock.RODirs(doesNotExistPath).IgnoreIfMissing(),
@@ -93,7 +66,7 @@ func TestPathDoesNotExist_Ignored(t *testing.T) {
 }
 
 func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
-	RequireLandlockABI(t, 1)
+	lltest.RequireABI(t, 1)
 
 	fpath := MakeSomeFile(t)
 
@@ -113,7 +86,7 @@ func isGoLandlockBug(err error) bool {
 }
 
 func TestEmptyAccessRights(t *testing.T) {
-	RequireLandlockABI(t, 1)
+	lltest.RequireABI(t, 1)
 
 	fpath := MakeSomeFile(t)
 
@@ -130,7 +103,7 @@ func TestEmptyAccessRights(t *testing.T) {
 }
 
 func TestOverlyBroadFSRule(t *testing.T) {
-	RequireLandlockABI(t, 1)
+	lltest.RequireABI(t, 1)
 
 	handled := landlock.AccessFSSet(0b011)
 	excempt := landlock.AccessFSSet(0b111) // superset of handled!
@@ -143,7 +116,7 @@ func TestOverlyBroadFSRule(t *testing.T) {
 }
 
 func TestReferNotPermittedInStrictV1(t *testing.T) {
-	RequireLandlockABI(t, 1)
+	lltest.RequireABI(t, 1)
 
 	// 'refer' is incompatible with Landlock ABI V1.
 	// Users should use Landlock V2 instead or construct a custom

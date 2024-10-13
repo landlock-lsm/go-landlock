@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/landlock-lsm/go-landlock/landlock"
+	"github.com/landlock-lsm/go-landlock/landlock/lltest"
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
 func TestCustomConfig(t *testing.T) {
-	RunInSubprocess(t, func() {
-		RequireLandlockABI(t, 1)
+	lltest.RunInSubprocess(t, func() {
+		lltest.RequireABI(t, 1)
 
 		pathRO := MakeSomeFile(t)
 		pathNoAccess := MakeSomeFile(t)
