@@ -16,6 +16,11 @@ func (r FSRule) addToRuleset(rulesetFD int, c Config) error {
 	if !r.enforceSubset {
 		effectiveAccessFS = effectiveAccessFS.intersect(c.handledAccessFS)
 	}
+	if effectiveAccessFS == 0 {
+		// Adding this to the ruleset would be a no-op
+		// and result in an error.
+		return nil
+	}
 	for _, path := range r.paths {
 		if err := addPath(rulesetFD, path, effectiveAccessFS); err != nil {
 			if r.ignoreMissing && errors.Is(err, unix.ENOENT) {
