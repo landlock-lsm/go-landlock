@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/landlock-lsm/go-landlock/landlock"
+	"github.com/landlock-lsm/go-landlock/landlock/lltest"
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 	"golang.org/x/sys/unix"
 )
@@ -208,10 +209,10 @@ func TestRestrictPaths(t *testing.T) {
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
-			RunInSubprocess(t, func() {
-				RequireLandlockABI(t, tt.RequiredABI)
+			lltest.RunInSubprocess(t, func() {
+				lltest.RequireABI(t, tt.RequiredABI)
 
-				dir := TempDir(t)
+				dir := lltest.TempDir(t)
 				fpath := filepath.Join(dir, "lolcat.txt")
 				MustWriteFile(t, fpath)
 				renameMeFpath := filepath.Join(dir, "renameme.txt")
@@ -389,8 +390,8 @@ func TestRestrictNet(t *testing.T) {
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
-			RunInSubprocess(t, func() {
-				RequireLandlockABI(t, tt.RequiredABI)
+			lltest.RunInSubprocess(t, func() {
+				lltest.RequireABI(t, tt.RequiredABI)
 
 				// Set up a service that we can dial for the test.
 				runBackgroundService(t, "tcp", fmt.Sprintf("localhost:%v", cPort))
@@ -477,8 +478,8 @@ func TestIoctlDev(t *testing.T) {
 		},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
-			RunInSubprocess(t, func() {
-				RequireLandlockABI(t, 5)
+			lltest.RunInSubprocess(t, func() {
+				lltest.RequireABI(t, 5)
 
 				err := landlock.V5.BestEffort().RestrictPaths(tt.Rule)
 				if err != nil {
