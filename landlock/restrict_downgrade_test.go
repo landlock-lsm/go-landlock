@@ -3,6 +3,7 @@
 package landlock
 
 import (
+	"fmt"
 	"testing"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
@@ -109,11 +110,14 @@ func TestDowngradeNetwork(t *testing.T) {
 }
 
 func TestDowngradeNoop(t *testing.T) {
-	cfg := V5.BestEffort()
-	abi := abiInfos[5]
-	gotCfg, _ := downgrade(cfg, []Rule{}, abi)
+	for _, abi := range abiInfos {
+		t.Run(fmt.Sprintf("V%v", abi.version), func(t *testing.T) {
+			cfg := abi.asConfig().BestEffort()
+			gotCfg, _ := downgrade(cfg, []Rule{}, abi)
 
-	if gotCfg != cfg {
-		t.Errorf("downgrade should have been a no-op.\n got %v,\nwant %v", gotCfg, cfg)
+			if gotCfg != cfg {
+				t.Errorf("downgrade should have been a no-op.\n got %v,\nwant %v", gotCfg, cfg)
+			}
+		})
 	}
 }
