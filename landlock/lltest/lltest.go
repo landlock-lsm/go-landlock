@@ -13,16 +13,12 @@ import (
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
-// isRunningInSubprocess indicates whether we are currently running in a subprocess context.
-var isRunningInSubprocess = false
-
 // RunInSubprocess runs the given test function in a subprocess
 // and forwards its output.
 func RunInSubprocess(t *testing.T, f func()) {
 	t.Helper()
 
-	if os.Getenv("IS_SUBPROCESS") != "" {
-		isRunningInSubprocess = true
+	if IsRunningInSubprocess() {
 		f()
 		return
 	}
@@ -67,7 +63,7 @@ func RunInSubprocess(t *testing.T, f func()) {
 func TempDir(t testing.TB) string {
 	t.Helper()
 
-	if isRunningInSubprocess {
+	if IsRunningInSubprocess() {
 		dir, err := os.MkdirTemp("", "LandlockTestTempDir")
 		if err != nil {
 			t.Fatalf("os.MkdirTemp: %v", err)
@@ -77,11 +73,34 @@ func TempDir(t testing.TB) string {
 	return t.TempDir()
 }
 
+func abiVersion() (int, error) {
+	// TODO(gnoack): This logic must stay in line with
+	// getSuppportedABIVersion().
+	v, err := ll.LandlockGetABIVersion()
+	if err != nil {
+		return 0, err
+	}
+	if v >= 6 {
+		errata, err := ll.LandlockGetErrata()
+		if err != nil {
+			return 0, err
+		}
+		if (errata & 0x2) != 0 {
+			v = 5
+		}
+	}
+	return v, nil
+}
+
 // RequireABI skips the test if the kernel does not provide the given ABI version.
 func RequireABI(t testing.TB, want int) {
 	t.Helper()
 
-	if v, err := ll.LandlockGetABIVersion(); err != nil || v < want {
+	if v, err := abiVersion(); err != nil || v < want {
 		t.Skipf("Requires Landlock >= V%v, got V%v (err=%v)", want, v, err)
 	}
+}
+
+func IsRunningInSubprocess() bool {
+	return os.Getenv("IS_SUBPROCESS") != ""
 }
