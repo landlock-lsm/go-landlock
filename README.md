@@ -1,8 +1,10 @@
 # Go Landlock library
 
 The Go-Landlock library restricts the current processes' ability to
-use files, using Linux 5.13's Landlock feature. ([Package
-documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock))
+use files, using Linux 5.13's Landlock feature. Landlock is useful for
+applications that "run other applications", and such restrictions also
+apply to child processes.
+([Package documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock))
 
 For a more low-level interface, please see [the landlock/syscall
 package](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock/syscall).
