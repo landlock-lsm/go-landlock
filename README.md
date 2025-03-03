@@ -1,3 +1,6 @@
+📚 [Godoc](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock)
+| 🌍 [landlock.io](https://landlock.io/)
+
 # Go Landlock library
 
 The Go-Landlock library restricts the current processes' ability to
