@@ -1,8 +1,26 @@
 # Go Landlock library
 
 The Go-Landlock library restricts the current processes' ability to
-use files, using Linux 5.13's Landlock feature. ([Package
-documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock))
+use files, using Linux 5.13's Landlock feature.
+
+## TL;DR: Example
+
+In a Go program, after starting up and doing program initialization work, run:
+
+```
+err := landlock.V5.BestEffort().RestrictPaths(
+    landlock.RODirs("/usr", "/bin"),
+    landlock.RWDirs("/tmp"),
+)
+```
+
+After this invocation, your program can only access the specified paths.
+
+Apart from file system access, Landlock can also restrict some
+networking functionality as well as some forms of IPC.
+
+More details and examples in the [Go-Landlock
+documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock).
 
 ## Goals
 
