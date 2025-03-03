@@ -7,10 +7,6 @@ documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock))
 For a more low-level interface, please see [the landlock/syscall
 package](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock/syscall).
 
-This package used to be located at `github.com/gnoack/golandlock`.
-Please update your import paths to point to
-`github.com/landlock-lsm/go-landlock/landlock`.
-
 ## Goals
 
 Goals of Go-Landlock are:
