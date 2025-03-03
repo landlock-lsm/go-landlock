@@ -23,7 +23,7 @@ Landlock is a Linux kernel feature and can restrict the following types of acces
 
 * Filesystem access
 * Some network operations
-* Some IPC operations (not implemented yet in Go: #35)
+* Some IPC operations (not implemented yet in Go: [#35](https://github.com/landlock-lsm/go-landlock/issues/35))
 
 More details and examples in the [Go-Landlock
 documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock).
