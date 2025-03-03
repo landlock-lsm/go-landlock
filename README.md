@@ -19,8 +19,11 @@ err := landlock.V5.BestEffort().RestrictPaths(
 
 After this invocation, your program can only access the specified paths.
 
-Apart from file system access, Landlock can also restrict some
-networking functionality as well as some forms of IPC.
+Landlock is a Linux kernel feature and can restrict the following types of access:
+
+* Filesystem access
+* Some network operations
+* Some IPC operations (not implemented yet in Go: #35)
 
 More details and examples in the [Go-Landlock
 documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock).
