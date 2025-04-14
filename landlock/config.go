@@ -3,6 +3,7 @@ package landlock
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
@@ -51,6 +52,7 @@ type Config struct {
 	handledAccessFS  AccessFSSet
 	handledAccessNet AccessNetSet
 	bestEffort       bool
+	restrictFlags    int
 }
 
 // NewConfig creates a new Landlock configuration with the given parameters.
@@ -134,7 +136,24 @@ func (c Config) String() string {
 		version = fmt.Sprintf("V%v", abi.version)
 	}
 
-	return fmt.Sprintf("{Landlock %v; FS: %v; Net: %v%v}", version, fsDesc, netDesc, bestEffort)
+	return fmt.Sprintf("{Landlock %v; FS: %v; Net: %v; Audit: %v%v}", version, fsDesc, netDesc, auditMode(c.restrictFlags), bestEffort)
+}
+
+func auditMode(restrictFlags int) string {
+	var r []string
+	if restrictFlags&ll.RestrictSelfLogSameExecOff == 0 {
+		r = append(r, "sameexec")
+	}
+	if restrictFlags&ll.RestrictSelfLogNewExecOn != 0 {
+		r = append(r, "newexec")
+	}
+	if restrictFlags&ll.RestrictSelfLogSubdomainsOff == 0 {
+		r = append(r, "subdomains")
+	}
+	if len(r) == 0 {
+		return "-"
+	}
+	return strings.Join(r, "+")
 }
 
 // BestEffort returns a config that will opportunistically enforce
@@ -146,6 +165,50 @@ func (c Config) String() string {
 func (c Config) BestEffort() Config {
 	cfg := c
 	cfg.bestEffort = true
+	return cfg
+}
+
+// AuditConfig controls whether Landlock denials should be logged
+// through Linux's audit subsystem (provided that audit is enabled in
+// the kernel).
+//
+// By default, denials are logged as long as the process
+// does not replace itself with execve(2), and are also logged when
+// the process enforces nested subdomains.
+//
+// For use cases where a subprocess is being sandboxed, it is possible
+// to enable audit logging also *after* a subsequent execve(2).
+type AuditConfig struct {
+	// NoSameExecution disables audit logging that happens before
+	// execve(2).
+	NoSameExecution bool
+	// NewExecutions enables audit logging that happens after
+	// execve(2).
+	NewExecutions bool
+	// NoSubdomains disables audit logging for cases where the
+	// process creates nested Landlock domains.
+	NoSubdomains bool
+}
+
+// AuditNewExecutions enables audit logging for Landlock denials even
+// when the denials happen after an additional process execution
+// (execve(2)).
+func (c Config) Audit(ac AuditConfig) Config {
+	cfg := c
+	for _, flag := range []struct {
+		isSet bool
+		value int
+	}{
+		{ac.NoSameExecution, ll.RestrictSelfLogSameExecOff},
+		{ac.NewExecutions, ll.RestrictSelfLogNewExecOn},
+		{ac.NoSubdomains, ll.RestrictSelfLogSubdomainsOff},
+	} {
+		if flag.isSet {
+			cfg.restrictFlags |= flag.value
+		} else {
+			cfg.restrictFlags &= ^flag.value
+		}
+	}
 	return cfg
 }
 
@@ -290,9 +353,12 @@ func (c Config) compatibleWithABI(abi abiInfo) bool {
 
 // restrictTo returns a config that is a subset of c and which is compatible with the given ABI.
 func (c Config) restrictTo(abi abiInfo) Config {
+	// XXX Drop the restrictFlags if the Landlock ABI is too low
+	// and audit is not supported.
 	return Config{
 		handledAccessFS:  c.handledAccessFS.intersect(abi.supportedAccessFS),
 		handledAccessNet: c.handledAccessNet.intersect(abi.supportedAccessNet),
 		bestEffort:       true,
+		restrictFlags:    c.restrictFlags,
 	}
 }

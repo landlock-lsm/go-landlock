@@ -45,6 +45,7 @@ func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlo
 	}
 
 	bestEffort := true
+	auditCfg := landlock.AuditConfig{}
 ArgParsing:
 	for len(args) > 0 {
 		switch args[0] {
@@ -70,6 +71,10 @@ ArgParsing:
 			continue
 		case "-strict":
 			bestEffort = false
+			args = args[1:]
+			continue
+		case "-audit":
+			auditCfg.NewExecutions = true
 			args = args[1:]
 			continue
 		case "-v":
@@ -102,6 +107,7 @@ ArgParsing:
 	}
 
 	cmd = args
+	cfg = cfg.Audit(auditCfg)
 	if bestEffort {
 		cfg = cfg.BestEffort()
 	}
@@ -132,6 +138,7 @@ func main() {
 		fmt.Println("  -1, -2, -3, -4, -5             select Landlock version")
 		fmt.Println("  -strict                        use strict mode (instead of best effort)")
 		fmt.Println("  -v                             verbose logging")
+		fmt.Println("  -audit                         enable denial logging in audit for the child process")
 		fmt.Println()
 		fmt.Println("A path list that contains the word '+refer' will additionally grant the refer access right.")
 		fmt.Println()

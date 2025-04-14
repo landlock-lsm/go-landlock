@@ -77,3 +77,14 @@ type NetPortAttr struct {
 	AllowedAccess uint64
 	Port          uint64
 }
+
+// Flags for [AllThreadsLandlockRestrictSelf].
+//
+// See the [landlock_restrict_self(2)] man page for details.
+//
+// [landlock_restrict_self(2)]: https://man7.org/linux/man-pages/man2/landlock_restrict_self.2.html
+const (
+	RestrictSelfLogSameExecOff = 1 << iota
+	RestrictSelfLogNewExecOn
+	RestrictSelfLogSubdomainsOff
+)

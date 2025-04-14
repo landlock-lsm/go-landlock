@@ -3,6 +3,7 @@ package landlock
 import (
 	"testing"
 
+	"github.com/landlock-lsm/go-landlock/landlock/syscall"
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
@@ -13,27 +14,35 @@ func TestConfigString(t *testing.T) {
 	}{
 		{
 			cfg:  Config{handledAccessFS: 0, handledAccessNet: 0},
-			want: "{Landlock V0; FS: ∅; Net: ∅}",
+			want: "{Landlock V0; FS: ∅; Net: ∅; Audit: sameexec+subdomains}",
 		},
 		{
 			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
-			want: "{Landlock V1; FS: {write_file}; Net: ∅}",
+			want: "{Landlock V1; FS: {write_file}; Net: ∅; Audit: sameexec+subdomains}",
 		},
 		{
 			cfg:  Config{handledAccessNet: ll.AccessNetBindTCP},
-			want: "{Landlock V4; FS: ∅; Net: {bind_tcp}}",
+			want: "{Landlock V4; FS: ∅; Net: {bind_tcp}; Audit: sameexec+subdomains}",
 		},
 		{
 			cfg:  V1,
-			want: "{Landlock V1; FS: all; Net: ∅}",
+			want: "{Landlock V1; FS: all; Net: ∅; Audit: sameexec+subdomains}",
 		},
 		{
 			cfg:  V1.BestEffort(),
-			want: "{Landlock V1; FS: all; Net: ∅ (best effort)}",
+			want: "{Landlock V1; FS: all; Net: ∅; Audit: sameexec+subdomains (best effort)}",
 		},
 		{
 			cfg:  Config{handledAccessFS: 1 << 63},
-			want: "{Landlock V???; FS: {1<<63}; Net: ∅}",
+			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Audit: sameexec+subdomains}",
+		},
+		{
+			cfg:  Config{restrictFlags: syscall.RestrictSelfLogSameExecOff | syscall.RestrictSelfLogNewExecOn | syscall.RestrictSelfLogSubdomainsOff},
+			want: "{Landlock V0; FS: ∅; Net: ∅; Audit: newexec}",
+		},
+		{
+			cfg:  Config{restrictFlags: syscall.RestrictSelfLogSameExecOff | syscall.RestrictSelfLogSubdomainsOff},
+			want: "{Landlock V0; FS: ∅; Net: ∅; Audit: -}",
 		},
 	} {
 		got := tc.cfg.String()
