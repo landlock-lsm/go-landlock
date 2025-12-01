@@ -35,6 +35,18 @@ Goals of Go-Landlock are:
 * Make unprivileged sandboxing easy to use and effective.
 * Keep Go-Landlock's implementation at an easily auditable size.
 
+### Why use Landlock?
+
+Using Landlock, a user space application can request restrictions from
+the Linux operating system. In other words, applications can sandbox
+themselves using Landlock, instead of "outsourcing" this effort to
+users and administrators.
+
+Landlock intends to mitigate the security impact of bugs or
+unexpected/malicious behaviors that could be present in applications.
+It is particularly useful for launchers (programs that execute programs),
+as well as "mission critical" applications that wish to restrict themselves.
+
 ## Technical implementation
 
 Some implementation notes that should simplify auditing.
