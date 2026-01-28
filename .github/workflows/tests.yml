@@ -9,8 +9,8 @@ jobs:
           - macos-latest
           - windows-latest
         go:
-          - '1.18'
-          - '1.20'
+          - '1.23'
+          - '1.24'
     name: Go Tests
     runs-on: ${{ matrix.os }}
     steps:
