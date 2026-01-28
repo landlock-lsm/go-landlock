@@ -131,7 +131,7 @@ func TestCompatibleWithABI(t *testing.T) {
 	for i, abi := range abiInfos {
 		cfg := abi.asConfig()
 		t.Run(fmt.Sprintf("V%v", i), func(t *testing.T) {
-			for j := 0; j < i; j++ {
+			for j := range i {
 				if cfg.compatibleWithABI(abiInfos[j]) {
 					t.Errorf("cfg.compatibleWithABI(abiInfos[%v]) = true, want false", j)
 				}
