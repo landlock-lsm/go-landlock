@@ -15,6 +15,10 @@ func LandlockGetABIVersion() (version int, err error) {
 	return -1, syscall.ENOSYS
 }
 
+func LandlockGetErrata() (errata int, err error) {
+	return -1, syscall.ENOSYS
+}
+
 func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags int) (err error) {
 	return syscall.ENOSYS
 }
