@@ -74,7 +74,7 @@ func getSupportedABIVersion() abiInfo {
 		if err != nil {
 			errata = 0 // pretend none fixed
 		}
-		if (errata & 0x2) != 0 {
+		if (errata & 0x2) == 0 {
 			v = 5
 		}
 	}

@@ -85,7 +85,7 @@ func abiVersion() (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		if (errata & 0x2) != 0 {
+		if (errata & 0x2) == 0 {
 			v = 5
 		}
 	}
