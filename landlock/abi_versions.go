@@ -7,6 +7,7 @@ type abiInfo struct {
 	supportedAccessFS  AccessFSSet
 	supportedAccessNet AccessNetSet
 	supportedScoped    ScopedSet
+	supportedLogging   LoggingSet
 }
 
 var abiInfos = []abiInfo{
@@ -42,6 +43,13 @@ var abiInfos = []abiInfo{
 		supportedAccessNet: (1 << 2) - 1,
 		supportedScoped:    (1 << 2) - 1,
 	},
+	{
+		version:            7,
+		supportedAccessFS:  (1 << 16) - 1,
+		supportedAccessNet: (1 << 2) - 1,
+		supportedScoped:    (1 << 2) - 1,
+		supportedLogging:   (1 << 3) - 1,
+	},
 }
 
 func (a abiInfo) asConfig() Config {
@@ -49,6 +57,7 @@ func (a abiInfo) asConfig() Config {
 		handledAccessFS:  a.supportedAccessFS,
 		handledAccessNet: a.supportedAccessNet,
 		scoped:           a.supportedScoped,
+		logging:          a.supportedLogging,
 	}
 }
 
