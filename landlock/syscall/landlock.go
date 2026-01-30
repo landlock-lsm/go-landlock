@@ -55,6 +55,12 @@ const (
 	ScopeSignal
 )
 
+const (
+	FlagRestrictSelfLogSameExecOff = 1 << iota
+	FlagRestrictSelfLogNewExecOn
+	FlagRestrictSelfLogSubdomainsOff
+)
+
 // RulesetAttr is the Landlock ruleset definition.
 //
 // Argument of LandlockCreateRuleset(). This structure can grow in future versions of Landlock.
