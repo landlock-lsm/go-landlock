@@ -31,7 +31,7 @@ func LandlockAddNetPortRule(rulesetFD int, attr *NetPortAttr, flags int) error {
 	return syscall.ENOSYS
 }
 
-func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
+func AllThreadsLandlockRestrictSelf(rulesetFd int, flags uint32) (err error) {
 	return syscall.ENOSYS
 }
 

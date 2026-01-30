@@ -3,10 +3,11 @@ package landlock
 import ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 
 type abiInfo struct {
-	version            int
-	supportedAccessFS  AccessFSSet
-	supportedAccessNet AccessNetSet
-	supportedScoped    ScopedSet
+	version                int
+	supportedAccessFS      AccessFSSet
+	supportedAccessNet     AccessNetSet
+	supportedScoped        ScopedSet
+	supportedRestrictFlags restrictFlagsSet
 }
 
 var abiInfos = []abiInfo{
@@ -42,6 +43,13 @@ var abiInfos = []abiInfo{
 		supportedAccessNet: (1 << 2) - 1,
 		supportedScoped:    (1 << 2) - 1,
 	},
+	{
+		version:                7,
+		supportedAccessFS:      (1 << 16) - 1,
+		supportedAccessNet:     (1 << 2) - 1,
+		supportedScoped:        (1 << 2) - 1,
+		supportedRestrictFlags: (1 << 3) - 1,
+	},
 }
 
 func (a abiInfo) asConfig() Config {
@@ -49,6 +57,7 @@ func (a abiInfo) asConfig() Config {
 		handledAccessFS:  a.supportedAccessFS,
 		handledAccessNet: a.supportedAccessNet,
 		scoped:           a.supportedScoped,
+		flags:            a.supportedRestrictFlags,
 	}
 }
 

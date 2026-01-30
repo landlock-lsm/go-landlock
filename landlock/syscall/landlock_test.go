@@ -8,6 +8,20 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func TestRestrictSelfFlags(t *testing.T) {
+	if FlagRestrictSelfLogNewExecOn != unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON {
+		t.Errorf("FlagRestrictSelfLogNewExecOn differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfLogNewExecOn, unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON)
+	}
+
+	if FlagRestrictSelfLogSameExecOff != unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF {
+		t.Errorf("FlagRestrictSelfLogSameExecOff differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfLogSameExecOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF)
+	}
+
+	if FlagRestrictSelfLogSubdomainsOff != unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF {
+		t.Errorf("FlagRestrictSelfLogSubdomainsOff differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfLogSubdomainsOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF)
+	}
+}
+
 func TestAccessRights(t *testing.T) {
 	for _, tt := range []struct {
 		Name        string
