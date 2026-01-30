@@ -55,6 +55,16 @@ const (
 	ScopeSignal
 )
 
+// Flags for [AllThreadsLandlockRestrictSelf].
+//
+// Please see full documentation at
+// https://docs.kernel.org/userspace-api/landlock.html#enforcing-a-ruleset
+const (
+	FlagRestrictSelfLogSameExecOff = 1 << iota
+	FlagRestrictSelfLogNewExecOn
+	FlagRestrictSelfLogSubdomainsOff
+)
+
 // RulesetAttr is the Landlock ruleset definition.
 //
 // Argument of LandlockCreateRuleset(). This structure can grow in future versions of Landlock.
