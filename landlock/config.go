@@ -135,7 +135,7 @@ func (c Config) String() string {
 
 	var netDesc = c.handledAccessNet.String()
 	if abi.supportedAccessNet == c.handledAccessNet && c.handledAccessNet != 0 {
-		fsDesc = "all"
+		netDesc = "all"
 	}
 
 	var scopedDesc = c.scoped.String()
