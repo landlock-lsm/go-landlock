@@ -4,6 +4,7 @@ package landlock_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -404,8 +405,8 @@ func TestRestrictNet(t *testing.T) {
 				if err := tryDial(cPort); !errEqual(err, tt.WantConnectErr) {
 					t.Errorf("net.Dial(tcp, localhost:%v) = «%v»; want «%v»", cPort, err, tt.WantConnectErr)
 				}
-				if err := tryListen(bPort); !errEqual(err, tt.WantBindErr) {
-					t.Errorf("net.Listen(tcp, localhost:%v) = «%v»; want «%v»", bPort, err, tt.WantBindErr)
+				if err := trySinglePathListen(bPort); !errEqual(err, tt.WantBindErr) {
+					t.Errorf("net.Listen(single-path tcp, localhost:%v) = «%v»; want «%v»", bPort, err, tt.WantBindErr)
 				}
 			})
 		})
@@ -444,8 +445,10 @@ func tryDial(port int) error {
 	return err
 }
 
-func tryListen(port int) error {
-	conn, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
+func trySinglePathListen(port int) error {
+	var lc net.ListenConfig
+	lc.SetMultipathTCP(false)
+	conn, err := lc.Listen(context.Background(), "tcp", fmt.Sprintf("localhost:%v", port))
 	if err == nil {
 		conn.Close()
 	}
