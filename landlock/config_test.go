@@ -33,6 +33,14 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅ (best effort)}",
 		},
 		{
+			cfg:  V5,
+			want: "{Landlock V5; FS: all; Net: all; Scoped: ∅}",
+		},
+		{
+			cfg:  V6,
+			want: "{Landlock V6; FS: all; Net: all; Scoped: all}",
+		},
+		{
 			cfg:  Config{handledAccessFS: 1 << 63},
 			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Scoped: ∅}",
 		},
