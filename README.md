@@ -11,7 +11,7 @@ use files, using Linux 5.13's Landlock feature.
 In a Go program, after starting up and doing program initialization work, run:
 
 ```
-err := landlock.V5.BestEffort().RestrictPaths(
+err := landlock.V6.BestEffort().RestrictPaths(
     landlock.RODirs("/usr", "/bin"),
     landlock.RWDirs("/tmp"),
 )
