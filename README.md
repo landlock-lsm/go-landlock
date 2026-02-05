@@ -35,6 +35,10 @@ Goals of Go-Landlock are:
 * Make unprivileged sandboxing easy to use and effective.
 * Keep Go-Landlock's implementation at an easily auditable size.
 
+## Projects Using Go-Landlock
+
+- [landrun](https://github.com/zouuup/landrun): A lightweight CLI sandbox tool using Landlock - think firejail but with kernel-native isolation and no root required.
+
 ## Technical implementation
 
 Some implementation notes that should simplify auditing.
