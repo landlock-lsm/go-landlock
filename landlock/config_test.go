@@ -14,23 +14,23 @@ func TestConfigString(t *testing.T) {
 	}{
 		{
 			cfg:  Config{handledAccessFS: 0, handledAccessNet: 0},
-			want: "{Landlock V0; FS: ∅; Net: ∅; Scoped: ∅}",
+			want: "{Landlock V0; FS: ∅; Net: ∅; Scoped: ∅ (log_same_exec_on)}",
 		},
 		{
 			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
-			want: "{Landlock V1; FS: {write_file}; Net: ∅; Scoped: ∅}",
+			want: "{Landlock V1; FS: {write_file}; Net: ∅; Scoped: ∅ (log_same_exec_on)}",
 		},
 		{
 			cfg:  Config{handledAccessNet: ll.AccessNetBindTCP},
-			want: "{Landlock V4; FS: ∅; Net: {bind_tcp}; Scoped: ∅}",
+			want: "{Landlock V4; FS: ∅; Net: {bind_tcp}; Scoped: ∅ (log_same_exec_on)}",
 		},
 		{
 			cfg:  V1,
-			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅}",
+			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅ (log_same_exec_on)}",
 		},
 		{
 			cfg:  V1.BestEffort(),
-			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅ (best effort)}",
+			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅ (log_same_exec_on) (best effort)}",
 		},
 		{
 			cfg:  V5,
@@ -42,7 +42,7 @@ func TestConfigString(t *testing.T) {
 		},
 		{
 			cfg:  Config{handledAccessFS: 1 << 63},
-			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Scoped: ∅}",
+			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Scoped: ∅ (log_same_exec_on)}",
 		},
 	} {
 		got := tc.cfg.String()
