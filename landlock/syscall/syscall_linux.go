@@ -87,21 +87,3 @@ func AllThreadsPrctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
 	}
 	return
 }
-
-func RestrictSelfFlagsFromLoggingSet(loggingSet uint64) (int, error) {
-	flags := 0
-
-	if loggingSet&uint64(FlagRestrictSelfLogSameExecOff) != 0 {
-		flags |= unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF
-	}
-
-	if loggingSet&uint64(FlagRestrictSelfLogNewExecOn) != 0 {
-		flags |= unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON
-	}
-
-	if loggingSet&uint64(FlagRestrictSelfLogSubdomainsOff) != 0 {
-		flags |= unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF
-	}
-
-	return flags, nil
-}

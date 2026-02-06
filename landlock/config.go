@@ -56,14 +56,14 @@ type Config struct {
 	handledAccessFS  AccessFSSet
 	handledAccessNet AccessNetSet
 	scoped           ScopedSet
-	logging          LoggingSet
+	flags            restrictFlagsSet
 	bestEffort       bool
 }
 
 // NewConfig creates a new Landlock configuration with the given parameters.
 //
 // Passing an AccessFSSet, AccessNetSet or ScopedSet will set these as
-// the set of file system/network/scoped/logging operations to restrict when
+// the set of file system/network/scoped operations to restrict when
 // enabling Landlock. The sets need to stay within the bounds of what
 // go-landlock supports.  (If you are getting an error, you might need
 // to upgrade to a newer version of go-landlock.)
@@ -105,14 +105,6 @@ func NewConfig(args ...any) (*Config, error) {
 				return nil, errors.New("unsupported ScopedSet value; upgrade go-landlock?")
 			}
 			c.scoped = arg
-		case LoggingSet:
-			if !c.logging.isEmpty() {
-				return nil, errors.New("only one LoggingSet may be provided")
-			}
-			if !arg.valid() {
-				return nil, errors.New("unsupported LoggingSet value; upgrade go-landlock?")
-			}
-			c.logging = arg
 		default:
 			return nil, fmt.Errorf("unknown argument %v; only AccessFSSet-type argument is supported", arg)
 		}
@@ -154,10 +146,7 @@ func (c Config) String() string {
 		scopedDesc = "all"
 	}
 
-	loggingDesc := c.logging.String()
-	if abi.supportedLogging == c.logging && c.logging != 0 {
-		loggingDesc = "all"
-	}
+	flagsDesc := c.flags.String()
 
 	bestEffort := ""
 	if c.bestEffort {
@@ -171,7 +160,7 @@ func (c Config) String() string {
 		version = fmt.Sprintf("V%v", abi.version)
 	}
 
-	return fmt.Sprintf("{Landlock %v; FS: %v; Net: %v; Scoped: %v; Logging: %v%v}", version, fsDesc, netDesc, scopedDesc, loggingDesc, bestEffort)
+	return fmt.Sprintf("{Landlock %v; FS: %v; Net: %v; Scoped: %v (%v)%v}", version, fsDesc, netDesc, scopedDesc, flagsDesc, bestEffort)
 }
 
 // BestEffort returns a config that will opportunistically enforce
@@ -194,18 +183,18 @@ func (c Config) BestEffort() Config {
 // Programs that only sandbox themselves should not set this flag, so users can be notified of
 // unauthorized access attempts via system logs
 func (c *Config) DisableLoggingForOriginatingProcess() {
-	c.logging |= ll.FlagRestrictSelfLogSameExecOff
+	c.flags |= ll.FlagRestrictSelfLogSameExecOff
 }
 
-// EnableAuditLoggingForSubprocesses enables logging of denied accesses after an execve(2)
+// EnableLoggingForSubprocesses enables logging of denied accesses after an execve(2)
 // call, providing visibility into unauthorized access attempts by newly executed programs
 // within the created Landlock domain.
 //
 // This flag is recommended only when all potential executables in the domain are expected
 // to comply with the access restrictions, as excessive audit log entries could make it more
 // difficult to identify critical events.
-func (c *Config) EnableAuditLoggingForSubprocesses() {
-	c.logging |= ll.FlagRestrictSelfLogNewExecOn
+func (c *Config) EnableLoggingForSubprocesses() {
+	c.flags |= ll.FlagRestrictSelfLogNewExecOn
 }
 
 // DisableLoggingForSubdomains disables logging of denied accesses originating from nested Landlock
@@ -214,10 +203,9 @@ func (c *Config) EnableAuditLoggingForSubprocesses() {
 //
 // It is useful for container runtimes or sandboxing tools that may launch programs which themselves create
 // Landlock domains and could otherwise generate excessive logs.
-// Unlike LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF, this flag only affects future nested domains, not the one being created.
-// It can also be used with a ruleset_fd value of -1 to mute subdomain logs without creating a domain.
+// Unlike [DisableLoggingForSubdomains], this affects future nested domains, not the one being created.
 func (c *Config) DisableLoggingForSubdomains() {
-	c.logging |= ll.FlagRestrictSelfLogSubdomainsOff
+	c.flags |= ll.FlagRestrictSelfLogSubdomainsOff
 }
 
 // RestrictPaths restricts all goroutines to only "see" the files
@@ -315,7 +303,7 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 	// clear out everything but file system access
 	c = Config{
 		handledAccessFS: c.handledAccessFS,
-		logging:         c.logging,
+		flags:           c.flags,
 		bestEffort:      c.bestEffort,
 	}
 	return restrict(c, rules...)
@@ -338,7 +326,7 @@ func (c Config) RestrictNet(rules ...Rule) error {
 	// clear out everything but network access
 	c = Config{
 		handledAccessNet: c.handledAccessNet,
-		logging:          c.logging,
+		flags:            c.flags,
 		bestEffort:       c.bestEffort,
 	}
 	return restrict(c, rules...)
@@ -353,7 +341,7 @@ func (c Config) RestrictScoped() error {
 	// clear out everything but scoped operations
 	c = Config{
 		scoped:     c.scoped,
-		logging:    c.logging,
+		flags:      c.flags,
 		bestEffort: c.bestEffort,
 	}
 	return restrict(c)
@@ -383,7 +371,7 @@ func (c Config) compatibleWithABI(abi abiInfo) bool {
 	return (c.handledAccessFS.isSubset(abi.supportedAccessFS) &&
 		c.handledAccessNet.isSubset(abi.supportedAccessNet) &&
 		c.scoped.isSubset(abi.supportedScoped)) &&
-		c.logging.isSubset(abi.supportedLogging)
+		c.flags.isSubset(abi.supportedRestrictFlags)
 }
 
 // restrictTo returns a config that is a subset of c and which is compatible with the given ABI.
@@ -392,7 +380,7 @@ func (c Config) restrictTo(abi abiInfo) Config {
 		handledAccessFS:  c.handledAccessFS.intersect(abi.supportedAccessFS),
 		handledAccessNet: c.handledAccessNet.intersect(abi.supportedAccessNet),
 		scoped:           c.scoped.intersect(abi.supportedScoped),
-		logging:          c.logging.intersect(abi.supportedLogging),
+		flags:            c.flags.intersect(abi.supportedRestrictFlags),
 		bestEffort:       true,
 	}
 }

@@ -8,31 +8,20 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func TestLoggingFlags(t *testing.T) {
-	for _, tt := range []struct {
-		Name         string
-		LoggingSet   uint64
-		ExpectedFlag int
-	}{
-		{"NoFlags", 0, 0},
-		{"LogSameExecOff", FlagRestrictSelfLogSameExecOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF},
-		{"LogNewExecOn", FlagRestrictSelfLogNewExecOn, unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON},
-		{"LogSubdomainsOff", FlagRestrictSelfLogSubdomainsOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF},
-		{"LogSameExecOff|LogNewExecOn", FlagRestrictSelfLogSameExecOff | FlagRestrictSelfLogNewExecOn, unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF | unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON},
-		{"LogSameExecOff|LogSubdomainsOff", FlagRestrictSelfLogSameExecOff | FlagRestrictSelfLogSubdomainsOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF | unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF},
-		{"LogNewExecOn|LogSubdomainsOff", FlagRestrictSelfLogNewExecOn | FlagRestrictSelfLogSubdomainsOff, unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON | unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF},
-		{"AllFlags", FlagRestrictSelfLogSameExecOff | FlagRestrictSelfLogNewExecOn | FlagRestrictSelfLogSubdomainsOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF | unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON | unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF},
-	} {
-		t.Run(tt.Name, func(t *testing.T) {
-			flags, err := RestrictSelfFlagsFromLoggingSet(tt.LoggingSet)
-			if err != nil {
-				t.Fatalf("RestrictSelfFlagsFromLoggingSet returned error: %v", err)
-			}
+func TestRestrictSelfFlags(t *testing.T) {
+	// TODO: replace with unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON once we can uprade the x/sys/unix dependency.
+	if FlagRestrictSelfLogNewExecOn != 0x2 {
+		t.Errorf("FlagRestrictSelfLogNewExecOn differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfLogNewExecOn, unix.LANDLOCK_RESTRICT_SELF_LOG_NEW_EXEC_ON)
+	}
 
-			if flags != tt.ExpectedFlag {
-				t.Errorf("RestrictSelfFlagsFromLoggingSet returned %v, want %v", flags, tt.ExpectedFlag)
-			}
-		})
+	// TODO: replace with unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF once we can uprade the x/sys/unix dependency.
+	if FlagRestrictSelfLogSameExecOff != 0x1 {
+		t.Errorf("FlagRestrictSelfLogSameExecOff differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfLogSameExecOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SAME_EXEC_OFF)
+	}
+
+	// TODO: replace with unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF once we can uprade the x/sys/unix dependency.
+	if FlagRestrictSelfLogSubdomainsOff != 0x4 {
+		t.Errorf("FlagRestrictSelfLogSubdomainsOff differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfLogSubdomainsOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF)
 	}
 }
 

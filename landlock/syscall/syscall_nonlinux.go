@@ -38,7 +38,3 @@ func AllThreadsLandlockRestrictSelf(rulesetFd int, flags int) (err error) {
 func AllThreadsPrctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
 	return syscall.ENOSYS
 }
-
-func RestrictSelfFlagsFromLoggingSet(loggingSet uint64) (int, error) {
-	return 0, syscall.ENOSYS
-}

@@ -86,12 +86,8 @@ func restrict(c Config, rules ...Rule) error {
 		return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))
 	}
 
-	flags, err := ll.RestrictSelfFlagsFromLoggingSet(uint64(c.logging))
-	if err != nil {
-		return bug(fmt.Errorf("RestrictSelfFlagsFromLoggingSet: %w", err))
-	}
-
-	if err := ll.AllThreadsLandlockRestrictSelf(fd, flags); err != nil {
+	// TODO(?): change the signature of AllThreadsLandlockRestrictSelf to take a uint32?
+	if err := ll.AllThreadsLandlockRestrictSelf(fd, int(c.flags)); err != nil {
 		if errors.Is(err, syscall.E2BIG) {
 			// Other errors than E2BIG should never happen.
 			return fmt.Errorf("the maximum number of stacked rulesets is reached for the current thread: %w", err)

@@ -55,6 +55,10 @@ const (
 	ScopeSignal
 )
 
+// Flags for [AllThreadsLandlockRestrictSelf].
+//
+// Please see full documentation at
+// https://docs.kernel.org/userspace-api/landlock.html#enforcing-a-ruleset
 const (
 	FlagRestrictSelfLogSameExecOff = 1 << iota
 	FlagRestrictSelfLogNewExecOn
