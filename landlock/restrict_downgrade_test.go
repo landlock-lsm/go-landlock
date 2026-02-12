@@ -3,146 +3,228 @@
 package landlock
 
 import (
-	"fmt"
 	"testing"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
-func TestDowngradeAccessFS(t *testing.T) {
+func TestDowngrade(t *testing.T) {
 	for _, tc := range []struct {
-		Name string
-
-		Handled      AccessFSSet
-		Requested    AccessFSSet
-		SupportedABI int
-
-		WantHandled   AccessFSSet
-		WantRequested AccessFSSet
-
-		WantFallbackToV0 bool
+		name         string
+		cfg          Config
+		rules        []Rule
+		supportedABI int
+		wantCfg      Config
+		wantRules    []Rule // nil means V0 fallback expected
 	}{
+		// FS access downgrade scenarios
 		{
-			Name:          "RestrictHandledToSupported",
-			SupportedABI:  1,
-			Handled:       0b1111,
-			Requested:     0b111111,
-			WantHandled:   0b1111,
-			WantRequested: 0b1111,
+			name:         "RestrictHandledToSupported",
+			cfg:          Config{handledAccessFS: 0b1111},
+			rules:        []Rule{PathAccess(0b111111, "foo")},
+			supportedABI: 1,
+			wantCfg:      Config{handledAccessFS: 0b1111},
+			wantRules:    []Rule{PathAccess(0b1111, "foo")},
 		},
 		{
-			Name:          "RestrictPathAccessToHandled",
-			SupportedABI:  1,
-			Handled:       0b1,
-			Requested:     0b11,
-			WantHandled:   0b1,
-			WantRequested: 0b1,
+			name:         "RestrictPathAccessToHandled",
+			cfg:          Config{handledAccessFS: 0b1},
+			rules:        []Rule{PathAccess(0b11, "foo")},
+			supportedABI: 1,
+			wantCfg:      Config{handledAccessFS: 0b1},
+			wantRules:    []Rule{PathAccess(0b1, "foo")},
 		},
 		{
-			Name:          "DowngradeToV0IfKernelDoesNotSupportV1",
-			SupportedABI:  0,
-			Handled:       0b1,
-			Requested:     0b11,
-			WantHandled:   0b0,
-			WantRequested: 0b0,
+			name:         "DowngradeToEmptyOnV0",
+			cfg:          Config{handledAccessFS: 0b1},
+			rules:        []Rule{PathAccess(0b11, "foo")},
+			supportedABI: 0,
+			wantCfg:      Config{},
+			wantRules:    []Rule{PathAccess(0, "foo")},
 		},
 		{
-			Name:          "ReferSupportedOnV2",
-			SupportedABI:  2,
-			Handled:       ll.AccessFSRefer | ll.AccessFSReadFile,
-			Requested:     ll.AccessFSRefer | ll.AccessFSReadFile,
-			WantHandled:   ll.AccessFSRefer | ll.AccessFSReadFile,
-			WantRequested: ll.AccessFSRefer | ll.AccessFSReadFile,
+			name:         "ReferSupportedOnV2",
+			cfg:          Config{handledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
+			rules:        []Rule{PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "foo")},
+			supportedABI: 2,
+			wantCfg:      Config{handledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
+			wantRules:    []Rule{PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "foo")},
 		},
 		{
-			Name:             "ReferNotSupportedOnV1",
-			SupportedABI:     1,
-			Handled:          ll.AccessFSRefer | ll.AccessFSReadFile,
-			Requested:        ll.AccessFSRefer | ll.AccessFSReadFile,
-			WantFallbackToV0: true,
+			name:         "ReferNotSupportedOnV1FallsBackToV0",
+			cfg:          Config{handledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
+			rules:        []Rule{PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "foo")},
+			supportedABI: 1,
+			wantCfg:      v0,
+			wantRules:    nil,
+		},
+		// Network downgrade
+		{
+			name: "NetworkDowngradeRemovesNet",
+			cfg: Config{
+				handledAccessFS:  ll.AccessFSWriteFile,
+				handledAccessNet: ll.AccessNetConnectTCP,
+			},
+			rules:        []Rule{ConnectTCP(53)},
+			supportedABI: 3,
+			wantCfg:      Config{handledAccessFS: ll.AccessFSWriteFile},
+			wantRules:    []Rule{NetRule{access: 0, port: 53}},
+		},
+		// Scoped downgrade
+		{
+			name:         "ScopedDowngrade",
+			cfg:          Config{scoped: ll.ScopeAbstractUnixSocket},
+			supportedABI: 5,
+			wantCfg:      Config{},
+			wantRules:    nil,
+		},
+		// Flags downgrade
+		{
+			name:         "FlagsDowngrade",
+			cfg:          Config{scoped: ll.ScopeAbstractUnixSocket, flags: ll.FlagRestrictSelfLogNewExecOn},
+			supportedABI: 6,
+			wantCfg:      Config{scoped: ll.ScopeAbstractUnixSocket},
+			wantRules:    nil,
+		},
+		// Noop - downgrading an ABI's own config is a no-op
+		{
+			name:         "NoopV0",
+			cfg:          abiInfos[0].asConfig(),
+			supportedABI: 0,
+			wantCfg:      abiInfos[0].asConfig(),
+			wantRules:    nil,
+		},
+		{
+			name:         "NoopV1",
+			cfg:          abiInfos[1].asConfig(),
+			supportedABI: 1,
+			wantCfg:      abiInfos[1].asConfig(),
+			wantRules:    nil,
+		},
+		{
+			name:         "NoopV2",
+			cfg:          abiInfos[2].asConfig(),
+			supportedABI: 2,
+			wantCfg:      abiInfos[2].asConfig(),
+			wantRules:    nil,
+		},
+		{
+			name:         "NoopV3",
+			cfg:          abiInfos[3].asConfig(),
+			supportedABI: 3,
+			wantCfg:      abiInfos[3].asConfig(),
+			wantRules:    nil,
+		},
+		{
+			name:         "NoopV4",
+			cfg:          abiInfos[4].asConfig(),
+			supportedABI: 4,
+			wantCfg:      abiInfos[4].asConfig(),
+			wantRules:    nil,
+		},
+		{
+			name:         "NoopV5",
+			cfg:          abiInfos[5].asConfig(),
+			supportedABI: 5,
+			wantCfg:      abiInfos[5].asConfig(),
+			wantRules:    nil,
+		},
+		{
+			name:         "NoopV6",
+			cfg:          abiInfos[6].asConfig(),
+			supportedABI: 6,
+			wantCfg:      abiInfos[6].asConfig(),
+			wantRules:    nil,
+		},
+		{
+			name:         "NoopV7",
+			cfg:          abiInfos[7].asConfig(),
+			supportedABI: 7,
+			wantCfg:      abiInfos[7].asConfig(),
+			wantRules:    nil,
+		},
+		// Multi-field scenarios
+		{
+			name: "AllFieldsDowngradeToV4",
+			cfg: Config{
+				handledAccessFS:  (1 << 16) - 1,
+				handledAccessNet: (1 << 2) - 1,
+				scoped:           (1 << 2) - 1,
+				flags:            (1 << 3) - 1,
+			},
+			rules:        []Rule{PathAccess(ll.AccessFSReadFile, "foo"), ConnectTCP(80)},
+			supportedABI: 4,
+			wantCfg: Config{
+				handledAccessFS:  (1 << 15) - 1,
+				handledAccessNet: (1 << 2) - 1,
+			},
+			wantRules: []Rule{
+				PathAccess(ll.AccessFSReadFile, "foo"),
+				ConnectTCP(80),
+			},
+		},
+		{
+			name: "AllFieldsDowngradeToV6DropsFlags",
+			cfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile,
+				handledAccessNet: ll.AccessNetConnectTCP,
+				scoped:           ll.ScopeAbstractUnixSocket,
+				flags:            ll.FlagRestrictSelfLogNewExecOn,
+			},
+			rules:        []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
+			supportedABI: 6,
+			wantCfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile,
+				handledAccessNet: ll.AccessNetConnectTCP,
+				scoped:           ll.ScopeAbstractUnixSocket,
+			},
+			wantRules: []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
+		},
+		{
+			name: "FSAndNetAndScopeDowngradeToV5DropsScope",
+			cfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile | ll.AccessFSIoctlDev,
+				handledAccessNet: ll.AccessNetBindTCP,
+				scoped:           ll.ScopeSignal,
+			},
+			supportedABI: 5,
+			wantCfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile | ll.AccessFSIoctlDev,
+				handledAccessNet: ll.AccessNetBindTCP,
+			},
+			wantRules: nil,
 		},
 	} {
-		t.Run(tc.Name, func(t *testing.T) {
-			abi := abiInfos[tc.SupportedABI]
+		t.Run(tc.name, func(t *testing.T) {
+			gotCfg, gotRules := downgrade(tc.cfg, tc.rules, abiInfos[tc.supportedABI])
 
-			rules := []Rule{PathAccess(tc.Requested, "foo")}
-			cfg := Config{handledAccessFS: tc.Handled}
-			gotCfg, gotRules := downgrade(cfg, rules, abi)
+			gotCfg.bestEffort = false // ignored for comparison
+			if gotCfg != tc.wantCfg {
+				t.Errorf("config: got %v, want %v", gotCfg, tc.wantCfg)
+			}
 
-			if tc.WantFallbackToV0 {
-				if gotCfg != v0 {
-					t.Errorf(
-						"downgrade(%v, %v, ABIv%d) = %v, %v; want fallback to V0",
-						cfg, tc.Requested, tc.SupportedABI,
-						gotCfg, gotRules,
-					)
+			if len(gotRules) != len(tc.wantRules) {
+				t.Fatalf("rules count: got %d, want %d", len(gotRules), len(tc.wantRules))
+			}
+			for i := range gotRules {
+				switch got := gotRules[i].(type) {
+				case FSRule:
+					want, ok := tc.wantRules[i].(FSRule)
+					if !ok {
+						t.Errorf("rule %d: got FSRule, want %T", i, tc.wantRules[i])
+					} else if got.accessFS != want.accessFS {
+						t.Errorf("rule %d accessFS: got %v, want %v", i, got.accessFS, want.accessFS)
+					}
+				case NetRule:
+					want, ok := tc.wantRules[i].(NetRule)
+					if !ok {
+						t.Errorf("rule %d: got NetRule, want %T", i, tc.wantRules[i])
+					} else if got != want {
+						t.Errorf("rule %d: got %v, want %v", i, got, want)
+					}
+				default:
+					t.Errorf("rule %d: unexpected type %T", i, gotRules[i])
 				}
-				return
-			}
-
-			if len(gotRules) != 1 {
-				t.Fatalf("wrong number of rules returned: got %d, want 1", len(gotRules))
-			}
-			gotRequested := gotRules[0].(FSRule).accessFS
-			gotHandled := gotCfg.handledAccessFS
-
-			if gotHandled != tc.WantHandled || gotRequested != tc.WantRequested {
-				t.Errorf(
-					"Unexpected result\ndowngrade(%v, %v, ABIv%d)\n        = %v, %v\n     want %v, %v",
-					cfg, tc.Requested, tc.SupportedABI,
-					gotCfg, gotRequested,
-					Config{handledAccessFS: tc.WantHandled}, tc.WantRequested,
-				)
-			}
-		})
-	}
-}
-
-func TestDowngradeNetwork(t *testing.T) {
-	cfg := Config{
-		handledAccessFS:  ll.AccessFSWriteFile,
-		handledAccessNet: ll.AccessNetConnectTCP,
-	}
-	abi := abiInfos[3] // does not have networking support
-	rules := []Rule{ConnectTCP(53)}
-	gotCfg, _ := downgrade(cfg, rules, abi)
-
-	if gotCfg.handledAccessNet != 0 {
-		t.Errorf("downgrade to v3 should remove networking support, but resulted in %v", gotCfg)
-	}
-	if gotCfg.handledAccessFS != cfg.handledAccessFS {
-		t.Errorf("downgrade to v3 should retain the supported accessFS right, but got %v", gotCfg)
-	}
-}
-
-func TestDowngradeScoped(t *testing.T) {
-	cfg := Config{scoped: ll.ScopeAbstractUnixSocket}
-	abi := abiInfos[5] // does not have scoping support
-	gotCfg, _ := downgrade(cfg, nil, abi)
-
-	if gotCfg.scoped != 0 {
-		t.Errorf("downgrade to v5 should remove scoping support, but resulted in %v", gotCfg)
-	}
-}
-
-func TestDowngradeFlags(t *testing.T) {
-	cfg := Config{scoped: ll.ScopeAbstractUnixSocket, flags: ll.FlagRestrictSelfLogNewExecOn}
-	abi := abiInfos[6] // does not have logging flags support
-	gotCfg, _ := downgrade(cfg, nil, abi)
-
-	if gotCfg.flags != 0 {
-		t.Errorf("downgrade to v6 should remove flags, but resulted in %v", gotCfg)
-	}
-}
-
-func TestDowngradeNoop(t *testing.T) {
-	for _, abi := range abiInfos {
-		t.Run(fmt.Sprintf("V%v", abi.version), func(t *testing.T) {
-			cfg := abi.asConfig().BestEffort()
-			gotCfg, _ := downgrade(cfg, []Rule{}, abi)
-
-			if gotCfg != cfg {
-				t.Errorf("downgrade should have been a no-op.\n got %v,\nwant %v", gotCfg, cfg)
 			}
 		})
 	}
