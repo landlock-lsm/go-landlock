@@ -41,6 +41,16 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V6; FS: all; Net: all; Scoped: all (restrictFlags: ∅)}",
 		},
 		{
+			// V7 is the same as V6...
+			cfg:  V7,
+			want: "{Landlock V6; FS: all; Net: all; Scoped: all (restrictFlags: ∅)}",
+		},
+		{
+			// ...unless you enable one of the logging flags.
+			cfg:  V7.EnableLoggingForSubprocesses(),
+			want: "{Landlock V7; FS: all; Net: all; Scoped: all (restrictFlags: {log_new_exec_on})}",
+		},
+		{
 			cfg:  Config{handledAccessFS: 1 << 63},
 			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Scoped: ∅ (restrictFlags: ∅)}",
 		},
@@ -139,6 +149,9 @@ func TestCompatibleWithABI(t *testing.T) {
 	for i, abi := range abiInfos {
 		cfg := abi.asConfig()
 		t.Run(fmt.Sprintf("V%v", i), func(t *testing.T) {
+			if i == 7 {
+				i = 6 // abiInfos[7].asConfig() is the same as abiInfos[6].asConfig()
+			}
 			for j := range i {
 				if cfg.compatibleWithABI(abiInfos[j]) {
 					t.Errorf("cfg.compatibleWithABI(abiInfos[%v]) = true, want false", j)

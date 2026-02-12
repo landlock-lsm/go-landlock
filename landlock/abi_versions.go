@@ -57,7 +57,7 @@ func (a abiInfo) asConfig() Config {
 		handledAccessFS:  a.supportedAccessFS,
 		handledAccessNet: a.supportedAccessNet,
 		scoped:           a.supportedScoped,
-		flags:            a.supportedRestrictFlags,
+		flags:            0,
 	}
 }
 
