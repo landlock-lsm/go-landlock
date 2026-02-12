@@ -5,12 +5,12 @@
 // The following invocation will restrict all goroutines so that they
 // can only read from /usr, /bin and /tmp, and only write to /tmp:
 //
-//	err := landlock.V6.BestEffort().RestrictPaths(
+//	err := landlock.V7.BestEffort().RestrictPaths(
 //	    landlock.RODirs("/usr", "/bin"),
 //	    landlock.RWDirs("/tmp"),
 //	)
 //
-// This will restrict file access using Landlock V6, if available. If
+// This will restrict file access using Landlock V7, if available. If
 // unavailable, it will attempt using earlier Landlock versions than
 // the one requested. If no Landlock version is available, it will
 // still succeed, without restricting file accesses.
@@ -20,19 +20,28 @@
 // The following invocation will restrict all goroutines so that they
 // can only bind to TCP port 8080 and only connect to TCP port 53:
 //
-//	err := landlock.V6.BestEffort().RestrictNet(
+//	err := landlock.V7.BestEffort().RestrictNet(
 //	    landlock.BindTCP(8080),
 //	    landlock.ConnectTCP(53),
 //	)
 //
 // This functionality is available since Landlock V4.
 //
+// **IMPORTANT:** Landlock's TCP restrictions only apply to "classic"
+// TCP sockets, not to Multipath TCP sockets, which can also serve
+// non-multipath clients.  Since Go 1.24, Multipath TCP is the default
+// for [net.Listen], and [net.Listen] works independent of Landlock's
+// networking restrictions.
+//
+// The bug needs to be fixed in the Linux kernel and is tracked here:
+// https://github.com/landlock-lsm/linux/issues/54
+//
 // # Restricting IPC scopes
 //
 // The following invocation will restrict IPC to more privileged
 // Landlock domains, if possible:
 //
-//	err := landlock.V6.BestEffort().RestrictScoped()
+//	err := landlock.V7.BestEffort().RestrictScoped()
 //
 // This functionality is available since Landlock V6.
 //
@@ -43,7 +52,7 @@
 // [Config.RestrictNet] and [Config.RestrictScoped] one after another,
 // but it happens in one step.
 //
-//	err := landlock.V6.BestEffort().Restrict(
+//	err := landlock.V7.BestEffort().Restrict(
 //	    landlock.RODirs("/usr", "/bin"),
 //	    landlock.RWDirs("/tmp"),
 //	    landlock.BindTCP(8080),
@@ -57,6 +66,17 @@
 // capabilities of Landlock V6, but returns an error if that
 // functionality is not available on the system that the program is
 // running on.
+//
+// If Audit logging is enabled in the Linux kernel, kernels with
+// Landlock ABI V7 and higher will log Landlock denials to the audit
+// log.  By default, this only happens for denials affecting the same
+// process which enforced the policy, and it also happens for nested
+// Landlock policies.
+//
+// The situations in which audit logging happens can be configured
+// using [Config.DisableLoggingForOriginatingProcess],
+// [Config.EnableLoggingForSubprocesses] and
+// [Config.DisableLoggingForSubdomains].
 //
 // # Landlock ABI versioning
 //
@@ -101,16 +121,6 @@
 // These are Landlock limitations that will be resolved in future
 // versions. See the [Kernel Documentation about Current Limitations]
 // for more details.
-//
-// # Current Limitations (IPC within the same Go program)
-//
-// For a Go process which restricts Landlock "scoped" IPC operations
-// for itself, goroutines within this process might be inconsistently
-// permitted or denied to use these IPC mechanisms among themselves.
-//
-// This is because different OS threads within the Go process may
-// technically belong to different Landlock domains (even if these
-// domains enforce the same policies).
 //
 // # Multithreading Limitations
 //
