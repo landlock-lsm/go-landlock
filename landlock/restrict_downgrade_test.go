@@ -17,6 +17,17 @@ func rulesEqual(a, b Rule) bool {
 	case NetRule:
 		b, ok := b.(NetRule)
 		return ok && a == b
+	case *compositeRule:
+		b, ok := b.(*compositeRule)
+		if !ok || len(a.rules) != len(b.rules) {
+			return false
+		}
+		for i := range a.rules {
+			if !rulesEqual(a.rules[i], b.rules[i]) {
+				return false
+			}
+		}
+		return true
 	default:
 		return false
 	}
@@ -257,6 +268,68 @@ func TestDowngrade(t *testing.T) {
 				handledAccessNet: ll.AccessNetBindTCP,
 			},
 			wantRules: nil,
+		},
+		// Composite rule scenarios
+		{
+			name: "CompositeDowngradeSucceeds",
+			cfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile | ll.AccessFSWriteFile,
+				handledAccessNet: ll.AccessNetConnectTCP,
+			},
+			rules: []Rule{
+				CompositeRule(
+					PathAccess(ll.AccessFSReadFile, "foo"),
+					ConnectTCP(80),
+				),
+			},
+			supportedABI: 4,
+			wantCfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile | ll.AccessFSWriteFile,
+				handledAccessNet: ll.AccessNetConnectTCP,
+			},
+			wantRules: []Rule{
+				CompositeRule(
+					PathAccess(ll.AccessFSReadFile, "foo"),
+					ConnectTCP(80),
+				),
+			},
+		},
+		{
+			name: "CompositeSubRuleDowngraded",
+			cfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile,
+				handledAccessNet: ll.AccessNetConnectTCP,
+			},
+			rules: []Rule{
+				CompositeRule(
+					PathAccess(ll.AccessFSReadFile|ll.AccessFSWriteFile, "foo"),
+					ConnectTCP(80),
+				),
+			},
+			supportedABI: 4,
+			wantCfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile,
+				handledAccessNet: ll.AccessNetConnectTCP,
+			},
+			wantRules: []Rule{
+				CompositeRule(
+					PathAccess(ll.AccessFSReadFile, "foo"),
+					ConnectTCP(80),
+				),
+			},
+		},
+		{
+			name: "CompositeWithReferFallsBackToV0",
+			cfg:  Config{handledAccessFS: ll.AccessFSReadFile},
+			rules: []Rule{
+				CompositeRule(
+					PathAccess(ll.AccessFSReadFile, "ok"),
+					PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "bad"),
+				),
+			},
+			supportedABI: 2,
+			wantCfg:      v0,
+			wantRules:    nil,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
