@@ -182,8 +182,10 @@ func (c Config) BestEffort() Config {
 // This is intended for programs that execute unknown code without invoking execve(2), such as script interpreters.
 // Programs that only sandbox themselves should not set this flag, so users can be notified of
 // unauthorized access attempts via system logs
-func (c *Config) DisableLoggingForOriginatingProcess() {
-	c.flags |= ll.FlagRestrictSelfLogSameExecOff
+func (c Config) DisableLoggingForOriginatingProcess() Config {
+	cfg := c
+	cfg.flags |= ll.FlagRestrictSelfLogSameExecOff
+	return cfg
 }
 
 // EnableLoggingForSubprocesses enables logging of denied accesses after an execve(2)
@@ -193,8 +195,10 @@ func (c *Config) DisableLoggingForOriginatingProcess() {
 // This flag is recommended only when all potential executables in the domain are expected
 // to comply with the access restrictions, as excessive audit log entries could make it more
 // difficult to identify critical events.
-func (c *Config) EnableLoggingForSubprocesses() {
-	c.flags |= ll.FlagRestrictSelfLogNewExecOn
+func (c Config) EnableLoggingForSubprocesses() Config {
+	cfg := c
+	cfg.flags |= ll.FlagRestrictSelfLogNewExecOn
+	return cfg
 }
 
 // DisableLoggingForSubdomains disables logging of denied accesses originating from nested Landlock
@@ -204,8 +208,10 @@ func (c *Config) EnableLoggingForSubprocesses() {
 // It is useful for container runtimes or sandboxing tools that may launch programs which themselves create
 // Landlock domains and could otherwise generate excessive logs.
 // Unlike [DisableLoggingForSubdomains], this affects future nested domains, not the one being created.
-func (c *Config) DisableLoggingForSubdomains() {
-	c.flags |= ll.FlagRestrictSelfLogSubdomainsOff
+func (c Config) DisableLoggingForSubdomains() Config {
+	cfg := c
+	cfg.flags |= ll.FlagRestrictSelfLogSubdomainsOff
+	return cfg
 }
 
 // RestrictPaths restricts all goroutines to only "see" the files
