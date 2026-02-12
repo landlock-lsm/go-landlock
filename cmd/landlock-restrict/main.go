@@ -1,3 +1,6 @@
+// landlock-restrict-scoped executes a process with Landlock filesystem restrictions.
+//
+// This is an example tool which does not provide backwards compatibility guarantees.
 package main
 
 import (
@@ -131,6 +134,7 @@ func main() {
 		fmt.Println()
 		fmt.Println("Default mode for Landlock is V7 in best effort mode (best compatibility)")
 		fmt.Println()
+		fmt.Println("\033[31;1m** This is a demo tool for go-landlock and will not provide backwards compatibility. **\033[0m")
 
 		log.Fatalf("Need proper command, got %v", cmdArgs)
 	}

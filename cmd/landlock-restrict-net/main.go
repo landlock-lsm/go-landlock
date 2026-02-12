@@ -1,7 +1,6 @@
-// landlock-restrict-net executes a process with Landlock network restrictions
+// landlock-restrict-net executes a process with Landlock network restrictions.
 //
-// This is an example tool which does not provide backwards
-// compatibility guarantees.
+// This is an example tool which does not provide backwards compatibility guarantees.
 package main
 
 import (
@@ -25,6 +24,8 @@ func usage() {
 	fmt.Fprintf(out, "\nExample usages:\n")
 	fmt.Fprintf(out, "  %s -tcp.bind 8080 /usr/bin/nc -l 127.0.0.1 8080\n", name)
 	fmt.Fprintf(out, "  %s -tcp.connect 8080 /usr/bin/nc 127.0.0.1 8080\n", name)
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "\033[31;1m** This is a demo tool for go-landlock and will not provide backwards compatibility. **\033[0m")
 }
 
 func main() {

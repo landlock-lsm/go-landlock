@@ -1,7 +1,6 @@
-// landlock-restrict-scoped executes a process with Landlock scope restrictions
+// landlock-restrict-scoped executes a process with Landlock scope restrictions.
 //
-// This is an example tool which does not provide backwards
-// compatibility guarantees.
+// This is an example tool which does not provide backwards compatibility guarantees.
 package main
 
 import (
@@ -23,6 +22,8 @@ func usage() {
 	flag.PrintDefaults()
 	fmt.Fprintf(out, "\nExample usages:\n")
 	fmt.Fprintf(out, "  %s -- /usr/bin/kill -USR1 $$\n", name)
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "\033[31;1m** This is a demo tool for go-landlock and will not provide backwards compatibility. **\033[0m")
 }
 
 func main() {
