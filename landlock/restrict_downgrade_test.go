@@ -99,13 +99,19 @@ func TestDowngradeAccessFS(t *testing.T) {
 }
 
 func TestDowngradeNetwork(t *testing.T) {
-	cfg := Config{handledAccessNet: ll.AccessNetConnectTCP}
+	cfg := Config{
+		handledAccessFS:  ll.AccessFSWriteFile,
+		handledAccessNet: ll.AccessNetConnectTCP,
+	}
 	abi := abiInfos[3] // does not have networking support
 	rules := []Rule{ConnectTCP(53)}
 	gotCfg, _ := downgrade(cfg, rules, abi)
 
 	if gotCfg.handledAccessNet != 0 {
 		t.Errorf("downgrade to v3 should remove networking support, but resulted in %v", gotCfg)
+	}
+	if gotCfg.handledAccessFS != cfg.handledAccessFS {
+		t.Errorf("downgrade to v3 should retain the supported accessFS right, but got %v", gotCfg)
 	}
 }
 
