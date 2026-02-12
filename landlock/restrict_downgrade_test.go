@@ -109,6 +109,26 @@ func TestDowngradeNetwork(t *testing.T) {
 	}
 }
 
+func TestDowngradeScoped(t *testing.T) {
+	cfg := Config{scoped: ll.ScopeAbstractUnixSocket}
+	abi := abiInfos[5] // does not have scoping support
+	gotCfg, _ := downgrade(cfg, nil, abi)
+
+	if gotCfg.scoped != 0 {
+		t.Errorf("downgrade to v5 should remove scoping support, but resulted in %v", gotCfg)
+	}
+}
+
+func TestDowngradeFlags(t *testing.T) {
+	cfg := Config{scoped: ll.ScopeAbstractUnixSocket, flags: ll.FlagRestrictSelfLogNewExecOn}
+	abi := abiInfos[6] // does not have logging flags support
+	gotCfg, _ := downgrade(cfg, nil, abi)
+
+	if gotCfg.flags != 0 {
+		t.Errorf("downgrade to v6 should remove flags, but resulted in %v", gotCfg)
+	}
+}
+
 func TestDowngradeNoop(t *testing.T) {
 	for _, abi := range abiInfos {
 		t.Run(fmt.Sprintf("V%v", abi.version), func(t *testing.T) {
