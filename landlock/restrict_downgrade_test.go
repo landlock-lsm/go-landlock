@@ -3,10 +3,24 @@
 package landlock
 
 import (
+	"slices"
 	"testing"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
+
+func rulesEqual(a, b Rule) bool {
+	switch a := a.(type) {
+	case FSRule:
+		b, ok := b.(FSRule)
+		return ok && a.accessFS == b.accessFS && slices.Equal(a.paths, b.paths)
+	case NetRule:
+		b, ok := b.(NetRule)
+		return ok && a == b
+	default:
+		return false
+	}
+}
 
 func TestDowngrade(t *testing.T) {
 	for _, tc := range []struct {
@@ -180,6 +194,56 @@ func TestDowngrade(t *testing.T) {
 			},
 			wantRules: []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
 		},
+		// Refer in rule but not in config on V2+ kernel
+		// The refer check looks at the downgraded config, not the ABI.
+		// If the config doesn't handle refer, the rule triggers v0 fallback
+		// even on a V2+ kernel.
+		{
+			name:         "ReferInRuleButNotInConfigOnV2FallsBackToV0",
+			cfg:          Config{handledAccessFS: ll.AccessFSReadFile},
+			rules:        []Rule{PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "foo")},
+			supportedABI: 2,
+			wantCfg:      v0,
+			wantRules:    nil,
+		},
+		// Empty rules list
+		{
+			name:         "EmptyRules",
+			cfg:          Config{handledAccessFS: ll.AccessFSReadFile},
+			supportedABI: 1,
+			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantRules:    []Rule{},
+		},
+		// BindTCP rule downgrade
+		{
+			name: "BindTCPDowngrade",
+			cfg: Config{
+				handledAccessFS:  ll.AccessFSReadFile,
+				handledAccessNet: ll.AccessNetBindTCP,
+			},
+			rules:        []Rule{BindTCP(8080)},
+			supportedABI: 3,
+			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantRules:    []Rule{NetRule{access: 0, port: 8080}},
+		},
+		// V3→V2 boundary: truncate stripped
+		{
+			name:         "TruncateStrippedOnV2",
+			cfg:          Config{handledAccessFS: ll.AccessFSTruncate | ll.AccessFSReadFile},
+			rules:        []Rule{PathAccess(ll.AccessFSTruncate|ll.AccessFSReadFile, "foo")},
+			supportedABI: 2,
+			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantRules:    []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
+		},
+		// V5→V4 boundary: IoctlDev stripped
+		{
+			name:         "IoctlDevStrippedOnV4",
+			cfg:          Config{handledAccessFS: ll.AccessFSIoctlDev | ll.AccessFSReadFile},
+			rules:        []Rule{PathAccess(ll.AccessFSIoctlDev|ll.AccessFSReadFile, "foo")},
+			supportedABI: 4,
+			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantRules:    []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
+		},
 		{
 			name: "FSAndNetAndScopeDowngradeToV5DropsScope",
 			cfg: Config{
@@ -207,23 +271,8 @@ func TestDowngrade(t *testing.T) {
 				t.Fatalf("rules count: got %d, want %d", len(gotRules), len(tc.wantRules))
 			}
 			for i := range gotRules {
-				switch got := gotRules[i].(type) {
-				case FSRule:
-					want, ok := tc.wantRules[i].(FSRule)
-					if !ok {
-						t.Errorf("rule %d: got FSRule, want %T", i, tc.wantRules[i])
-					} else if got.accessFS != want.accessFS {
-						t.Errorf("rule %d accessFS: got %v, want %v", i, got.accessFS, want.accessFS)
-					}
-				case NetRule:
-					want, ok := tc.wantRules[i].(NetRule)
-					if !ok {
-						t.Errorf("rule %d: got NetRule, want %T", i, tc.wantRules[i])
-					} else if got != want {
-						t.Errorf("rule %d: got %v, want %v", i, got, want)
-					}
-				default:
-					t.Errorf("rule %d: unexpected type %T", i, gotRules[i])
+				if !rulesEqual(gotRules[i], tc.wantRules[i]) {
+					t.Errorf("rule %d: got %v, want %v", i, gotRules[i], tc.wantRules[i])
 				}
 			}
 		})
