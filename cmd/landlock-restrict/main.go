@@ -12,7 +12,7 @@ import (
 )
 
 func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlock.Rule, cmd []string) {
-	configs := []landlock.Config{landlock.V1, landlock.V2, landlock.V3, landlock.V4, landlock.V5, landlock.V6}
+	configs := []landlock.Config{landlock.V1, landlock.V2, landlock.V3, landlock.V4, landlock.V5, landlock.V6, landlock.V7}
 	cfg = configs[len(configs)-1]
 
 	takeArgs := func(makeOpt func(...string) landlock.FSRule) landlock.Rule {
@@ -56,6 +56,9 @@ ArgParsing:
 				log.Fatal(err)
 			}
 			cfg = configs[v-1]
+		case "-l":
+			cfg = cfg.EnableLoggingForSubprocesses()
+			continue
 		case "-strict":
 			bestEffort = false
 			args = args[1:]
@@ -109,21 +112,24 @@ func main() {
 	if len(cmdArgs) < 1 {
 		fmt.Println("Usage:")
 		fmt.Println("  landlock-restrict")
-		fmt.Println("     [-v]")
+		fmt.Println("     [-v] [-l]")
 		fmt.Println("     [-1] [-2] [-3] [-4] [-5] [-6] [-strict]")
-		fmt.Println("     [-ro [+refer] PATH...] [-rw [+refer] [+ioctl_dev] PATH...]")
-		fmt.Println("     [-rofiles [+refer] PATH] [-rwfiles [+refer] PATH]")
-		fmt.Println("       -- COMMAND...")
+		fmt.Println("     [-ro [+refer] PATH...]")
+		fmt.Println("     [-rw [+refer] [+ioctl_dev] PATH...]")
+		fmt.Println("     [-rofiles [+refer] PATH]")
+		fmt.Println("     [-rwfiles [+refer] PATH]")
+		fmt.Println("     -- COMMAND...")
 		fmt.Println()
 		fmt.Println("Options:")
 		fmt.Println("  -ro, -rw, -rofiles, -rwfiles   paths to restrict to")
-		fmt.Println("  -1, -2, -3, -4, -5, -6         select Landlock version")
+		fmt.Println("  -1, -2, -3, -4, -5, -6, -7     select Landlock version")
 		fmt.Println("  -strict                        use strict mode (instead of best effort)")
 		fmt.Println("  -v                             verbose logging")
+		fmt.Println("  -l                             audit logging for subprocess")
 		fmt.Println()
 		fmt.Println("A path list that contains the word '+refer' will additionally grant the refer access right.")
 		fmt.Println()
-		fmt.Println("Default mode for Landlock is V5 in best effort mode (best compatibility)")
+		fmt.Println("Default mode for Landlock is V7 in best effort mode (best compatibility)")
 		fmt.Println()
 
 		log.Fatalf("Need proper command, got %v", cmdArgs)
