@@ -146,11 +146,12 @@ func (c Config) String() string {
 		scopedDesc = "all"
 	}
 
-	flagsDesc := c.flags.String()
-
-	bestEffort := ""
+	extra := ""
+	if c.flags != 0 {
+		extra += fmt.Sprintf(" (flags: %s)", c.flags.String())
+	}
 	if c.bestEffort {
-		bestEffort = " (best effort)"
+		extra += " (best effort)"
 	}
 
 	var version string
@@ -160,7 +161,7 @@ func (c Config) String() string {
 		version = fmt.Sprintf("V%v", abi.version)
 	}
 
-	return fmt.Sprintf("{Landlock %v; FS: %v; Net: %v; Scoped: %v (restrictFlags: %v)%v}", version, fsDesc, netDesc, scopedDesc, flagsDesc, bestEffort)
+	return fmt.Sprintf("{Landlock %v; FS: %v; Net: %v; Scoped: %v%v}", version, fsDesc, netDesc, scopedDesc, extra)
 }
 
 // BestEffort returns a config that will opportunistically enforce

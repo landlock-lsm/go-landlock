@@ -1,5 +1,9 @@
 package landlock
 
+import (
+	"strings"
+)
+
 // restrictFlagsSet is a set of logging directives.
 type restrictFlagsSet uint32
 
@@ -10,13 +14,17 @@ var flagNames = []string{
 }
 
 func (a restrictFlagsSet) String() string {
-	if a == 0 {
-		// When no flag is set, logging will be done for the
-		// program execution only, as long as the kernel
-		// supports it. Otherwise, no logging is done.
-		return "∅"
+	var b strings.Builder
+	for i, flagName := range flagNames {
+		if a&(1<<i) == 0 {
+			continue
+		}
+		if b.Len() > 1 {
+			b.WriteByte(',')
+		}
+		b.WriteString(flagName)
 	}
-	return accessSetString(uint64(a), flagNames)
+	return b.String()
 }
 
 func (a restrictFlagsSet) isSubset(b restrictFlagsSet) bool {

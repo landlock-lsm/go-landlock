@@ -14,45 +14,50 @@ func TestConfigString(t *testing.T) {
 	}{
 		{
 			cfg:  Config{handledAccessFS: 0, handledAccessNet: 0},
-			want: "{Landlock V0; FS: ∅; Net: ∅; Scoped: ∅ (restrictFlags: ∅)}",
+			want: "{Landlock V0; FS: ∅; Net: ∅; Scoped: ∅}",
 		},
 		{
 			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
-			want: "{Landlock V1; FS: {write_file}; Net: ∅; Scoped: ∅ (restrictFlags: ∅)}",
+			want: "{Landlock V1; FS: {write_file}; Net: ∅; Scoped: ∅}",
 		},
 		{
 			cfg:  Config{handledAccessNet: ll.AccessNetBindTCP},
-			want: "{Landlock V4; FS: ∅; Net: {bind_tcp}; Scoped: ∅ (restrictFlags: ∅)}",
+			want: "{Landlock V4; FS: ∅; Net: {bind_tcp}; Scoped: ∅}",
 		},
 		{
 			cfg:  V1,
-			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅ (restrictFlags: ∅)}",
+			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅}",
 		},
 		{
 			cfg:  V1.BestEffort(),
-			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅ (restrictFlags: ∅) (best effort)}",
+			want: "{Landlock V1; FS: all; Net: ∅; Scoped: ∅ (best effort)}",
 		},
 		{
 			cfg:  V5,
-			want: "{Landlock V5; FS: all; Net: all; Scoped: ∅ (restrictFlags: ∅)}",
+			want: "{Landlock V5; FS: all; Net: all; Scoped: ∅}",
 		},
 		{
 			cfg:  V6,
-			want: "{Landlock V6; FS: all; Net: all; Scoped: all (restrictFlags: ∅)}",
+			want: "{Landlock V6; FS: all; Net: all; Scoped: all}",
 		},
 		{
 			// V7 is the same as V6...
 			cfg:  V7,
-			want: "{Landlock V6; FS: all; Net: all; Scoped: all (restrictFlags: ∅)}",
+			want: "{Landlock V6; FS: all; Net: all; Scoped: all}",
 		},
 		{
 			// ...unless you enable one of the logging flags.
 			cfg:  V7.EnableLoggingForSubprocesses(),
-			want: "{Landlock V7; FS: all; Net: all; Scoped: all (restrictFlags: {log_new_exec_on})}",
+			want: "{Landlock V7; FS: all; Net: all; Scoped: all (flags: log_new_exec_on)}",
+		},
+		{
+			// ...or some other ones.
+			cfg:  V7.DisableLoggingForOriginatingProcess().DisableLoggingForSubdomains(),
+			want: "{Landlock V7; FS: all; Net: all; Scoped: all (flags: log_same_exec_off,log_subdomains_off)}",
 		},
 		{
 			cfg:  Config{handledAccessFS: 1 << 63},
-			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Scoped: ∅ (restrictFlags: ∅)}",
+			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Scoped: ∅}",
 		},
 	} {
 		got := tc.cfg.String()
