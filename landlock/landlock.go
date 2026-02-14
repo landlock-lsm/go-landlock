@@ -93,6 +93,10 @@
 // as there is a risk that new Landlock versions will break operations
 // that their programs rely on.
 //
+// The documentation for [landlock.V7] and the adjacent version
+// numbers explains what you need to look for when upgrading between
+// Landlock ABI versions.
+//
 // # Graceful degradation on older kernels
 //
 // Programs that get run on different kernel versions will want to use

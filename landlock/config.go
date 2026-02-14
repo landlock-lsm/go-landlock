@@ -28,6 +28,80 @@ const (
 //
 // The higher the ABI version, the more operations Landlock will be
 // able to restrict.
+//
+// # Upgrading to V2
+//
+// Upgrading from V1 to V2 should not break existing programs.
+// Programs that need it can now move and link files between
+// directories with the "refer" access right.
+//
+// # Upgrading to V3
+//
+// Upgrading from V2 to V3 should not break existing programs,
+// as long as they are using RWPaths() and RWDirs() to express
+// access rights.
+//
+// Programs that spell out individual access rights might need
+// to add the "truncate" access right to the required access
+// rights.  Note that the truncation right is often required
+// for opening files for writing, because that often does an
+// implicit truncation for existing files.
+//
+// # Upgrading to V4
+//
+// When upgrading from V3 to V4, the TCP connect() and bind()
+// operations (required for [net.Dial] and [net.Listen]) will be
+// restricted when using [Config.Restrict] or [Config.RestrictNet].
+//
+// Note: This only affects "classic" TCP, not multipath TCP.
+// Multipath TCP, which is the default for [net.Listen] since
+// Go 1.24, continues to work.
+//
+// For comprehensive network sandboxing at this ABI level, we
+// recommend using additional sandboxing mechanisms.
+//
+// # Upgrading to V5
+//
+// When upgrading from V4 to V5, if you use [Config.Restrict] or
+// [Config.RestrictPaths], IOCTL operations on device files are now
+// restricted.  A small list of common IOCTLs continues to be
+// permitted and is listed in the [Kernel Documentation about Access Rights].
+//
+// The [RWFiles] and [RWDirs] helpers do not grant IOCTL rights
+// automatically, but you can ask for the access right explicitly
+// using [FSRule.WithIoctlDev].
+//
+// # Upgrading to V6
+//
+// When upgrading from V5 to V6, the following operations are newly
+// restricted if you are using [Config.Restrict] or
+// [Config.RestrictScoped]:
+//
+//   - Abstract UNIX Domain Socket connections that are reaching out to
+//     a server outside of the enforced Landlock domain.
+//   - UNIX signals that are signaling a program which is running outside
+//     of the enforced Landlock domain.
+//
+// # Upgrading to V7
+//
+// Upgrading from V6 to V7 is safe.
+//
+// The following methods can be newly used to influence audit logging
+// of Landlock denials:
+//
+//   - [Config.DisableLoggingForOriginatingProcess]
+//   - [Config.EnableLoggingForSubprocesses]
+//   - [Config.DisableLoggingForSubdomains]
+//
+// It is safe to use these in combination with [Config.BestEffort],
+// also on Linux systems that only support older Landlock ABIs.
+//
+// When one of these logging flags is set but [Config.BestEffort] is
+// omitted, you are asserting that you are running on a kernel that
+// supports ABI V7+, and you will get an error at restriction time if
+// the kernel does not support that.
+//
+// [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 var (
 	// Landlock V1 support (basic file operations).
 	V1 = abiInfos[1].asConfig()
@@ -52,6 +126,10 @@ var v0 = Config{}
 // The Landlock configuration describes the desired set of
 // landlockable operations to be restricted and the constraints on it
 // (e.g. best effort mode).
+//
+// It is recommended to use one of the preset configurations such as
+// [landlock.V7], which restrict the full set of access rights
+// available at this Landlock ABI version.
 type Config struct {
 	handledAccessFS  AccessFSSet
 	handledAccessNet AccessNetSet
@@ -176,39 +254,59 @@ func (c Config) BestEffort() Config {
 	return cfg
 }
 
-// DisableLoggingForOriginatingProcess disables logging of denied accesses originating from the
-// thread creating the Landlock domain, as well as its children, as long as they continue running
-// the same executable code (i.e., without an intervening execve(2) call).
+// DisableLoggingForOriginatingProcess disables logging of denied
+// accesses originating from the thread creating the Landlock domain,
+// as well as its children, as long as they continue running the same
+// executable code (i.e., without an intervening execve(2) call).
 //
-// This is intended for programs that execute unknown code without invoking execve(2), such as script interpreters.
-// Programs that only sandbox themselves should not set this flag, so users can be notified of
-// unauthorized access attempts via system logs
+// This is intended for programs that execute unknown code without
+// invoking execve(2), such as script interpreters.  Programs that
+// only sandbox themselves should not set this flag, so users can be
+// notified of unauthorized access attempts via system logs
+//
+// Requires a Linux kernel that supports Landlock ABI v7 or higher.
+// In combination with [Config.BestEffort], the logging option will be
+// omitted on older kernels and not result in an error.
 func (c Config) DisableLoggingForOriginatingProcess() Config {
 	cfg := c
 	cfg.flags |= ll.FlagRestrictSelfLogSameExecOff
 	return cfg
 }
 
-// EnableLoggingForSubprocesses enables logging of denied accesses after an execve(2)
-// call, providing visibility into unauthorized access attempts by newly executed programs
-// within the created Landlock domain.
+// EnableLoggingForSubprocesses enables logging of denied accesses
+// after an execve(2) call, providing visibility into unauthorized
+// access attempts by newly executed programs within the created
+// Landlock domain.
 //
-// This flag is recommended only when all potential executables in the domain are expected
-// to comply with the access restrictions, as excessive audit log entries could make it more
-// difficult to identify critical events.
+// This flag is recommended only when all potential executables in the
+// domain are expected to comply with the access restrictions, as
+// excessive audit log entries could make it more difficult to
+// identify critical events.
+//
+// Requires a Linux kernel that supports Landlock ABI v7 or higher.
+// In combination with [Config.BestEffort], the logging option will be
+// omitted on older kernels and not result in an error.
 func (c Config) EnableLoggingForSubprocesses() Config {
 	cfg := c
 	cfg.flags |= ll.FlagRestrictSelfLogNewExecOn
 	return cfg
 }
 
-// DisableLoggingForSubdomains disables logging of denied accesses originating from nested Landlock
-// domains created by the caller or its descendants. This flag should be set according to runtime configuration,
-// not hardcoded, to avoid suppressing important security events.
+// DisableLoggingForSubdomains disables logging of denied accesses
+// originating from nested Landlock domains created by the caller or
+// its descendants. This flag should be set according to runtime
+// configuration, not hardcoded, to avoid suppressing important
+// security events.
 //
-// It is useful for container runtimes or sandboxing tools that may launch programs which themselves create
-// Landlock domains and could otherwise generate excessive logs.
-// Unlike [DisableLoggingForSubdomains], this affects future nested domains, not the one being created.
+// It is useful for container runtimes or sandboxing tools that may
+// launch programs which themselves create Landlock domains and could
+// otherwise generate excessive logs.  Unlike
+// [DisableLoggingForSubdomains], this affects future nested domains,
+// not the one being created.
+//
+// Requires a Linux kernel that supports Landlock ABI v7 or higher.
+// In combination with [Config.BestEffort], the logging option will be
+// omitted on older kernels and not result in an error.
 func (c Config) DisableLoggingForSubdomains() Config {
 	cfg := c
 	cfg.flags |= ll.FlagRestrictSelfLogSubdomainsOff
