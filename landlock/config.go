@@ -452,15 +452,16 @@ func (c Config) RestrictScoped() error {
 	return restrict(c)
 }
 
-// Restrict restricts all types of access which is restrictable with the Config.
+// Restrict restricts all types of access rights which are
+// restrictable with the Config.
 //
-// Using Landlock V4, this is equivalent to calling both
-// [RestrictPaths] and [RestrictNet] with the subset of arguments that
-// apply to it.
+// Using Landlock V7, this is equivalent to calling all of
+// [Config.RestrictPaths], [Config.RestrictNet] and
+// [Config.RestrictScoped] with the subset of arguments that apply to
+// it.
 //
 // In future Landlock versions, this function might restrict
-// additional kinds of operations outside of file system access and
-// networking, provided that the [Config] specifies these.
+// additional types of access rights which are specified in the [Config].
 func (c Config) Restrict(rules ...Rule) error {
 	return restrict(c, rules...)
 }
