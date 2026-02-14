@@ -403,6 +403,9 @@ func (c Config) DisableLoggingForSubdomains() Config {
 // access rights. AccessFSSets permitted using [PathAccess] must be a
 // subset of the [AccessFSSet] that the Config restricts.
 //
+// To restrict multiple types of access rights at the same time, use
+// the more generic [Config.Restrict].
+//
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func (c Config) RestrictPaths(rules ...Rule) error {
 	// clear out everything but file system access
@@ -434,6 +437,9 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 // Landlock ABI v7 and we recommend using additional sandboxing
 // mechanisms to augment it.
 //
+// To restrict multiple types of access rights at the same time, use
+// the more generic [Config.Restrict].
+//
 // [Kernel Documentation about Network flags]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#network-flags
 func (c Config) RestrictNet(rules ...Rule) error {
 	// clear out everything but network access
@@ -450,6 +456,9 @@ func (c Config) RestrictNet(rules ...Rule) error {
 // Starting with Landlock V6, this restricts the use of IPC mechanisms
 // like signals and abstract unix domain sockets, when talking to
 // processes in more privileged Landlock domains.
+//
+// To restrict multiple types of access rights at the same time, use
+// the more generic [Config.Restrict].
 func (c Config) RestrictScoped() error {
 	// clear out everything but scoped operations
 	c = Config{
