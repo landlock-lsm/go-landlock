@@ -416,15 +416,23 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 
 // RestrictNet restricts network access in all goroutines.
 //
-// Using Landlock V4, this function will disallow the use of bind(2)
-// and connect(2) for TCP ports, unless those TCP ports are
-// specifically permitted using these rules:
+// Using Landlock V4, this function restricts the use of bind(2) and
+// connect(2) for TCP ports, unless those TCP ports are specifically
+// permitted using these rules:
 //
 //   - [ConnectTCP] permits connect(2) operations to a given TCP port.
 //   - [BindTCP] permits bind(2) operations on a given TCP port.
 //
 // These network access rights are documented in more depth in the
 // [Kernel Documentation about Network flags].
+//
+// The restrictions do not currently work with Multipath TCP, which is
+// the default for [net.Listen] since Go 1.24.  See the discussion in
+// the package-level documentation.
+//
+// Landlock's network sandboxing support is still incomplete as of
+// Landlock ABI v7 and we recommend using additional sandboxing
+// mechanisms to augment it.
 //
 // [Kernel Documentation about Network flags]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#network-flags
 func (c Config) RestrictNet(rules ...Rule) error {
@@ -457,8 +465,8 @@ func (c Config) RestrictScoped() error {
 //
 // Using Landlock V7, this is equivalent to calling all of
 // [Config.RestrictPaths], [Config.RestrictNet] and
-// [Config.RestrictScoped] with the subset of arguments that apply to
-// it.
+// [Config.RestrictScoped] with the respective subset of rule
+// arguments that apply to them.
 //
 // In future Landlock versions, this function might restrict
 // additional types of access rights which are specified in the [Config].

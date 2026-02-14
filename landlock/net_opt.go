@@ -15,7 +15,7 @@ type NetRule struct {
 // to a given TCP port.
 //
 // In Go, the connect(2) operation is usually run as part of
-// net.Dial().
+// [net.Dial].
 func ConnectTCP(port uint16) NetRule {
 	return NetRule{
 		access: ll.AccessNetConnectTCP,
@@ -27,7 +27,8 @@ func ConnectTCP(port uint16) NetRule {
 // given TCP port.
 //
 // In Go, the bind(2) operation is usually run as part of
-// net.Listen().
+// [net.Listen].  Since Go 1.24, [net.Listen] defaults to Multipath
+// TCP, see the discussion in the package documentation.
 func BindTCP(port uint16) NetRule {
 	return NetRule{
 		access: ll.AccessNetBindTCP,

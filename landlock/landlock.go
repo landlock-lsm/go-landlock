@@ -30,8 +30,8 @@
 // **IMPORTANT:** Landlock's TCP restrictions only apply to "classic"
 // TCP sockets, not to Multipath TCP sockets, which can also serve
 // non-multipath clients.  Since Go 1.24, Multipath TCP is the default
-// for [net.Listen], and [net.Listen] works independent of Landlock's
-// networking restrictions.
+// for [net.Listen], and therefore, [net.Listen] can not be restricted
+// with Landlock.
 //
 // The bug needs to be fixed in the Linux kernel and is tracked here:
 // https://github.com/landlock-lsm/linux/issues/54
