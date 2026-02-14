@@ -33,6 +33,21 @@ func TestCustomConfig(t *testing.T) {
 	})
 }
 
+func TestRestrictWithLoggingFlags(t *testing.T) {
+	lltest.RunInSubprocess(t, func() {
+		cfg := landlock.V7.
+			DisableLoggingForOriginatingProcess().
+			EnableLoggingForSubprocesses().
+			DisableLoggingForSubdomains().
+			BestEffort()
+
+		// Should always work, because "best effort" is set.
+		if err := cfg.Restrict(); err != nil {
+			t.Errorf("%v.Restrict(): unexpected error: %v", cfg, err)
+		}
+	})
+}
+
 func TestAbsurdDowngradeCase(t *testing.T) {
 	// This is a regression test for a bug where:
 	//
