@@ -61,7 +61,7 @@ func main() {
 		cmd = []string{"/bin/bash"}
 	}
 
-	if err := landlock.V4.RestrictNet(rules...); err != nil {
+	if err := landlock.V8.RestrictNet(rules...); err != nil {
 		log.Fatalf("landlock RestrictNet: %v", err)
 	}
 
