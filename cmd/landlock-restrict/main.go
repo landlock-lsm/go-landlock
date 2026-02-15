@@ -53,7 +53,7 @@ func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlo
 ArgParsing:
 	for len(args) > 0 {
 		switch args[0] {
-		case "-1", "-2", "-3", "-4", "-5", "-6":
+		case "-1", "-2", "-3", "-4", "-5", "-6", "-7":
 			v, err := strconv.Atoi(args[0][1:])
 			if err != nil {
 				log.Fatal(err)
