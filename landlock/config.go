@@ -139,7 +139,7 @@ var v0 = Config{}
 // (e.g. best effort mode).
 //
 // It is recommended to use one of the preset configurations such as
-// [landlock.V7], which restrict the full set of access rights
+// [landlock.V8], which restrict the full set of access rights
 // available at this Landlock ABI version.
 type Config struct {
 	handledAccessFS  AccessFSSet
@@ -333,12 +333,12 @@ func (c Config) DisableLoggingForSubdomains() Config {
 // that it can only read from /usr, /bin and /tmp, and only write to
 // /tmp:
 //
-//	err := landlock.V3.RestrictPaths(
+//	err := landlock.V8.RestrictPaths(
 //	    landlock.RODirs("/usr", "/bin"),
 //	    landlock.RWDirs("/tmp"),
 //	)
 //	if err != nil {
-//	    log.Fatalf("landlock.V3.RestrictPaths(): %v", err)
+//	    log.Fatalf("landlock.V8.RestrictPaths(): %v", err)
 //	}
 //
 // RestrictPaths returns an error if any of the given paths does not
@@ -445,7 +445,7 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 // the package-level documentation.
 //
 // Landlock's network sandboxing support is still incomplete as of
-// Landlock ABI v7 and we recommend using additional sandboxing
+// Landlock ABI v8 and we recommend using additional sandboxing
 // mechanisms to augment it.
 //
 // To restrict multiple types of access rights at the same time, use
@@ -483,7 +483,7 @@ func (c Config) RestrictScoped() error {
 // Restrict restricts all types of access rights which are
 // restrictable with the Config.
 //
-// Using Landlock V7, this is equivalent to calling all of
+// Using Landlock V8, this is equivalent to calling all of
 // [Config.RestrictPaths], [Config.RestrictNet] and
 // [Config.RestrictScoped] with the respective subset of rule
 // arguments that apply to them.
