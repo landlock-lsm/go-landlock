@@ -119,7 +119,7 @@ func main() {
 		fmt.Println("Usage:")
 		fmt.Println("  landlock-restrict")
 		fmt.Println("     [-v] [-l]")
-		fmt.Println("     [-1] [-2] [-3] [-4] [-5] [-6] [-strict]")
+		fmt.Println("     [-1] [-2] [-3] [-4] [-5] [-6] [-7] [-strict]")
 		fmt.Println("     [-ro [+refer] PATH...]")
 		fmt.Println("     [-rw [+refer] [+ioctl_dev] PATH...]")
 		fmt.Println("     [-rofiles [+refer] PATH]")
