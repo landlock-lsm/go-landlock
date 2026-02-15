@@ -1,4 +1,4 @@
-// landlock-restrict-scoped executes a process with Landlock filesystem restrictions.
+// landlock-restrict executes a process with Landlock filesystem restrictions.
 //
 // This is an example tool which does not provide backwards compatibility guarantees.
 package main
