@@ -5,6 +5,7 @@ package landlock
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"syscall"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
@@ -31,8 +32,12 @@ func downgrade(c Config, rules []Rule, abi abiInfo) (Config, []Rule) {
 
 // restrict is the actual implementation which sets up Landlock.
 func restrict(c Config, rules ...Rule) error {
-	// Work around https://github.com/landlock-lsm/go-landlock/issues/39
-	rules = maybeWorkaroundBug39(c, rules)
+	abi := getSupportedABIVersion()
+	multithreadedEnforcementInUserspace := abi.version < 8
+	if multithreadedEnforcementInUserspace {
+		// Work around https://github.com/landlock-lsm/go-landlock/issues/39
+		rules = maybeWorkaroundBug39(c, rules)
+	}
 
 	// Check validity of rules early.
 	for _, rule := range rules {
@@ -41,7 +46,6 @@ func restrict(c Config, rules ...Rule) error {
 		}
 	}
 
-	abi := getSupportedABIVersion()
 	if c.bestEffort {
 		c, rules = downgrade(c, rules, abi)
 	}
@@ -81,14 +85,30 @@ func restrict(c Config, rules ...Rule) error {
 		}
 	}
 
-	if err := ll.AllThreadsPrctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
-		// This prctl invocation should always work.
-		return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))
+	if multithreadedEnforcementInUserspace {
+		if err := ll.AllThreadsPrctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
+			// This prctl invocation should always work.
+			return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))
+		}
+
+		if err := ll.AllThreadsLandlockRestrictSelf(fd, uint32(c.flags)); err != nil {
+			if errors.Is(err, syscall.E2BIG) {
+				// Other errors than E2BIG should never happen.
+				return fmt.Errorf("the maximum number of stacked rulesets is reached for the current thread: %w", err)
+			}
+			return bug(fmt.Errorf("landlock_restrict_self: %w", err))
+		}
+		return nil
 	}
 
-	if err := ll.AllThreadsLandlockRestrictSelf(fd, uint32(c.flags)); err != nil {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if err := unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
+		return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))
+	}
+	if err := ll.LandlockRestrictSelf(fd, uint32(c.flags)|ll.FlagRestrictSelfTSync); err != nil {
 		if errors.Is(err, syscall.E2BIG) {
-			// Other errors than E2BIG should never happen.
 			return fmt.Errorf("the maximum number of stacked rulesets is reached for the current thread: %w", err)
 		}
 		return bug(fmt.Errorf("landlock_restrict_self: %w", err))

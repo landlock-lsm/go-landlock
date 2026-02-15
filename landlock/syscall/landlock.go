@@ -63,6 +63,7 @@ const (
 	FlagRestrictSelfLogSameExecOff = 1 << iota
 	FlagRestrictSelfLogNewExecOn
 	FlagRestrictSelfLogSubdomainsOff
+	FlagRestrictSelfTSync
 )
 
 // RulesetAttr is the Landlock ruleset definition.

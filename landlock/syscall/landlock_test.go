@@ -20,6 +20,11 @@ func TestRestrictSelfFlags(t *testing.T) {
 	if FlagRestrictSelfLogSubdomainsOff != unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF {
 		t.Errorf("FlagRestrictSelfLogSubdomainsOff differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfLogSubdomainsOff, unix.LANDLOCK_RESTRICT_SELF_LOG_SUBDOMAINS_OFF)
 	}
+
+	// TODO: compare with unix.LANDLOCK_RESTRICT_SELF_TSYNC when available.
+	if FlagRestrictSelfTSync != (1 << 3) {
+		t.Errorf("FlagRestrictSelfTSync differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfTSync, 1<<3)
+	}
 }
 
 func TestAccessRights(t *testing.T) {

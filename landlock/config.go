@@ -86,8 +86,8 @@ const (
 //
 // Upgrading from V6 to V7 is safe.
 //
-// The following methods can be newly used to influence audit logging
-// of Landlock denials:
+// With ABI V7, the following methods can be newly used to influence
+// audit logging of Landlock denials:
 //
 //   - [Config.DisableLoggingForOriginatingProcess]
 //   - [Config.EnableLoggingForSubprocesses]
@@ -100,6 +100,15 @@ const (
 // omitted, you are asserting that you are running on a kernel that
 // supports ABI V7+, and you will get an error at restriction time if
 // the kernel does not support that.
+//
+// # Upgrading to V8
+//
+// Upgrading from V7 to V8 is safe.
+//
+// ABI V8 adds an under-the-hood improvement for multithreaded
+// Landlock enforcement, which is used by Go-Landlock whenever it is
+// available.  The [landlock.V8] configuration preset restricts the
+// same operations as [landlock.V7].
 //
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 var (
@@ -118,6 +127,8 @@ var (
 	V6 = abiInfos[6].asConfig()
 	// Landlock V7 support (V6 + logging support)
 	V7 = abiInfos[7].asConfig()
+	// Landlock V8 support (V7 + thread synchronization)
+	V8 = abiInfos[8].asConfig()
 )
 
 // v0 denotes "no Landlock support". Only used internally.

@@ -69,8 +69,32 @@ func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags
 	return
 }
 
+// LandlockRestrictSelf is the landlock_restrict_self(2) system call.
+//
+// If the [FlagRestrictSelfTSync] flag is provided in flags, the
+// Landlock policy is applied to all threads of the current process,
+// and the no_new_privs attribute is also synchronized across all
+// threads (if it was set for the current thread).
+//
+// Without this flag, the policy is only applied to the current OS thread.
+//
+// See https://docs.kernel.org/userspace-api/landlock.html#c.sys_landlock_restrict_self
+func LandlockRestrictSelf(rulesetFd int, flags uint32) (err error) {
+	_, _, e1 := syscall.Syscall(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
+	if e1 != 0 {
+		err = syscall.Errno(e1)
+	}
+	return
+}
+
 // AllThreadsLandlockRestrictSelf enforces the given ruleset on all OS
 // threads belonging to the current process.
+//
+// This is the libpsx variant which uses signals to execute the
+// system call on all threads in userspace.
+//
+// For Landlock ABI v8 and higher, we recommend using
+// [LandlockRestrictSelf] with the [FlagRestrictSelfTSync] flag instead.
 func AllThreadsLandlockRestrictSelf(rulesetFd int, flags uint32) (err error) {
 	_, _, e1 := psx.Syscall3(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
 	if e1 != 0 {

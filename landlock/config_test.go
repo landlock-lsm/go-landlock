@@ -41,8 +41,12 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V6; FS: all; Net: all; Scoped: all}",
 		},
 		{
-			// V7 is the same as V6...
+			// V7 and V8 are the same as V6...
 			cfg:  V7,
+			want: "{Landlock V6; FS: all; Net: all; Scoped: all}",
+		},
+		{
+			cfg:  V8,
 			want: "{Landlock V6; FS: all; Net: all; Scoped: all}",
 		},
 		{
@@ -154,8 +158,8 @@ func TestCompatibleWithABI(t *testing.T) {
 	for i, abi := range abiInfos {
 		cfg := abi.asConfig()
 		t.Run(fmt.Sprintf("V%v", i), func(t *testing.T) {
-			if i == 7 {
-				i = 6 // abiInfos[7].asConfig() is the same as abiInfos[6].asConfig()
+			if i >= 6 {
+				i = 6 // abiInfos[6, 7, 8].asConfig() are all the same
 			}
 			for j := range i {
 				if cfg.compatibleWithABI(abiInfos[j]) {
