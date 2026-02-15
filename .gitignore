@@ -1,3 +1,7 @@
 main
 bin/*
 *~
+/CLAUDE.md
+/GEMINI.md
+/justfile
+/TODO.md
