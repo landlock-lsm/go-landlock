@@ -59,8 +59,11 @@ ArgParsing:
 				log.Fatal(err)
 			}
 			cfg = configs[v-1]
+			args = args[1:]
+			continue
 		case "-l":
 			cfg = cfg.EnableLoggingForSubprocesses()
+			args = args[1:]
 			continue
 		case "-strict":
 			bestEffort = false
