@@ -6,7 +6,7 @@ import (
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
 
-// FSRule is a Rule which permits access to file system paths.
+// FSRule is a Rule which permits access to filesystem paths.
 type FSRule struct {
 	accessFS      AccessFSSet
 	paths         []string
@@ -51,8 +51,8 @@ func (r FSRule) WithIoctlDev() FSRule {
 //
 // Under normal circumstances, referring to a non-existing path in a rule would
 // lead to a runtime error. When the rule uses the IgnoreIfMissing modifier,
-// these runtime errors are ignored. This can be useful e.g. for optional
-// configuration paths, which are only ever read by a program.
+// these runtime errors are ignored. This can be useful for optional
+// configuration paths, which are only read but not written.
 func (r FSRule) IgnoreIfMissing() FSRule {
 	r.ignoreMissing = true
 	return r

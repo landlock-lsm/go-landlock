@@ -24,7 +24,7 @@ var accessFSNames = []string{
 	"ioctl_dev",
 }
 
-// AccessFSSet is a set of Landlockable file system access operations.
+// AccessFSSet is a set of Landlockable filesystem access operations.
 type AccessFSSet uint64
 
 var supportedAccessFS = AccessFSSet((1 << len(accessFSNames)) - 1)

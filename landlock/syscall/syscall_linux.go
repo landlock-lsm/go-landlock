@@ -93,7 +93,7 @@ func LandlockRestrictSelf(rulesetFd int, flags uint32) (err error) {
 // This is the libpsx variant which uses signals to execute the
 // system call on all threads in userspace.
 //
-// For Landlock ABI v8 and higher, we recommend using
+// For Landlock ABI V8 and higher, we recommend using
 // [LandlockRestrictSelf] with the [FlagRestrictSelfTSync] flag instead.
 func AllThreadsLandlockRestrictSelf(rulesetFd int, flags uint32) (err error) {
 	_, _, e1 := psx.Syscall3(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)

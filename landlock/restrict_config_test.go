@@ -53,7 +53,7 @@ func TestAbsurdDowngradeCase(t *testing.T) {
 	//
 	// - we run on a kernel that supports Landlock but does not
 	//   support the truncate access right
-	// - Go-Landlock will "downgrade" the file system rule to "no access rights",
+	// - Go-Landlock will "downgrade" the filesystem rule to "no access rights",
 	//   because the requested access right "truncate" is not supported.
 	// - It should not try to add that rule (but it used to).
 	if v, err := ll.LandlockGetABIVersion(); err != nil || v <= 0 || v > 2 {

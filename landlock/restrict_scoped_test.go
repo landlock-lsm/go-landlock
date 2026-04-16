@@ -16,7 +16,7 @@ import (
 func TestRestrictScoped(t *testing.T) {
 	const name = "@abstract/go-landlock/test"
 
-	// Bring up an abstract Unix Domain Socket service in the
+	// Bring up an abstract UNIX Domain Socket service in the
 	// parent process, which the subprocesses can dial.
 	if !lltest.IsRunningInSubprocess() {
 		ls, err := net.Listen("unix", name)

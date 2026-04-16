@@ -1,4 +1,4 @@
-// Package landlock restricts a Go program's ability to use files and networking.
+// Package landlock enforces sandboxing policies using Linux's Landlock LSM.
 //
 // # Restricting file access
 //
@@ -83,9 +83,9 @@
 // The Landlock ABI is versioned, so that callers can probe for the
 // availability of different Landlock features.
 //
-// When using the Go Landlock package, callers need to identify at
+// When using the Go-Landlock package, callers need to identify at
 // which ABI level they want to use Landlock and call one of the
-// restriction methods (e.g. [Config.RestrictPaths]) on the
+// restriction methods (e.g., [Config.RestrictPaths]) on the
 // corresponding ABI constant.
 //
 // When new Landlock versions become available in landlock, users will
@@ -103,17 +103,17 @@
 // the [Config.BestEffort] method to gracefully degrade to using the
 // best available Landlock version on the current kernel.
 //
-// In this case, the Go Landlock library will enforce as much as
+// In this case, the Go-Landlock library will enforce as much as
 // possible, but it will ensure that all the requested access rights
 // are permitted after Landlock enforcement.
 //
-// # Current limitations (File System)
+// # Current limitations (Filesystem)
 //
-// Landlock can not currently restrict all file system operations.
+// Landlock can not currently restrict all filesystem operations.
 // The operations that can and can not be restricted yet are listed in
 // the [Kernel Documentation about Access Rights].
 //
-// Enabling Landlock implicitly turns off the following file system
+// Enabling Landlock implicitly turns off the following filesystem
 // features:
 //
 //   - File reparenting: renaming or linking a file to a different parent directory is denied,
@@ -132,13 +132,13 @@
 // libraries that start OS threads through means other than
 // pthread_create() before landlock is called:
 //
-// When using cgo, the landlock package relies on libpsx in order to
-// apply the rules across all OS threads, (rather than just the ones
-// managed by the Go runtime). psx achieves this by wrapping the
-// C-level phtread_create() API which is very commonly used on Unix to
-// start threads. However, C libraries calling clone(2) through other
-// means before landlock is called might still create threads that
-// won't have Landlock protections.
+// Before Landlock ABI V8, when using cgo, the landlock package relies
+// on libpsx in order to apply the rules across all OS threads,
+// (rather than just the ones managed by the Go runtime).  psx
+// achieves this by wrapping the C-level pthread_create() API which is
+// very commonly used on UNIX to start threads. However, C libraries
+// calling clone(2) through other means before landlock is called
+// might still create threads that won't have Landlock protections.
 //
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 // [Kernel Documentation about Current Limitations]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#current-limitations

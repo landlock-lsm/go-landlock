@@ -49,10 +49,11 @@ Because the mapping between OS threads and Goroutines is not
 guaranteed anyway, the Go-Landlock API always enables the given
 Landlock for the entire process.
 
-Prior to Linux 7.0, this is done using the `psx` library, which is a
-helper library for the `libcap` library for working with Linux
-capabilities. `psx` exposes an API that does a system call with the
-given arguments on *every OS thread* in a running Go program.
+Prior to Landlock ABI V8 (Linux 7.0), this is done using the `psx`
+library, which is a helper library for the `libcap` library for
+working with Linux capabilities. `psx` exposes an API that does a
+system call with the given arguments on *every OS thread* in a running
+Go program.
 
 For pure Go programs, `psx` does the same as the
 [`syscall.AllThreadsSyscall`

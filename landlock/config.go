@@ -53,7 +53,7 @@ const (
 // operations (required for [net.Dial] and [net.Listen]) will be
 // restricted when using [Config.Restrict] or [Config.RestrictNet].
 //
-// Note: This only affects "classic" TCP, not multipath TCP.
+// Note: This only affects "classic" TCP, not Multipath TCP.
 // Multipath TCP, which is the default for [net.Listen] since
 // Go 1.24, continues to work.
 //
@@ -123,7 +123,7 @@ var (
 	// Landlock V5 support (V4 + ioctl on device files)
 	V5 = abiInfos[5].asConfig()
 	// Landlock V6 support (V5 + IPC scopes for signals and
-	// Abstract Unix Domain Sockets (c.f. unix(7)))
+	// Abstract UNIX Domain Sockets (see unix(7)))
 	V6 = abiInfos[6].asConfig()
 	// Landlock V7 support (V6 + logging support)
 	V7 = abiInfos[7].asConfig()
@@ -136,7 +136,7 @@ var v0 = Config{}
 
 // The Landlock configuration describes the desired set of
 // landlockable operations to be restricted and the constraints on it
-// (e.g. best effort mode).
+// (e.g., best effort mode).
 //
 // It is recommended to use one of the preset configurations such as
 // [landlock.V8], which restrict the full set of access rights
@@ -152,10 +152,10 @@ type Config struct {
 // NewConfig creates a new Landlock configuration with the given parameters.
 //
 // Passing an AccessFSSet, AccessNetSet or ScopedSet will set these as
-// the set of file system/network/scoped operations to restrict when
+// the set of filesystem/network/scoped operations to restrict when
 // enabling Landlock. The sets need to stay within the bounds of what
-// go-landlock supports.  (If you are getting an error, you might need
-// to upgrade to a newer version of go-landlock.)
+// Go-Landlock supports.  (If you are getting an error, you might need
+// to upgrade to a newer version of Go-Landlock.)
 //
 // Example:
 //
@@ -273,9 +273,9 @@ func (c Config) BestEffort() Config {
 // This is intended for programs that execute unknown code without
 // invoking execve(2), such as script interpreters.  Programs that
 // only sandbox themselves should not set this flag, so users can be
-// notified of unauthorized access attempts via system logs
+// notified of unauthorized access attempts via system logs.
 //
-// Requires a Linux kernel that supports Landlock ABI v7 or higher.
+// Requires a Linux kernel that supports Landlock ABI V7 or higher.
 // In combination with [Config.BestEffort], the logging option will be
 // omitted on older kernels and not result in an error.
 func (c Config) DisableLoggingForOriginatingProcess() Config {
@@ -294,7 +294,7 @@ func (c Config) DisableLoggingForOriginatingProcess() Config {
 // excessive audit log entries could make it more difficult to
 // identify critical events.
 //
-// Requires a Linux kernel that supports Landlock ABI v7 or higher.
+// Requires a Linux kernel that supports Landlock ABI V7 or higher.
 // In combination with [Config.BestEffort], the logging option will be
 // omitted on older kernels and not result in an error.
 func (c Config) EnableLoggingForSubprocesses() Config {
@@ -312,10 +312,10 @@ func (c Config) EnableLoggingForSubprocesses() Config {
 // It is useful for container runtimes or sandboxing tools that may
 // launch programs which themselves create Landlock domains and could
 // otherwise generate excessive logs.  Unlike
-// [DisableLoggingForSubdomains], this affects future nested domains,
-// not the one being created.
+// [DisableLoggingForOriginatingProcess], this affects future nested
+// domains, not the one being created.
 //
-// Requires a Linux kernel that supports Landlock ABI v7 or higher.
+// Requires a Linux kernel that supports Landlock ABI V7 or higher.
 // In combination with [Config.BestEffort], the logging option will be
 // omitted on older kernels and not result in an error.
 func (c Config) DisableLoggingForSubdomains() Config {
@@ -330,7 +330,7 @@ func (c Config) DisableLoggingForSubdomains() Config {
 // specified in advance in the call to RestrictPaths.
 //
 // Example: The following invocation will restrict all goroutines so
-// that it can only read from /usr, /bin and /tmp, and only write to
+// that they can only read from /usr, /bin and /tmp, and only write to
 // /tmp:
 //
 //	err := landlock.V8.RestrictPaths(
@@ -419,7 +419,7 @@ func (c Config) DisableLoggingForSubdomains() Config {
 //
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 func (c Config) RestrictPaths(rules ...Rule) error {
-	// clear out everything but file system access
+	// clear out everything but filesystem access
 	c = Config{
 		handledAccessFS: c.handledAccessFS,
 		flags:           c.flags,
@@ -445,7 +445,7 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 // the package-level documentation.
 //
 // Landlock's network sandboxing support is still incomplete as of
-// Landlock ABI v8 and we recommend using additional sandboxing
+// Landlock ABI V8 and we recommend using additional sandboxing
 // mechanisms to augment it.
 //
 // To restrict multiple types of access rights at the same time, use
@@ -465,7 +465,7 @@ func (c Config) RestrictNet(rules ...Rule) error {
 // RestrictScoped restricts scoped IPC access in all goroutines.
 //
 // Starting with Landlock V6, this restricts the use of IPC mechanisms
-// like signals and abstract unix domain sockets, when talking to
+// like signals and abstract UNIX domain sockets, when talking to
 // processes in more privileged Landlock domains.
 //
 // To restrict multiple types of access rights at the same time, use

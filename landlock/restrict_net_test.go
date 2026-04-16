@@ -157,7 +157,7 @@ func runBackgroundService(t *testing.T, network, addr string) {
 		for {
 			c, err := l.Accept()
 			if err != nil {
-				// Return on error (e.g. if l gets closed asynchronously)
+				// Return on error (e.g., if l gets closed asynchronously)
 				return
 			}
 			c.Close()

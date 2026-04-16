@@ -41,7 +41,7 @@ func (c *compositeRule) addToRuleset(rulesetFD int, cfg Config) error {
 // A composite rule passed to [Config.Restrict] behaves the same as
 // passing all sub-rules individually.  Composite rules are not
 // strictly necessary in Go-Landlock, but useful for building
-// libraries of re-usable Landlock rules.
+// libraries of reusable Landlock rules.
 func CompositeRule(rules ...Rule) Rule {
 	return &compositeRule{rules: rules}
 }

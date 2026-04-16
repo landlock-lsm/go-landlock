@@ -4,7 +4,7 @@ package landlock
 //
 // When the scope is restricted, these IPC operations can not be used
 // to communicate with a process in a more privileged sandbox domain
-// (e.g. a process in a parent domain or a non-sandboxed process).
+// (e.g., a process in a parent domain or a non-sandboxed process).
 type ScopedSet uint64
 
 var scopedNames = []string{
