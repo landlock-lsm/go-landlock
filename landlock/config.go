@@ -35,10 +35,14 @@ const (
 // Programs that need it can now move and link files between
 // directories with the "refer" access right.
 //
+// The [RWFiles] and [RWDirs] helpers do not grant the "refer" right
+// automatically, but you can ask for the access right explicitly
+// using [FSRule.WithRefer].
+//
 // # Upgrading to V3
 //
 // Upgrading from V2 to V3 should not break existing programs,
-// as long as they are using RWPaths() and RWDirs() to express
+// as long as they are using [RWPaths] and [RWDirs] to express
 // access rights.
 //
 // Programs that spell out individual access rights might need
