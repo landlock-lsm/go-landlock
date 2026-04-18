@@ -1,6 +1,6 @@
 package landlock
 
-import ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
+import "github.com/landlock-lsm/go-landlock/landlock/internal"
 
 type abiInfo struct {
 	version                int
@@ -74,25 +74,9 @@ func (a abiInfo) asConfig() Config {
 // newest one known to go-landlock, the highest ABI version known to
 // go-landlock is returned.
 func getSupportedABIVersion() abiInfo {
-	v, err := ll.LandlockGetABIVersion()
-	if err != nil {
-		v = 0 // ABI version 0 is "no Landlock support".
-	}
+	v := internal.DetectedABIVersion()
 	if v >= len(abiInfos) {
 		v = len(abiInfos) - 1
-	}
-	if v >= 6 {
-		// Check that the signal scoping bug is fixed,
-		// otherwise downgrade to v5.  This should happen only
-		// seldomly, as the bugfix was backported to newer
-		// versions of the 6.12 LTS kernel.
-		errata, err := ll.LandlockGetErrata()
-		if err != nil {
-			errata = 0 // pretend none fixed
-		}
-		if (errata & 0x2) == 0 {
-			v = 5
-		}
 	}
 	return abiInfos[v]
 }

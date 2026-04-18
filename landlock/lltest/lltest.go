@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
+	"github.com/landlock-lsm/go-landlock/landlock/internal"
 )
 
 // RunInSubprocess runs the given test function in a subprocess
@@ -73,22 +73,7 @@ func TempDir(t testing.TB) string {
 }
 
 func abiVersion() (int, error) {
-	// TODO(gnoack): This logic must stay in line with
-	// getSuppportedABIVersion().
-	v, err := ll.LandlockGetABIVersion()
-	if err != nil {
-		return 0, err
-	}
-	if v >= 6 {
-		errata, err := ll.LandlockGetErrata()
-		if err != nil {
-			return 0, err
-		}
-		if (errata & 0x2) == 0 {
-			v = 5
-		}
-	}
-	return v, nil
+	return internal.DetectedABIVersion(), nil
 }
 
 // RequireABI skips the test if the kernel does not provide the given ABI version.
