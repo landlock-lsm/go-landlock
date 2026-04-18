@@ -33,8 +33,8 @@ func downgrade(c Config, rules []Rule, abi abiInfo) (Config, []Rule) {
 // restrict is the actual implementation which sets up Landlock.
 func restrict(c Config, rules ...Rule) error {
 	abi := getSupportedABIVersion()
-	multithreadedEnforcementInUserspace := abi.version < 8
-	if multithreadedEnforcementInUserspace {
+	useTsync := abi.version >= 8
+	if !useTsync {
 		// Work around https://github.com/landlock-lsm/go-landlock/issues/39
 		rules = maybeWorkaroundBug39(c, rules)
 	}
@@ -85,7 +85,7 @@ func restrict(c Config, rules ...Rule) error {
 		}
 	}
 
-	if multithreadedEnforcementInUserspace {
+	if !useTsync {
 		if err := ll.AllThreadsPrctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
 			// This prctl invocation should always work.
 			return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))

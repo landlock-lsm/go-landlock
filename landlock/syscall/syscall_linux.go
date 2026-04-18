@@ -7,7 +7,6 @@ import (
 	"unsafe"
 
 	"golang.org/x/sys/unix"
-	"kernel.org/pub/linux/libs/security/libcap/psx"
 )
 
 // LandlockCreateRuleset creates a ruleset file descriptor with the
@@ -81,31 +80,6 @@ func LandlockAddRule(rulesetFd int, ruleType int, ruleAttr unsafe.Pointer, flags
 // See https://docs.kernel.org/userspace-api/landlock.html#c.sys_landlock_restrict_self
 func LandlockRestrictSelf(rulesetFd int, flags uint32) (err error) {
 	_, _, e1 := syscall.Syscall(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
-	if e1 != 0 {
-		err = syscall.Errno(e1)
-	}
-	return
-}
-
-// AllThreadsLandlockRestrictSelf enforces the given ruleset on all OS
-// threads belonging to the current process.
-//
-// This is the libpsx variant which uses signals to execute the
-// system call on all threads in userspace.
-//
-// For Landlock ABI V8 and higher, we recommend using
-// [LandlockRestrictSelf] with the [FlagRestrictSelfTSync] flag instead.
-func AllThreadsLandlockRestrictSelf(rulesetFd int, flags uint32) (err error) {
-	_, _, e1 := psx.Syscall3(unix.SYS_LANDLOCK_RESTRICT_SELF, uintptr(rulesetFd), uintptr(flags), 0)
-	if e1 != 0 {
-		err = syscall.Errno(e1)
-	}
-	return
-}
-
-// AllThreadsPrctl is like unix.Prctl, but gets applied on all OS threads at the same time.
-func AllThreadsPrctl(option int, arg2, arg3, arg4, arg5 uintptr) (err error) {
-	_, _, e1 := psx.Syscall6(syscall.SYS_PRCTL, uintptr(option), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
 	if e1 != 0 {
 		err = syscall.Errno(e1)
 	}
