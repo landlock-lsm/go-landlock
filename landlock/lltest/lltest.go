@@ -37,8 +37,7 @@ func RunInSubprocess(t *testing.T, f func()) {
 		t.Fatalf("Could not execute test in subprocess: %v", err)
 	}
 
-	lines := strings.Split(string(buf), "\n")
-	for _, l := range lines {
+	for l := range strings.SplitSeq(string(buf), "\n") {
 		if l == "FAIL" {
 			defer func() { t.Error("Test failed in subprocess") }()
 			continue

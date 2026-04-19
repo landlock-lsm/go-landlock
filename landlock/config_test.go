@@ -136,7 +136,7 @@ func TestNewConfigEmpty(t *testing.T) {
 }
 
 func TestNewConfigFailures(t *testing.T) {
-	for _, args := range [][]interface{}{
+	for _, args := range [][]any{
 		{ll.AccessFSWriteFile},
 		{123},
 		{"a string"},
@@ -179,7 +179,7 @@ func TestRestrictTo(t *testing.T) {
 	for i, abi := range abiInfos {
 		cfg := abi.asConfig()
 		t.Run(fmt.Sprintf("V%v", i), func(t *testing.T) {
-			for j := 0; j < len(abiInfos); j++ {
+			for j := range abiInfos {
 				compatCfg := cfg.restrictTo(abiInfos[j])
 				if !compatCfg.compatibleWithABI(abiInfos[j]) {
 					t.Errorf("compatCfg.compatibleWithABI(abiInfos[%v]) = false, want true", j)
