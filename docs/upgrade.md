@@ -1,6 +1,9 @@
 # Upgrading to using a newer Landlock ABI version using go-landlock
 
-Use this workflow to adopt new Landlock features after.
+Use this workflow to adopt new Landlock features after a new version
+of Go-Landlock was released.  This unlocks also new Landlock
+capabilities offered by the kernel and can make your sandbox policy
+more constrained.
 
 ## Step 1 — Update the library
 
