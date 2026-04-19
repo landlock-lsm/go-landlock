@@ -34,3 +34,8 @@ Goals of Go-Landlock are:
 
 * Make unprivileged sandboxing easy to use and effective.
 * Keep Go-Landlock's implementation at an easily auditable size.
+
+## How to...
+
+* [...onboard a program to use Go-Landlock](docs/onboarding.md)
+* [...upgrade a Go-Landlock usage to use more advanced features](docs/upgrade.md)
