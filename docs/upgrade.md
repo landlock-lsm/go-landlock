@@ -42,7 +42,7 @@ documentation.
 
 ## After upgrading
 
-Replace the version constant (e.g. `landlock.V6` → `landlock.V8`) and
+Replace the version constant (e.g. `landlock.V6` → `landlock.V9`) and
 run the test suite.  Make sure to exercise scenarios where the sandbox
 is applied - that often means that the actual program binary must be
 invoked.
