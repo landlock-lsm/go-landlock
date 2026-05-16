@@ -13,7 +13,7 @@ func TestAbiVersionsIncrementing(t *testing.T) {
 }
 
 func TestSupportedAccessFS(t *testing.T) {
-	got := abiInfos[5].supportedAccessFS
+	got := abiInfos[9].supportedAccessFS
 	want := supportedAccessFS
 
 	if got != want {

@@ -47,6 +47,17 @@ func (r FSRule) WithIoctlDev() FSRule {
 	return r.withRights(ll.AccessFSIoctlDev)
 }
 
+// WithResolveUnix adds the "resolve unix" access right to a FSRule.
+//
+// This access right covers the use of connect(2) and sendmsg(2) on
+// pathname UNIX domain sockets (see unix(7)).
+//
+// It is uncommon to need this access right, so it is not part of
+// [RWFiles] or [RWDirs].
+func (r FSRule) WithResolveUnix() FSRule {
+	return r.withRights(ll.AccessFSResolveUnix)
+}
+
 // IgnoreIfMissing gracefully ignores missing paths.
 //
 // Under normal circumstances, referring to a non-existing path in a rule would
@@ -146,6 +157,10 @@ func RODirs(paths ...string) FSRule {
 //   - RWDirs does *not* grant the right to *use IOCTL* on device
 //     files.  If this access right is required, use
 //     [FSRule.WithIoctlDev].
+//
+//   - RWDirs does *not* grant the right to use *connect(2) and
+//     sendmsg(2) on pathname UNIX domain sockets*.  If this access
+//     right is required, use [FSRule.WithResolveUnix].
 func RWDirs(paths ...string) FSRule {
 	return FSRule{
 		accessFS:      accessFSReadWrite,
@@ -174,6 +189,10 @@ func ROFiles(paths ...string) FSRule {
 //   - RWFiles does *not* grant the right to *use IOCTL* on device
 //     files.  If this access right is required, use
 //     [FSRule.WithIoctlDev].
+//
+//   - RWFiles does *not* grant the right to use *connect(2) and
+//     sendmsg(2) on pathname UNIX domain sockets*.  If this access
+//     right is required, use [FSRule.WithResolveUnix].
 func RWFiles(paths ...string) FSRule {
 	return FSRule{
 		accessFS:      accessFSReadWrite & accessFile,

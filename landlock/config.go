@@ -114,6 +114,19 @@ const (
 // available.  The [landlock.V8] configuration preset restricts the
 // same operations as [landlock.V7].
 //
+// # Upgrading to V9
+//
+// When upgrading from V8 to V9, if you use [Config.Restrict] or
+// [Config.RestrictPaths], connect(2) and sendmsg(2) calls on pathname
+// UNIX domain sockets (see unix(7)) are now restricted.  This only
+// affects connections to UNIX server sockets that were created
+// outside of the enforced Landlock domain.  Newly created UNIX
+// servers within the same Landlock domain continue to be accessible.
+//
+// The [RWFiles] and [RWDirs] helpers do not grant the "resolve unix"
+// access right automatically, but you can ask for the access right
+// explicitly using [FSRule.WithResolveUnix].
+//
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 var (
 	// Landlock V1 support (basic file operations).
@@ -133,6 +146,9 @@ var (
 	V7 = abiInfos[7].asConfig()
 	// Landlock V8 support (V7 + thread synchronization)
 	V8 = abiInfos[8].asConfig()
+	// Landlock V9 support (V8 + restricting connect(2) and sendmsg(2)
+	// on pathname UNIX domain sockets)
+	V9 = abiInfos[9].asConfig()
 )
 
 // v0 denotes "no Landlock support". Only used internally.

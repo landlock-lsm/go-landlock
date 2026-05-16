@@ -49,6 +49,8 @@ func TestAccessRights(t *testing.T) {
 		{"FSRefer", AccessFSRefer, unix.LANDLOCK_ACCESS_FS_REFER},
 		{"FSTruncate", AccessFSTruncate, unix.LANDLOCK_ACCESS_FS_TRUNCATE},
 		{"FSIoctlDev", AccessFSIoctlDev, unix.LANDLOCK_ACCESS_FS_IOCTL_DEV},
+		// TODO: compare with unix.LANDLOCK_ACCESS_FS_RESOLVE_UNIX when available.
+		{"FSResolveUnix", AccessFSResolveUnix, 1 << 16},
 		{"NetBindTCP", AccessNetBindTCP, unix.LANDLOCK_ACCESS_NET_BIND_TCP},
 		{"NetConnectTCP", AccessNetConnectTCP, unix.LANDLOCK_ACCESS_NET_CONNECT_TCP},
 	} {
