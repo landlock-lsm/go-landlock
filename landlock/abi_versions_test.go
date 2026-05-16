@@ -13,10 +13,10 @@ func TestAbiVersionsIncrementing(t *testing.T) {
 }
 
 func TestSupportedAccessFS(t *testing.T) {
-	got := abiInfos[5].supportedAccessFS
+	got := abiInfos[9].supportedAccessFS
 	want := supportedAccessFS
 
 	if got != want {
-		t.Errorf("V3 supported access FS: got %v, want %v", got, want)
+		t.Errorf("V9 supported access FS: got %v, want %v", got, want)
 	}
 }

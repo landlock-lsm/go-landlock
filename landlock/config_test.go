@@ -50,6 +50,10 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V6; FS: all; Net: all; Scoped: all}",
 		},
 		{
+			cfg:  V9,
+			want: "{Landlock V9; FS: all; Net: all; Scoped: all}",
+		},
+		{
 			// ...unless you enable one of the logging flags.
 			cfg:  V7.EnableLoggingForSubprocesses(),
 			want: "{Landlock V7; FS: all; Net: all; Scoped: all (flags: log_new_exec_on)}",
@@ -144,7 +148,7 @@ func TestNewConfigFailures(t *testing.T) {
 		// May not specify two AccessFSSets
 		{AccessFSSet(ll.AccessFSWriteFile), AccessFSSet(ll.AccessFSReadFile)},
 		// May not specify an unsupported AccessFSSet value
-		{AccessFSSet(1 << 16)},
+		{AccessFSSet(1 << 17)},
 		{AccessFSSet(1 << 63)},
 	} {
 		_, err := NewConfig(args...)
@@ -158,8 +162,9 @@ func TestCompatibleWithABI(t *testing.T) {
 	for i, abi := range abiInfos {
 		cfg := abi.asConfig()
 		t.Run(fmt.Sprintf("V%v", i), func(t *testing.T) {
-			if i >= 6 {
-				i = 6 // abiInfos[6, 7, 8].asConfig() are all the same
+			// abiInfos[6, 7, 8].asConfig() are all the same.
+			if i == 7 || i == 8 {
+				i = 6
 			}
 			for j := range i {
 				if cfg.compatibleWithABI(abiInfos[j]) {
