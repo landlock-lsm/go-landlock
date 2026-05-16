@@ -15,19 +15,22 @@ import (
 )
 
 func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlock.Rule, cmd []string) {
-	configs := []landlock.Config{landlock.V1, landlock.V2, landlock.V3, landlock.V4, landlock.V5, landlock.V6, landlock.V7, landlock.V8}
+	configs := []landlock.Config{landlock.V1, landlock.V2, landlock.V3, landlock.V4, landlock.V5, landlock.V6, landlock.V7, landlock.V8, landlock.V9}
 	cfg = configs[len(configs)-1]
 
 	takeArgs := func(makeOpt func(...string) landlock.FSRule) landlock.Rule {
 		var paths []string
 		needRefer := false
 		needIoctlDev := false
+		needResolveUnix := false
 		for len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 			switch args[0] {
 			case "+refer":
 				needRefer = true
 			case "+ioctl_dev":
 				needIoctlDev = true
+			case "+resolve_unix":
+				needResolveUnix = true
 			default:
 				paths = append(paths, args[0])
 			}
@@ -43,6 +46,9 @@ func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlo
 		if needIoctlDev {
 			opt = opt.WithIoctlDev()
 		}
+		if needResolveUnix {
+			opt = opt.WithResolveUnix()
+		}
 		if verbose {
 			fmt.Println("Path option:", opt)
 		}
@@ -53,7 +59,7 @@ func parseFlags(args []string) (verbose bool, cfg landlock.Config, opts []landlo
 ArgParsing:
 	for len(args) > 0 {
 		switch args[0] {
-		case "-1", "-2", "-3", "-4", "-5", "-6", "-7", "-8":
+		case "-1", "-2", "-3", "-4", "-5", "-6", "-7", "-8", "-9":
 			v, err := strconv.Atoi(args[0][1:])
 			if err != nil {
 				log.Fatal(err)
@@ -119,23 +125,23 @@ func main() {
 		fmt.Println("Usage:")
 		fmt.Println("  landlock-restrict")
 		fmt.Println("     [-v] [-l]")
-		fmt.Println("     [-1] [-2] [-3] [-4] [-5] [-6] [-7] [-8] [-strict]")
+		fmt.Println("     [-1] [-2] [-3] [-4] [-5] [-6] [-7] [-8] [-9] [-strict]")
 		fmt.Println("     [-ro [+refer] PATH...]")
-		fmt.Println("     [-rw [+refer] [+ioctl_dev] PATH...]")
+		fmt.Println("     [-rw [+refer] [+ioctl_dev] [+resolve_unix] PATH...]")
 		fmt.Println("     [-rofiles [+refer] PATH]")
 		fmt.Println("     [-rwfiles [+refer] PATH]")
 		fmt.Println("     -- COMMAND...")
 		fmt.Println()
 		fmt.Println("Options:")
-		fmt.Println("  -ro, -rw, -rofiles, -rwfiles   paths to restrict to")
-		fmt.Println("  -1, -2, -3, -4, -5, -6, -7, -8 select Landlock version")
-		fmt.Println("  -strict                        use strict mode (instead of best effort)")
-		fmt.Println("  -v                             verbose logging")
-		fmt.Println("  -l                             audit logging for subprocess")
+		fmt.Println("  -ro, -rw, -rofiles, -rwfiles       paths to restrict to")
+		fmt.Println("  -1, -2, -3, -4, -5, -6, -7, -8, -9 select Landlock version")
+		fmt.Println("  -strict                            use strict mode (instead of best effort)")
+		fmt.Println("  -v                                 verbose logging")
+		fmt.Println("  -l                                 audit logging for subprocess")
 		fmt.Println()
 		fmt.Println("A path list that contains the word '+refer' will additionally grant the refer access right.")
 		fmt.Println()
-		fmt.Println("Default mode for Landlock is V8 in best effort mode (best compatibility)")
+		fmt.Println("Default mode for Landlock is V9 in best effort mode (best compatibility)")
 		fmt.Println()
 		fmt.Println("\033[31;1m** This is a demo tool for go-landlock and will not provide backwards compatibility. **\033[0m")
 
