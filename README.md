@@ -3,8 +3,7 @@
 
 # Go Landlock library
 
-The Go-Landlock library restricts the current processes' ability to
-use files, using Linux 5.13's Landlock feature.
+Go-Landlock is a Go library for the Landlock LSM.
 
 ## TL;DR: Example
 
@@ -19,6 +18,8 @@ err := landlock.V9.BestEffort().RestrictPaths(
 
 After this invocation, your program can only access the specified paths.
 
+## What is Landlock?
+
 Landlock is a Linux kernel feature and can restrict the following types of access:
 
 * Filesystem access
@@ -26,7 +27,13 @@ Landlock is a Linux kernel feature and can restrict the following types of acces
 * Some IPC operations
 
 More details and examples in the [Go-Landlock
-documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock).
+documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock)
+and the [Linux Userspace-API documentation for
+Landlock](https://docs.kernel.org/userspace-api/landlock.html).
+
+The Landlock LSM was introduced with Linux 5.13 and is today [enabled
+on most major Linux
+distributions](https://landlock.io/integrations/#linux-distributions).
 
 ## Goals
 
