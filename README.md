@@ -3,7 +3,24 @@
 
 # Go Landlock library
 
-Go-Landlock is a Go library for the Landlock LSM.
+Go-Landlock is a Go library for the Landlock LSM,
+an unprivileged sandboxing mechanism on Linux.
+
+## What is Landlock?
+
+Landlock is a Linux kernel feature and can restrict the following types of access:
+
+* Filesystem access
+* Some network operations
+* Some IPC operations
+
+More details and examples in the [Go-Landlock
+documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock)
+and the [Linux Userspace API documentation for
+Landlock](https://docs.kernel.org/userspace-api/landlock.html).  The
+Landlock LSM was introduced with Linux 5.13 and is today [enabled on
+most major Linux
+distributions](https://landlock.io/integrations/#linux-distributions).
 
 ## TL;DR: Example
 
@@ -17,23 +34,6 @@ err := landlock.V9.BestEffort().RestrictPaths(
 ```
 
 After this invocation, your program can only access the specified paths.
-
-## What is Landlock?
-
-Landlock is a Linux kernel feature and can restrict the following types of access:
-
-* Filesystem access
-* Some network operations
-* Some IPC operations
-
-More details and examples in the [Go-Landlock
-documentation](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock)
-and the [Linux Userspace-API documentation for
-Landlock](https://docs.kernel.org/userspace-api/landlock.html).
-
-The Landlock LSM was introduced with Linux 5.13 and is today [enabled
-on most major Linux
-distributions](https://landlock.io/integrations/#linux-distributions).
 
 ## Goals
 
