@@ -35,7 +35,7 @@ func TestCustomConfig(t *testing.T) {
 
 func TestRestrictWithLoggingFlags(t *testing.T) {
 	lltest.RunInSubprocess(t, func() {
-		cfg := landlock.V9.
+		cfg := landlock.V10.
 			DisableLoggingForOriginatingProcess().
 			EnableLoggingForSubprocesses().
 			DisableLoggingForSubdomains().
