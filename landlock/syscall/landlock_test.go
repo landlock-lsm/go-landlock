@@ -53,6 +53,10 @@ func TestAccessRights(t *testing.T) {
 		{"FSResolveUnix", AccessFSResolveUnix, 1 << 16},
 		{"NetBindTCP", AccessNetBindTCP, unix.LANDLOCK_ACCESS_NET_BIND_TCP},
 		{"NetConnectTCP", AccessNetConnectTCP, unix.LANDLOCK_ACCESS_NET_CONNECT_TCP},
+		// TODO: compare with unix.LANDLOCK_ACCESS_NET_BIND_UDP when available.
+		{"NetBindUDP", AccessNetBindUDP, 1 << 2},
+		// TODO: compare with unix.LANDLOCK_ACCESS_NET_CONNECT_SEND_UDP when available.
+		{"NetConnectSendUDP", AccessNetConnectSendUDP, 1 << 3},
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
 			if tt.LandlockDef != tt.SyscallDef {

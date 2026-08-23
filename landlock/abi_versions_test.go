@@ -13,10 +13,19 @@ func TestAbiVersionsIncrementing(t *testing.T) {
 }
 
 func TestSupportedAccessFS(t *testing.T) {
-	got := abiInfos[9].supportedAccessFS
+	got := abiInfos[10].supportedAccessFS
 	want := supportedAccessFS
 
 	if got != want {
-		t.Errorf("V9 supported access FS: got %v, want %v", got, want)
+		t.Errorf("V10 supported access FS: got %v, want %v", got, want)
+	}
+}
+
+func TestSupportedAccessNet(t *testing.T) {
+	got := abiInfos[10].supportedAccessNet
+	want := supportedAccessNet
+
+	if got != want {
+		t.Errorf("V10 supported access Net: got %v, want %v", got, want)
 	}
 }

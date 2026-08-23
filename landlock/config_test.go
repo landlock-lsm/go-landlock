@@ -54,6 +54,14 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V9; FS: all; Net: all; Scoped: all}",
 		},
 		{
+			cfg:  V10,
+			want: "{Landlock V10; FS: all; Net: all; Scoped: all}",
+		},
+		{
+			cfg:  Config{handledAccessNet: ll.AccessNetBindUDP},
+			want: "{Landlock V10; FS: ∅; Net: {bind_udp}; Scoped: ∅}",
+		},
+		{
 			// ...unless you enable one of the logging flags.
 			cfg:  V7.EnableLoggingForSubprocesses(),
 			want: "{Landlock V7; FS: all; Net: all; Scoped: all (flags: log_new_exec_on)}",
@@ -95,6 +103,11 @@ func TestNewConfig(t *testing.T) {
 			name: "net_bind",
 			args: []any{AccessNetSet(ll.AccessNetBindTCP)},
 			want: Config{handledAccessNet: ll.AccessNetBindTCP},
+		},
+		{
+			name: "net_connect_send_udp",
+			args: []any{AccessNetSet(ll.AccessNetConnectSendUDP)},
+			want: Config{handledAccessNet: ll.AccessNetConnectSendUDP},
 		},
 		{
 			name: "scoped_signal",
@@ -150,6 +163,9 @@ func TestNewConfigFailures(t *testing.T) {
 		// May not specify an unsupported AccessFSSet value
 		{AccessFSSet(1 << 17)},
 		{AccessFSSet(1 << 63)},
+		// May not specify an unsupported AccessNetSet value
+		{AccessNetSet(1 << 4)},
+		{AccessNetSet(1 << 63)},
 	} {
 		_, err := NewConfig(args...)
 		if err == nil {

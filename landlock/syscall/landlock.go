@@ -45,6 +45,8 @@ const (
 const (
 	AccessNetBindTCP = 1 << iota
 	AccessNetConnectTCP
+	AccessNetBindUDP
+	AccessNetConnectSendUDP
 )
 
 // Landlock scope flags.

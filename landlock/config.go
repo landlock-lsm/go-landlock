@@ -127,6 +127,23 @@ const (
 // access right automatically, but you can ask for the access right
 // explicitly using [FSRule.WithResolveUnix].
 //
+// # Upgrading to V10
+//
+// When upgrading from V9 to V10, if you use [Config.Restrict] or
+// [Config.RestrictNet], UDP sockets are now restricted as well:
+//
+//   - [BindUDP] permits setting the local port of a UDP socket.
+//   - [ConnectSendUDP] permits setting the remote port of a UDP
+//     socket with connect(2), and sending datagrams to that remote
+//     port with e.g. sendto(2).
+//
+// Note that the kernel implicitly binds ("autobinds") an unbound UDP
+// socket to an ephemeral local port when a remote peer is set or the
+// first datagram is sent.  Programs which restrict [BindUDP] and use
+// UDP sockets that were not bound before enforcement need to permit
+// this explicitly, most easily with [BindUDP](0).  Please refer to the
+// [BindUDP] documentation for the details.
+//
 // [Kernel Documentation about Access Rights]: https://www.kernel.org/doc/html/latest/userspace-api/landlock.html#access-rights
 var (
 	// Landlock V1 support (basic file operations).
@@ -149,6 +166,9 @@ var (
 	// Landlock V9 support (V8 + restricting connect(2) and sendmsg(2)
 	// on pathname UNIX domain sockets)
 	V9 = abiInfos[9].asConfig()
+	// Landlock V10 support (V9 + restricting bind(2), connect(2) and
+	// send*(2) on UDP sockets)
+	V10 = abiInfos[10].asConfig()
 )
 
 // v0 denotes "no Landlock support". Only used internally.
@@ -457,6 +477,13 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 //   - [ConnectTCP] permits connect(2) operations to a given TCP port.
 //   - [BindTCP] permits bind(2) operations on a given TCP port.
 //
+// Using Landlock V10, the equivalent operations on UDP sockets are
+// restricted as well:
+//
+//   - [BindUDP] permits setting the local port of a UDP socket.
+//   - [ConnectSendUDP] permits setting the remote port of a UDP
+//     socket, and sending datagrams to that remote port.
+//
 // These network access rights are documented in more depth in the
 // [Kernel Documentation about Network flags].
 //
@@ -465,7 +492,7 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 // the package-level documentation.
 //
 // Landlock's network sandboxing support is still incomplete as of
-// Landlock ABI v9 and we recommend using additional sandboxing
+// Landlock ABI v10 and we recommend using additional sandboxing
 // mechanisms to augment it.
 //
 // To restrict multiple types of access rights at the same time, use

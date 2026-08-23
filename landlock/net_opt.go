@@ -36,8 +36,46 @@ func BindTCP(port uint16) NetRule {
 	}
 }
 
+// BindUDP is a [Rule] which grants the right to bind a UDP socket to
+// a given local port.
+//
+// This access right is available since Landlock V10.
+//
+// The port 0 has a special meaning: Granting [BindUDP] on port 0
+// permits bind(2) calls on port 0, which make the kernel pick an
+// arbitrary port from the ephemeral port range.  This also covers the
+// implicit "autobind" which the kernel performs when an unbound UDP
+// socket gets a remote peer set or sends its first datagram.  Programs
+// which handle both [BindUDP] and [ConnectSendUDP] and which use UDP
+// sockets that were not already bound before enforcement therefore
+// need to grant either [BindUDP](0), or [BindUDP] on a specific port
+// which they bind(2) to before connecting or sending.
+func BindUDP(port uint16) NetRule {
+	return NetRule{
+		access: ll.AccessNetBindUDP,
+		port:   port,
+	}
+}
+
+// ConnectSendUDP is a [Rule] which grants the right to set the remote
+// port of a UDP socket to the given port with connect(2), and to send
+// datagrams to that remote port with e.g. sendto(2), regardless of any
+// destination that was previously set on the socket.
+//
+// This access right is available since Landlock V10.
+//
+// Note that setting a remote address or sending a first datagram makes
+// the kernel autobind the UDP socket to an ephemeral local source port,
+// if it is not already bound.  See [BindUDP] for how to permit that.
+func ConnectSendUDP(port uint16) NetRule {
+	return NetRule{
+		access: ll.AccessNetConnectSendUDP,
+		port:   port,
+	}
+}
+
 func (n NetRule) String() string {
-	return fmt.Sprintf("ALLOW %v on TCP port %v", n.access, n.port)
+	return fmt.Sprintf("ALLOW %v on port %v", n.access, n.port)
 }
 
 func (n NetRule) compatibleWithConfig(c Config) bool {

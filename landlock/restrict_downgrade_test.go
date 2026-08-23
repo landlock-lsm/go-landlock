@@ -237,6 +237,31 @@ func TestDowngrade(t *testing.T) {
 			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
 			wantRules:    []Rule{NetRule{access: 0, port: 8080}},
 		},
+		// V10→V9 boundary: UDP access rights stripped
+		{
+			name: "UDPStrippedOnV9",
+			cfg: Config{
+				handledAccessNet: ll.AccessNetBindTCP | ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP,
+			},
+			rules:        []Rule{BindTCP(8080), BindUDP(0), ConnectSendUDP(53)},
+			supportedABI: 9,
+			wantCfg:      Config{handledAccessNet: ll.AccessNetBindTCP},
+			wantRules: []Rule{
+				BindTCP(8080),
+				NetRule{access: 0, port: 0},
+				NetRule{access: 0, port: 53},
+			},
+		},
+		{
+			name: "UDPKeptOnV10",
+			cfg: Config{
+				handledAccessNet: ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP,
+			},
+			rules:        []Rule{BindUDP(0), ConnectSendUDP(53)},
+			supportedABI: 10,
+			wantCfg:      Config{handledAccessNet: ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP},
+			wantRules:    []Rule{BindUDP(0), ConnectSendUDP(53)},
+		},
 		// V3→V2 boundary: truncate stripped
 		{
 			name:         "TruncateStrippedOnV2",

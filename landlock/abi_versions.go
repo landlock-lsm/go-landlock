@@ -64,6 +64,13 @@ var abiInfos = []abiInfo{
 		supportedScoped:        (1 << 2) - 1,
 		supportedRestrictFlags: (1 << 4) - 1,
 	},
+	{
+		version:                10,
+		supportedAccessFS:      (1 << 17) - 1,
+		supportedAccessNet:     (1 << 4) - 1,
+		supportedScoped:        (1 << 2) - 1,
+		supportedRestrictFlags: (1 << 4) - 1,
+	},
 }
 
 func (a abiInfo) asConfig() Config {
