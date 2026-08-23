@@ -24,6 +24,11 @@ func usage() {
 	fmt.Fprintf(out, "\nExample usages:\n")
 	fmt.Fprintf(out, "  %s -tcp.bind 8080 /usr/bin/nc -l 127.0.0.1 8080\n", name)
 	fmt.Fprintf(out, "  %s -tcp.connect 8080 /usr/bin/nc 127.0.0.1 8080\n", name)
+	fmt.Fprintf(out, "  %s -udp.bind 8080 /usr/bin/nc -u -l 127.0.0.1 8080\n", name)
+	fmt.Fprintf(out, "  %s -udp.bind 0 -udp.connect_send 8080 /usr/bin/nc -u 127.0.0.1 8080\n", name)
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Note: The kernel autobinds an ephemeral local port when a UDP socket")
+	fmt.Fprintln(out, "gets a remote peer or sends its first datagram.  Permit this with -udp.bind 0.")
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "\033[31;1m** This is a demo tool for go-landlock and will not provide backwards compatibility. **\033[0m")
 }
@@ -51,6 +56,25 @@ func main() {
 		return nil
 	})
 
+	flag.Func("udp.bind", "A UDP port where bind(2) should be permitted (0 means \"any ephemeral port\")", func(s string) error {
+		p, err := strconv.ParseUint(s, 10, 16)
+		if err != nil {
+			return err
+		}
+		log.Println("PERMIT UDP bind on port", p)
+		rules = append(rules, landlock.BindUDP(uint16(p)))
+		return nil
+	})
+	flag.Func("udp.connect_send", "A UDP port where connect(2) and send*(2) should be permitted", func(s string) error {
+		p, err := strconv.ParseUint(s, 10, 16)
+		if err != nil {
+			return err
+		}
+		log.Println("PERMIT UDP connect/send to port", p)
+		rules = append(rules, landlock.ConnectSendUDP(uint16(p)))
+		return nil
+	})
+
 	flag.Parse()
 
 	var cmd []string
@@ -61,7 +85,7 @@ func main() {
 		cmd = []string{"/bin/bash"}
 	}
 
-	if err := landlock.V9.RestrictNet(rules...); err != nil {
+	if err := landlock.V10.RestrictNet(rules...); err != nil {
 		log.Fatalf("landlock RestrictNet: %v", err)
 	}
 
