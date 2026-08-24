@@ -14,9 +14,15 @@ func rulesEqual(a, b Rule) bool {
 	case FSRule:
 		b, ok := b.(FSRule)
 		return ok && a.accessFS == b.accessFS && slices.Equal(a.paths, b.paths)
+	case QuietFSRule:
+		b, ok := b.(QuietFSRule)
+		return ok && slices.Equal(a.paths, b.paths) && a.ignoreMissing == b.ignoreMissing
 	case NetRule:
 		b, ok := b.(NetRule)
 		return ok && a == b
+	case QuietNetRule:
+		b, ok := b.(QuietNetRule)
+		return ok && slices.Equal(a.ports, b.ports)
 	case *compositeRule:
 		b, ok := b.(*compositeRule)
 		if !ok || len(a.rules) != len(b.rules) {
@@ -342,6 +348,42 @@ func TestDowngrade(t *testing.T) {
 					ConnectTCP(80),
 				),
 			},
+		},
+		// Quieting scenarios
+		{
+			name:         "QuietingIsKeptOnV10",
+			cfg:          Config{handledAccessFS: ll.AccessFSReadFile, quietAll: true},
+			rules:        []Rule{QuietPaths("foo")},
+			supportedABI: 10,
+			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile, quietAll: true},
+			wantRules:    []Rule{QuietPaths("foo")},
+		},
+		{
+			// The rule itself stays as it is: It turns into a
+			// no-op when it is added to the ruleset, because
+			// the downgraded Config has no quiet access rights.
+			name:         "QuietingIsDroppedFromConfigBelowV10",
+			cfg:          Config{handledAccessFS: ll.AccessFSReadFile, quietAll: true},
+			rules:        []Rule{QuietPaths("foo")},
+			supportedABI: 9,
+			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantRules:    []Rule{QuietPaths("foo")},
+		},
+		{
+			name:         "QuietPortsAreKeptOnV10",
+			cfg:          Config{handledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
+			rules:        []Rule{QuietPorts(53)},
+			supportedABI: 10,
+			wantCfg:      Config{handledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
+			wantRules:    []Rule{QuietPorts(53)},
+		},
+		{
+			name:         "QuietPortsAreDroppedFromConfigBelowV10",
+			cfg:          Config{handledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
+			rules:        []Rule{QuietPorts(53)},
+			supportedABI: 9,
+			wantCfg:      Config{handledAccessNet: ll.AccessNetConnectTCP},
+			wantRules:    []Rule{QuietPorts(53)},
 		},
 		{
 			name: "CompositeWithReferFallsBackToV0",

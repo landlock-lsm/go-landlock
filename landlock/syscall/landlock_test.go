@@ -65,3 +65,10 @@ func TestAccessRights(t *testing.T) {
 		})
 	}
 }
+
+func TestAddRuleFlags(t *testing.T) {
+	// TODO: compare with unix.LANDLOCK_ADD_RULE_QUIET when available.
+	if FlagAddRuleQuiet != (1 << 0) {
+		t.Errorf("FlagAddRuleQuiet differs from x/sys/unix definition; got %v, want %v", FlagAddRuleQuiet, 1<<0)
+	}
+}

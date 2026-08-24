@@ -92,6 +92,22 @@
 // [Config.EnableLoggingForSubprocesses] and
 // [Config.DisableLoggingForSubdomains].
 //
+// # Quieting denials
+//
+// Since Landlock ABI V10, denials for individual files and network
+// ports can be kept out of the audit log as well, using
+// [Config.QuietAll] in combination with the [QuietPaths] and
+// [QuietPorts] rules:
+//
+//	err := landlock.V10.BestEffort().QuietAll().Restrict(
+//	    landlock.RODirs("/usr", "/bin"),
+//	    landlock.QuietPaths("/home/user/.cache"),
+//	)
+//
+// [Config.QuietAll] also turns off logging for the denied IPC scopes
+// of the configuration.  Unlike files and ports, these do not need to
+// be marked with a rule.
+//
 // # Landlock ABI versioning
 //
 // The Landlock ABI is versioned, so that callers can probe for the

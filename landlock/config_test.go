@@ -72,6 +72,21 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V7; FS: all; Net: all; Scoped: all (flags: log_same_exec_off,log_subdomains_off)}",
 		},
 		{
+			// Quieting requires V10, even if the restricted
+			// access rights would work on older versions.
+			cfg:  V10.QuietAll(),
+			want: "{Landlock V10; FS: all; Net: all; Scoped: all (quiet)}",
+		},
+		{
+			// Quieting alone already requires V10.
+			cfg:  Config{}.QuietAll(),
+			want: "{Landlock V10; FS: ∅; Net: ∅; Scoped: ∅ (quiet)}",
+		},
+		{
+			cfg:  V10.QuietAll().BestEffort(),
+			want: "{Landlock V10; FS: all; Net: all; Scoped: all (quiet) (best effort)}",
+		},
+		{
 			cfg:  Config{handledAccessFS: 1 << 63},
 			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Scoped: ∅}",
 		},
@@ -205,6 +220,52 @@ func TestRestrictTo(t *testing.T) {
 				if !compatCfg.compatibleWithABI(abiInfos[j]) {
 					t.Errorf("compatCfg.compatibleWithABI(abiInfos[%v]) = false, want true", j)
 				}
+			}
+		})
+	}
+}
+
+func TestRulesetAttr(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		cfg  Config
+		want ll.RulesetAttr
+	}{
+		{
+			name: "no quieting",
+			cfg:  V10,
+			want: ll.RulesetAttr{
+				HandledAccessFS:  (1 << 17) - 1,
+				HandledAccessNet: (1 << 4) - 1,
+				Scoped:           (1 << 2) - 1,
+			},
+		},
+		{
+			name: "quiet masks mirror the handled sets",
+			cfg:  V10.QuietAll(),
+			want: ll.RulesetAttr{
+				HandledAccessFS:  (1 << 17) - 1,
+				HandledAccessNet: (1 << 4) - 1,
+				Scoped:           (1 << 2) - 1,
+				QuietAccessFS:    (1 << 17) - 1,
+				QuietAccessNet:   (1 << 4) - 1,
+				QuietScoped:      (1 << 2) - 1,
+			},
+		},
+		{
+			// The quiet masks must stay a subset of the handled
+			// sets, so they only cover what the Config restricts.
+			name: "quiet masks stay within the handled sets",
+			cfg:  MustConfig(AccessFSSet(ll.AccessFSReadFile)).QuietAll(),
+			want: ll.RulesetAttr{
+				HandledAccessFS: ll.AccessFSReadFile,
+				QuietAccessFS:   ll.AccessFSReadFile,
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.rulesetAttr(); got != tt.want {
+				t.Errorf("%v.rulesetAttr() = %+v, want %+v", tt.cfg, got, tt.want)
 			}
 		})
 	}
