@@ -10,7 +10,7 @@ import (
 type FSRule struct {
 	accessFS      AccessFSSet
 	paths         []string
-	enforceSubset bool // enforce that accessFS is a subset of cfg.handledAccessFS
+	enforceSubset bool // enforce that accessFS is a subset of cfg.HandledAccessFS
 	ignoreMissing bool // ignore missing paths
 }
 
@@ -91,14 +91,14 @@ func (r FSRule) compatibleWithConfig(c Config) bool {
 		// for the "refer" flag, which should still get checked though.
 		a = a.intersect(ll.AccessFSRefer)
 	}
-	return a.isSubset(c.handledAccessFS)
+	return a.isSubset(c.HandledAccessFS)
 }
 
 // downgrade calculates the actual ruleset to be enforced given the
 // current config (and assuming that the config is going to work under
 // the running kernel).
 //
-// It establishes that rule.accessFS ⊆ c.handledAccessFS.
+// It establishes that rule.accessFS ⊆ c.HandledAccessFS.
 //
 // If ok is false, downgrade is impossible and we need to fall back to doing nothing.
 func (r FSRule) downgrade(c Config) (out Rule, ok bool) {
@@ -106,10 +106,10 @@ func (r FSRule) downgrade(c Config) (out Rule, ok bool) {
 	// require Landlock V2+, or we have to downgrade to V0.
 	// You can't get the refer capability with V1, but linking/
 	// renaming files is always implicitly restricted.
-	if hasRefer(r.accessFS) && !hasRefer(c.handledAccessFS) {
+	if hasRefer(r.accessFS) && !hasRefer(c.HandledAccessFS) {
 		return FSRule{}, false
 	}
-	return r.intersectRights(c.handledAccessFS), true
+	return r.intersectRights(c.HandledAccessFS), true
 }
 
 func hasRefer(a AccessFSSet) bool {

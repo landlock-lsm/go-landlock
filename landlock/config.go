@@ -187,12 +187,16 @@ var v0 = Config{}
 // [landlock.V10], which restrict the full set of access rights
 // available at this Landlock ABI version.
 type Config struct {
-	handledAccessFS  AccessFSSet
-	handledAccessNet AccessNetSet
-	scoped           ScopedSet
-	flags            restrictFlagsSet
-	quietAll         bool
-	bestEffort       bool
+	// HandledAccessFS is the set of filesystem access rights to restrict.
+	HandledAccessFS AccessFSSet
+	// HandledAccessNet is the set of network access rights to restrict.
+	HandledAccessNet AccessNetSet
+	// Scoped is the set of IPC scopes to restrict.
+	Scoped ScopedSet
+
+	flags      restrictFlagsSet
+	quietAll   bool
+	bestEffort bool
 }
 
 // NewConfig creates a new Landlock configuration with the given parameters.
@@ -211,35 +215,34 @@ func NewConfig(args ...any) (*Config, error) {
 	// extensibility in mind. Only specific types are supported as
 	// input, but in the future more might be added.
 	//
-	// This constructor ensures that callers can't construct
-	// invalid Config values.
+	// This constructor rejects invalid Config values.
 	var c Config
 	for _, arg := range args {
 		switch arg := arg.(type) {
 		case AccessFSSet:
-			if !c.handledAccessFS.isEmpty() {
+			if !c.HandledAccessFS.isEmpty() {
 				return nil, errors.New("only one AccessFSSet may be provided")
 			}
 			if !arg.valid() {
 				return nil, errors.New("unsupported AccessFSSet value; upgrade go-landlock?")
 			}
-			c.handledAccessFS = arg
+			c.HandledAccessFS = arg
 		case AccessNetSet:
-			if !c.handledAccessNet.isEmpty() {
+			if !c.HandledAccessNet.isEmpty() {
 				return nil, errors.New("only one AccessNetSet may be provided")
 			}
 			if !arg.valid() {
 				return nil, errors.New("unsupported AccessNetSet value; upgrade go-landlock?")
 			}
-			c.handledAccessNet = arg
+			c.HandledAccessNet = arg
 		case ScopedSet:
-			if !c.scoped.isEmpty() {
+			if !c.Scoped.isEmpty() {
 				return nil, errors.New("only one ScopedSet may be provided")
 			}
 			if !arg.valid() {
 				return nil, errors.New("unsupported ScopedSet value; upgrade go-landlock?")
 			}
-			c.scoped = arg
+			c.Scoped = arg
 		default:
 			return nil, fmt.Errorf("unknown argument %v; only AccessFSSet-type argument is supported", arg)
 		}
@@ -266,18 +269,18 @@ func (c Config) String() string {
 		}
 	}
 
-	fsDesc := c.handledAccessFS.String()
-	if abi.supportedAccessFS == c.handledAccessFS && c.handledAccessFS != 0 {
+	fsDesc := c.HandledAccessFS.String()
+	if abi.supportedAccessFS == c.HandledAccessFS && c.HandledAccessFS != 0 {
 		fsDesc = "all"
 	}
 
-	netDesc := c.handledAccessNet.String()
-	if abi.supportedAccessNet == c.handledAccessNet && c.handledAccessNet != 0 {
+	netDesc := c.HandledAccessNet.String()
+	if abi.supportedAccessNet == c.HandledAccessNet && c.HandledAccessNet != 0 {
 		netDesc = "all"
 	}
 
-	scopedDesc := c.scoped.String()
-	if abi.supportedScoped == c.scoped && c.scoped != 0 {
+	scopedDesc := c.Scoped.String()
+	if abi.supportedScoped == c.Scoped && c.Scoped != 0 {
 		scopedDesc = "all"
 	}
 
@@ -492,7 +495,7 @@ func (c Config) QuietAll() Config {
 func (c Config) RestrictPaths(rules ...Rule) error {
 	// clear out everything but filesystem access
 	c = Config{
-		handledAccessFS: c.handledAccessFS,
+		HandledAccessFS: c.HandledAccessFS,
 		flags:           c.flags,
 		quietAll:        c.quietAll,
 		bestEffort:      c.bestEffort,
@@ -534,7 +537,7 @@ func (c Config) RestrictPaths(rules ...Rule) error {
 func (c Config) RestrictNet(rules ...Rule) error {
 	// clear out everything but network access
 	c = Config{
-		handledAccessNet: c.handledAccessNet,
+		HandledAccessNet: c.HandledAccessNet,
 		flags:            c.flags,
 		quietAll:         c.quietAll,
 		bestEffort:       c.bestEffort,
@@ -553,7 +556,7 @@ func (c Config) RestrictNet(rules ...Rule) error {
 func (c Config) RestrictScoped() error {
 	// clear out everything but scoped operations
 	c = Config{
-		scoped:     c.scoped,
+		Scoped:     c.Scoped,
 		flags:      c.flags,
 		quietAll:   c.quietAll,
 		bestEffort: c.bestEffort,
@@ -583,9 +586,9 @@ type PathOpt = Rule
 
 // compatibleWith is true if c is compatible to work at the given Landlock ABI level.
 func (c Config) compatibleWithABI(abi abiInfo) bool {
-	return (c.handledAccessFS.isSubset(abi.supportedAccessFS) &&
-		c.handledAccessNet.isSubset(abi.supportedAccessNet) &&
-		c.scoped.isSubset(abi.supportedScoped)) &&
+	return (c.HandledAccessFS.isSubset(abi.supportedAccessFS) &&
+		c.HandledAccessNet.isSubset(abi.supportedAccessNet) &&
+		c.Scoped.isSubset(abi.supportedScoped)) &&
 		c.flags.isSubset(abi.supportedRestrictFlags) &&
 		(!c.quietAll || abi.supportsQuiet)
 }
@@ -597,7 +600,7 @@ func (c Config) quietAccessFS() AccessFSSet {
 	if !c.quietAll {
 		return 0
 	}
-	return c.handledAccessFS
+	return c.HandledAccessFS
 }
 
 // quietAccessNet returns the set of network access rights whose
@@ -607,7 +610,7 @@ func (c Config) quietAccessNet() AccessNetSet {
 	if !c.quietAll {
 		return 0
 	}
-	return c.handledAccessNet
+	return c.HandledAccessNet
 }
 
 // quietScoped returns the set of IPC scopes whose denial is kept out
@@ -617,7 +620,7 @@ func (c Config) quietScoped() ScopedSet {
 	if !c.quietAll {
 		return 0
 	}
-	return c.scoped
+	return c.Scoped
 }
 
 // rulesetAttr returns the Landlock ruleset attributes for enforcing c.
@@ -626,9 +629,9 @@ func (c Config) quietScoped() ScopedSet {
 // they are a subset of these, as the kernel requires.
 func (c Config) rulesetAttr() ll.RulesetAttr {
 	return ll.RulesetAttr{
-		HandledAccessFS:  uint64(c.handledAccessFS),
-		HandledAccessNet: uint64(c.handledAccessNet),
-		Scoped:           uint64(c.scoped),
+		HandledAccessFS:  uint64(c.HandledAccessFS),
+		HandledAccessNet: uint64(c.HandledAccessNet),
+		Scoped:           uint64(c.Scoped),
 		QuietAccessFS:    uint64(c.quietAccessFS()),
 		QuietAccessNet:   uint64(c.quietAccessNet()),
 		QuietScoped:      uint64(c.quietScoped()),
@@ -638,9 +641,9 @@ func (c Config) rulesetAttr() ll.RulesetAttr {
 // restrictTo returns a config that is a subset of c and which is compatible with the given ABI.
 func (c Config) restrictTo(abi abiInfo) Config {
 	return Config{
-		handledAccessFS:  c.handledAccessFS.intersect(abi.supportedAccessFS),
-		handledAccessNet: c.handledAccessNet.intersect(abi.supportedAccessNet),
-		scoped:           c.scoped.intersect(abi.supportedScoped),
+		HandledAccessFS:  c.HandledAccessFS.intersect(abi.supportedAccessFS),
+		HandledAccessNet: c.HandledAccessNet.intersect(abi.supportedAccessNet),
+		Scoped:           c.Scoped.intersect(abi.supportedScoped),
 		flags:            c.flags.intersect(abi.supportedRestrictFlags),
 		quietAll:         c.quietAll && abi.supportsQuiet,
 		bestEffort:       true,

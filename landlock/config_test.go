@@ -13,15 +13,15 @@ func TestConfigString(t *testing.T) {
 		want string
 	}{
 		{
-			cfg:  Config{handledAccessFS: 0, handledAccessNet: 0},
+			cfg:  Config{HandledAccessFS: 0, HandledAccessNet: 0},
 			want: "{Landlock V0; FS: ∅; Net: ∅; Scoped: ∅}",
 		},
 		{
-			cfg:  Config{handledAccessFS: ll.AccessFSWriteFile},
+			cfg:  Config{HandledAccessFS: ll.AccessFSWriteFile},
 			want: "{Landlock V1; FS: {write_file}; Net: ∅; Scoped: ∅}",
 		},
 		{
-			cfg:  Config{handledAccessNet: ll.AccessNetBindTCP},
+			cfg:  Config{HandledAccessNet: ll.AccessNetBindTCP},
 			want: "{Landlock V4; FS: ∅; Net: {bind_tcp}; Scoped: ∅}",
 		},
 		{
@@ -58,7 +58,7 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V10; FS: all; Net: all; Scoped: all}",
 		},
 		{
-			cfg:  Config{handledAccessNet: ll.AccessNetBindUDP},
+			cfg:  Config{HandledAccessNet: ll.AccessNetBindUDP},
 			want: "{Landlock V10; FS: ∅; Net: {bind_udp}; Scoped: ∅}",
 		},
 		{
@@ -87,7 +87,7 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V10; FS: all; Net: all; Scoped: all (quiet) (best effort)}",
 		},
 		{
-			cfg:  Config{handledAccessFS: 1 << 63},
+			cfg:  Config{HandledAccessFS: 1 << 63},
 			want: "{Landlock V???; FS: {1<<63}; Net: ∅; Scoped: ∅}",
 		},
 	} {
@@ -107,27 +107,27 @@ func TestNewConfig(t *testing.T) {
 		{
 			name: "fs_write_file",
 			args: []any{AccessFSSet(ll.AccessFSWriteFile)},
-			want: Config{handledAccessFS: ll.AccessFSWriteFile},
+			want: Config{HandledAccessFS: ll.AccessFSWriteFile},
 		},
 		{
 			name: "fs_refer",
 			args: []any{AccessFSSet(ll.AccessFSRefer)},
-			want: Config{handledAccessFS: ll.AccessFSRefer},
+			want: Config{HandledAccessFS: ll.AccessFSRefer},
 		},
 		{
 			name: "net_bind",
 			args: []any{AccessNetSet(ll.AccessNetBindTCP)},
-			want: Config{handledAccessNet: ll.AccessNetBindTCP},
+			want: Config{HandledAccessNet: ll.AccessNetBindTCP},
 		},
 		{
 			name: "net_connect_send_udp",
 			args: []any{AccessNetSet(ll.AccessNetConnectSendUDP)},
-			want: Config{handledAccessNet: ll.AccessNetConnectSendUDP},
+			want: Config{HandledAccessNet: ll.AccessNetConnectSendUDP},
 		},
 		{
 			name: "scoped_signal",
 			args: []any{ScopedSet(ll.ScopeSignal)},
-			want: Config{scoped: ll.ScopeSignal},
+			want: Config{Scoped: ll.ScopeSignal},
 		},
 		{
 			name: "christmas_tree",
@@ -137,9 +137,9 @@ func TestNewConfig(t *testing.T) {
 				ScopedSet(ll.ScopeSignal | ll.ScopeAbstractUnixSocket),
 			},
 			want: Config{
-				handledAccessFS:  ll.AccessFSReadDir | ll.AccessFSReadFile,
-				handledAccessNet: ll.AccessNetBindTCP | ll.AccessNetConnectTCP,
-				scoped:           ll.ScopeSignal | ll.ScopeAbstractUnixSocket,
+				HandledAccessFS:  ll.AccessFSReadDir | ll.AccessFSReadFile,
+				HandledAccessNet: ll.AccessNetBindTCP | ll.AccessNetConnectTCP,
+				Scoped:           ll.ScopeSignal | ll.ScopeAbstractUnixSocket,
 			},
 		},
 	} {
@@ -162,8 +162,8 @@ func TestNewConfigEmpty(t *testing.T) {
 		t.Errorf("NewConfig(): expected success, got %v", err)
 	}
 	want := AccessFSSet(0)
-	if c.handledAccessFS != want {
-		t.Errorf("c.handledAccessFS = %v, want %v", c.handledAccessFS, want)
+	if c.HandledAccessFS != want {
+		t.Errorf("c.HandledAccessFS = %v, want %v", c.HandledAccessFS, want)
 	}
 }
 

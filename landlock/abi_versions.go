@@ -77,9 +77,9 @@ var abiInfos = []abiInfo{
 
 func (a abiInfo) asConfig() Config {
 	return Config{
-		handledAccessFS:  a.supportedAccessFS,
-		handledAccessNet: a.supportedAccessNet,
-		scoped:           a.supportedScoped,
+		HandledAccessFS:  a.supportedAccessFS,
+		HandledAccessNet: a.supportedAccessNet,
+		Scoped:           a.supportedScoped,
 		flags:            0,
 	}
 }

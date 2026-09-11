@@ -57,7 +57,7 @@ func restrict(c Config, rules ...Rule) error {
 	// always implicit, even in Landlock V1. So enabling Landlock
 	// on a Landlock V1 kernel without any handled access rights
 	// will still forbid linking files between directories.
-	if c.handledAccessFS.isEmpty() && c.handledAccessNet.isEmpty() && c.scoped.isEmpty() {
+	if c.HandledAccessFS.isEmpty() && c.HandledAccessNet.isEmpty() && c.Scoped.isEmpty() {
 		return nil // Success: Nothing to restrict.
 	}
 

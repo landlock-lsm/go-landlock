@@ -14,7 +14,7 @@ import (
 func (r FSRule) addToRuleset(rulesetFD int, c Config) error {
 	effectiveAccessFS := r.accessFS
 	if !r.enforceSubset {
-		effectiveAccessFS = effectiveAccessFS.intersect(c.handledAccessFS)
+		effectiveAccessFS = effectiveAccessFS.intersect(c.HandledAccessFS)
 	}
 	if effectiveAccessFS == 0 {
 		// Adding this to the ruleset would be a no-op

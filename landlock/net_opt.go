@@ -79,7 +79,7 @@ func (n NetRule) String() string {
 }
 
 func (n NetRule) compatibleWithConfig(c Config) bool {
-	return n.access.isSubset(c.handledAccessNet)
+	return n.access.isSubset(c.HandledAccessNet)
 }
 
 func (n NetRule) addToRuleset(rulesetFD int, c Config) error {
@@ -97,7 +97,7 @@ func (n NetRule) addToRuleset(rulesetFD int, c Config) error {
 
 func (n NetRule) downgrade(c Config) (out Rule, ok bool) {
 	return NetRule{
-		access: n.access.intersect(c.handledAccessNet),
+		access: n.access.intersect(c.HandledAccessNet),
 		port:   n.port,
 	}, true
 }

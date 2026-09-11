@@ -51,23 +51,23 @@ func TestDowngrade(t *testing.T) {
 		// FS access downgrade scenarios
 		{
 			name:         "RestrictHandledToSupported",
-			cfg:          Config{handledAccessFS: 0b1111},
+			cfg:          Config{HandledAccessFS: 0b1111},
 			rules:        []Rule{PathAccess(0b111111, "foo")},
 			supportedABI: 1,
-			wantCfg:      Config{handledAccessFS: 0b1111},
+			wantCfg:      Config{HandledAccessFS: 0b1111},
 			wantRules:    []Rule{PathAccess(0b1111, "foo")},
 		},
 		{
 			name:         "RestrictPathAccessToHandled",
-			cfg:          Config{handledAccessFS: 0b1},
+			cfg:          Config{HandledAccessFS: 0b1},
 			rules:        []Rule{PathAccess(0b11, "foo")},
 			supportedABI: 1,
-			wantCfg:      Config{handledAccessFS: 0b1},
+			wantCfg:      Config{HandledAccessFS: 0b1},
 			wantRules:    []Rule{PathAccess(0b1, "foo")},
 		},
 		{
 			name:         "DowngradeToEmptyOnV0",
-			cfg:          Config{handledAccessFS: 0b1},
+			cfg:          Config{HandledAccessFS: 0b1},
 			rules:        []Rule{PathAccess(0b11, "foo")},
 			supportedABI: 0,
 			wantCfg:      Config{},
@@ -75,15 +75,15 @@ func TestDowngrade(t *testing.T) {
 		},
 		{
 			name:         "ReferSupportedOnV2",
-			cfg:          Config{handledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
+			cfg:          Config{HandledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
 			rules:        []Rule{PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "foo")},
 			supportedABI: 2,
-			wantCfg:      Config{handledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
+			wantCfg:      Config{HandledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
 			wantRules:    []Rule{PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "foo")},
 		},
 		{
 			name:         "ReferNotSupportedOnV1FallsBackToV0",
-			cfg:          Config{handledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
+			cfg:          Config{HandledAccessFS: ll.AccessFSRefer | ll.AccessFSReadFile},
 			rules:        []Rule{PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "foo")},
 			supportedABI: 1,
 			wantCfg:      v0,
@@ -93,18 +93,18 @@ func TestDowngrade(t *testing.T) {
 		{
 			name: "NetworkDowngradeRemovesNet",
 			cfg: Config{
-				handledAccessFS:  ll.AccessFSWriteFile,
-				handledAccessNet: ll.AccessNetConnectTCP,
+				HandledAccessFS:  ll.AccessFSWriteFile,
+				HandledAccessNet: ll.AccessNetConnectTCP,
 			},
 			rules:        []Rule{ConnectTCP(53)},
 			supportedABI: 3,
-			wantCfg:      Config{handledAccessFS: ll.AccessFSWriteFile},
+			wantCfg:      Config{HandledAccessFS: ll.AccessFSWriteFile},
 			wantRules:    []Rule{NetRule{access: 0, port: 53}},
 		},
 		// Scoped downgrade
 		{
 			name:         "ScopedDowngrade",
-			cfg:          Config{scoped: ll.ScopeAbstractUnixSocket},
+			cfg:          Config{Scoped: ll.ScopeAbstractUnixSocket},
 			supportedABI: 5,
 			wantCfg:      Config{},
 			wantRules:    nil,
@@ -112,9 +112,9 @@ func TestDowngrade(t *testing.T) {
 		// Flags downgrade
 		{
 			name:         "FlagsDowngrade",
-			cfg:          Config{scoped: ll.ScopeAbstractUnixSocket, flags: ll.FlagRestrictSelfLogNewExecOn},
+			cfg:          Config{Scoped: ll.ScopeAbstractUnixSocket, flags: ll.FlagRestrictSelfLogNewExecOn},
 			supportedABI: 6,
-			wantCfg:      Config{scoped: ll.ScopeAbstractUnixSocket},
+			wantCfg:      Config{Scoped: ll.ScopeAbstractUnixSocket},
 			wantRules:    nil,
 		},
 		// Noop - downgrading an ABI's own config is a no-op
@@ -178,16 +178,16 @@ func TestDowngrade(t *testing.T) {
 		{
 			name: "AllFieldsDowngradeToV4",
 			cfg: Config{
-				handledAccessFS:  (1 << 16) - 1,
-				handledAccessNet: (1 << 2) - 1,
-				scoped:           (1 << 2) - 1,
+				HandledAccessFS:  (1 << 16) - 1,
+				HandledAccessNet: (1 << 2) - 1,
+				Scoped:           (1 << 2) - 1,
 				flags:            (1 << 3) - 1,
 			},
 			rules:        []Rule{PathAccess(ll.AccessFSReadFile, "foo"), ConnectTCP(80)},
 			supportedABI: 4,
 			wantCfg: Config{
-				handledAccessFS:  (1 << 15) - 1,
-				handledAccessNet: (1 << 2) - 1,
+				HandledAccessFS:  (1 << 15) - 1,
+				HandledAccessNet: (1 << 2) - 1,
 			},
 			wantRules: []Rule{
 				PathAccess(ll.AccessFSReadFile, "foo"),
@@ -197,17 +197,17 @@ func TestDowngrade(t *testing.T) {
 		{
 			name: "AllFieldsDowngradeToV6DropsFlags",
 			cfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile,
-				handledAccessNet: ll.AccessNetConnectTCP,
-				scoped:           ll.ScopeAbstractUnixSocket,
+				HandledAccessFS:  ll.AccessFSReadFile,
+				HandledAccessNet: ll.AccessNetConnectTCP,
+				Scoped:           ll.ScopeAbstractUnixSocket,
 				flags:            ll.FlagRestrictSelfLogNewExecOn,
 			},
 			rules:        []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
 			supportedABI: 6,
 			wantCfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile,
-				handledAccessNet: ll.AccessNetConnectTCP,
-				scoped:           ll.ScopeAbstractUnixSocket,
+				HandledAccessFS:  ll.AccessFSReadFile,
+				HandledAccessNet: ll.AccessNetConnectTCP,
+				Scoped:           ll.ScopeAbstractUnixSocket,
 			},
 			wantRules: []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
 		},
@@ -217,7 +217,7 @@ func TestDowngrade(t *testing.T) {
 		// even on a V2+ kernel.
 		{
 			name:         "ReferInRuleButNotInConfigOnV2FallsBackToV0",
-			cfg:          Config{handledAccessFS: ll.AccessFSReadFile},
+			cfg:          Config{HandledAccessFS: ll.AccessFSReadFile},
 			rules:        []Rule{PathAccess(ll.AccessFSRefer|ll.AccessFSReadFile, "foo")},
 			supportedABI: 2,
 			wantCfg:      v0,
@@ -226,32 +226,32 @@ func TestDowngrade(t *testing.T) {
 		// Empty rules list
 		{
 			name:         "EmptyRules",
-			cfg:          Config{handledAccessFS: ll.AccessFSReadFile},
+			cfg:          Config{HandledAccessFS: ll.AccessFSReadFile},
 			supportedABI: 1,
-			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantCfg:      Config{HandledAccessFS: ll.AccessFSReadFile},
 			wantRules:    []Rule{},
 		},
 		// BindTCP rule downgrade
 		{
 			name: "BindTCPDowngrade",
 			cfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile,
-				handledAccessNet: ll.AccessNetBindTCP,
+				HandledAccessFS:  ll.AccessFSReadFile,
+				HandledAccessNet: ll.AccessNetBindTCP,
 			},
 			rules:        []Rule{BindTCP(8080)},
 			supportedABI: 3,
-			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantCfg:      Config{HandledAccessFS: ll.AccessFSReadFile},
 			wantRules:    []Rule{NetRule{access: 0, port: 8080}},
 		},
 		// V10→V9 boundary: UDP access rights stripped
 		{
 			name: "UDPStrippedOnV9",
 			cfg: Config{
-				handledAccessNet: ll.AccessNetBindTCP | ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP,
+				HandledAccessNet: ll.AccessNetBindTCP | ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP,
 			},
 			rules:        []Rule{BindTCP(8080), BindUDP(0), ConnectSendUDP(53)},
 			supportedABI: 9,
-			wantCfg:      Config{handledAccessNet: ll.AccessNetBindTCP},
+			wantCfg:      Config{HandledAccessNet: ll.AccessNetBindTCP},
 			wantRules: []Rule{
 				BindTCP(8080),
 				NetRule{access: 0, port: 0},
@@ -261,42 +261,42 @@ func TestDowngrade(t *testing.T) {
 		{
 			name: "UDPKeptOnV10",
 			cfg: Config{
-				handledAccessNet: ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP,
+				HandledAccessNet: ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP,
 			},
 			rules:        []Rule{BindUDP(0), ConnectSendUDP(53)},
 			supportedABI: 10,
-			wantCfg:      Config{handledAccessNet: ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP},
+			wantCfg:      Config{HandledAccessNet: ll.AccessNetBindUDP | ll.AccessNetConnectSendUDP},
 			wantRules:    []Rule{BindUDP(0), ConnectSendUDP(53)},
 		},
 		// V3→V2 boundary: truncate stripped
 		{
 			name:         "TruncateStrippedOnV2",
-			cfg:          Config{handledAccessFS: ll.AccessFSTruncate | ll.AccessFSReadFile},
+			cfg:          Config{HandledAccessFS: ll.AccessFSTruncate | ll.AccessFSReadFile},
 			rules:        []Rule{PathAccess(ll.AccessFSTruncate|ll.AccessFSReadFile, "foo")},
 			supportedABI: 2,
-			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantCfg:      Config{HandledAccessFS: ll.AccessFSReadFile},
 			wantRules:    []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
 		},
 		// V5→V4 boundary: IoctlDev stripped
 		{
 			name:         "IoctlDevStrippedOnV4",
-			cfg:          Config{handledAccessFS: ll.AccessFSIoctlDev | ll.AccessFSReadFile},
+			cfg:          Config{HandledAccessFS: ll.AccessFSIoctlDev | ll.AccessFSReadFile},
 			rules:        []Rule{PathAccess(ll.AccessFSIoctlDev|ll.AccessFSReadFile, "foo")},
 			supportedABI: 4,
-			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantCfg:      Config{HandledAccessFS: ll.AccessFSReadFile},
 			wantRules:    []Rule{PathAccess(ll.AccessFSReadFile, "foo")},
 		},
 		{
 			name: "FSAndNetAndScopeDowngradeToV5DropsScope",
 			cfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile | ll.AccessFSIoctlDev,
-				handledAccessNet: ll.AccessNetBindTCP,
-				scoped:           ll.ScopeSignal,
+				HandledAccessFS:  ll.AccessFSReadFile | ll.AccessFSIoctlDev,
+				HandledAccessNet: ll.AccessNetBindTCP,
+				Scoped:           ll.ScopeSignal,
 			},
 			supportedABI: 5,
 			wantCfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile | ll.AccessFSIoctlDev,
-				handledAccessNet: ll.AccessNetBindTCP,
+				HandledAccessFS:  ll.AccessFSReadFile | ll.AccessFSIoctlDev,
+				HandledAccessNet: ll.AccessNetBindTCP,
 			},
 			wantRules: nil,
 		},
@@ -304,8 +304,8 @@ func TestDowngrade(t *testing.T) {
 		{
 			name: "CompositeDowngradeSucceeds",
 			cfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile | ll.AccessFSWriteFile,
-				handledAccessNet: ll.AccessNetConnectTCP,
+				HandledAccessFS:  ll.AccessFSReadFile | ll.AccessFSWriteFile,
+				HandledAccessNet: ll.AccessNetConnectTCP,
 			},
 			rules: []Rule{
 				CompositeRule(
@@ -315,8 +315,8 @@ func TestDowngrade(t *testing.T) {
 			},
 			supportedABI: 4,
 			wantCfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile | ll.AccessFSWriteFile,
-				handledAccessNet: ll.AccessNetConnectTCP,
+				HandledAccessFS:  ll.AccessFSReadFile | ll.AccessFSWriteFile,
+				HandledAccessNet: ll.AccessNetConnectTCP,
 			},
 			wantRules: []Rule{
 				CompositeRule(
@@ -328,8 +328,8 @@ func TestDowngrade(t *testing.T) {
 		{
 			name: "CompositeSubRuleDowngraded",
 			cfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile,
-				handledAccessNet: ll.AccessNetConnectTCP,
+				HandledAccessFS:  ll.AccessFSReadFile,
+				HandledAccessNet: ll.AccessNetConnectTCP,
 			},
 			rules: []Rule{
 				CompositeRule(
@@ -339,8 +339,8 @@ func TestDowngrade(t *testing.T) {
 			},
 			supportedABI: 4,
 			wantCfg: Config{
-				handledAccessFS:  ll.AccessFSReadFile,
-				handledAccessNet: ll.AccessNetConnectTCP,
+				HandledAccessFS:  ll.AccessFSReadFile,
+				HandledAccessNet: ll.AccessNetConnectTCP,
 			},
 			wantRules: []Rule{
 				CompositeRule(
@@ -352,10 +352,10 @@ func TestDowngrade(t *testing.T) {
 		// Quieting scenarios
 		{
 			name:         "QuietingIsKeptOnV10",
-			cfg:          Config{handledAccessFS: ll.AccessFSReadFile, quietAll: true},
+			cfg:          Config{HandledAccessFS: ll.AccessFSReadFile, quietAll: true},
 			rules:        []Rule{QuietPaths("foo")},
 			supportedABI: 10,
-			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile, quietAll: true},
+			wantCfg:      Config{HandledAccessFS: ll.AccessFSReadFile, quietAll: true},
 			wantRules:    []Rule{QuietPaths("foo")},
 		},
 		{
@@ -363,31 +363,31 @@ func TestDowngrade(t *testing.T) {
 			// no-op when it is added to the ruleset, because
 			// the downgraded Config has no quiet access rights.
 			name:         "QuietingIsDroppedFromConfigBelowV10",
-			cfg:          Config{handledAccessFS: ll.AccessFSReadFile, quietAll: true},
+			cfg:          Config{HandledAccessFS: ll.AccessFSReadFile, quietAll: true},
 			rules:        []Rule{QuietPaths("foo")},
 			supportedABI: 9,
-			wantCfg:      Config{handledAccessFS: ll.AccessFSReadFile},
+			wantCfg:      Config{HandledAccessFS: ll.AccessFSReadFile},
 			wantRules:    []Rule{QuietPaths("foo")},
 		},
 		{
 			name:         "QuietPortsAreKeptOnV10",
-			cfg:          Config{handledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
+			cfg:          Config{HandledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
 			rules:        []Rule{QuietPorts(53)},
 			supportedABI: 10,
-			wantCfg:      Config{handledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
+			wantCfg:      Config{HandledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
 			wantRules:    []Rule{QuietPorts(53)},
 		},
 		{
 			name:         "QuietPortsAreDroppedFromConfigBelowV10",
-			cfg:          Config{handledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
+			cfg:          Config{HandledAccessNet: ll.AccessNetConnectTCP, quietAll: true},
 			rules:        []Rule{QuietPorts(53)},
 			supportedABI: 9,
-			wantCfg:      Config{handledAccessNet: ll.AccessNetConnectTCP},
+			wantCfg:      Config{HandledAccessNet: ll.AccessNetConnectTCP},
 			wantRules:    []Rule{QuietPorts(53)},
 		},
 		{
 			name: "CompositeWithReferFallsBackToV0",
-			cfg:  Config{handledAccessFS: ll.AccessFSReadFile},
+			cfg:  Config{HandledAccessFS: ll.AccessFSReadFile},
 			rules: []Rule{
 				CompositeRule(
 					PathAccess(ll.AccessFSReadFile, "ok"),
