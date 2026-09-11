@@ -27,3 +27,14 @@ func TestRestrictNonLinux_Strict(t *testing.T) {
 		t.Errorf("expected error with %q, got %v", errStr, err)
 	}
 }
+
+func TestRestrictNonLinux_UnknownAccessRights(t *testing.T) {
+	cfg := landlock.Config{HandledAccessFS: 1 << 63}
+	for _, c := range []landlock.Config{cfg, cfg.BestEffort()} {
+		err := c.RestrictPaths(landlock.RODirs("/"))
+		errStr := "upgrade go-landlock"
+		if err == nil || !strings.Contains(err.Error(), errStr) {
+			t.Errorf("expected error with %q, got %v", errStr, err)
+		}
+	}
+}

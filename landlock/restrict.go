@@ -32,6 +32,12 @@ func downgrade(c Config, rules []Rule, abi abiInfo) (Config, []Rule) {
 
 // restrict is the actual implementation which sets up Landlock.
 func restrict(c Config, rules ...Rule) error {
+	// Check before the best effort downgrade, which would drop
+	// unknown access rights silently.
+	if !c.valid() {
+		return fmt.Errorf("unsupported access rights in %v (upgrade go-landlock?): %w", c, syscall.EINVAL)
+	}
+
 	abi := getSupportedABIVersion()
 	useTsync := abi.version >= 8
 	if !useTsync {

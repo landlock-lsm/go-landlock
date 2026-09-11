@@ -215,7 +215,7 @@ func NewConfig(args ...any) (*Config, error) {
 	// extensibility in mind. Only specific types are supported as
 	// input, but in the future more might be added.
 	//
-	// This constructor rejects invalid Config values.
+	// This constructor rejects invalid Config values early.
 	var c Config
 	for _, arg := range args {
 		switch arg := arg.(type) {
@@ -311,6 +311,8 @@ func (c Config) String() string {
 //
 // Warning: A best-effort call to RestrictPaths() will succeed without
 // error even when Landlock is not available at all on the current kernel.
+//
+// Access rights unknown to Go-Landlock are still rejected.
 func (c Config) BestEffort() Config {
 	cfg := c
 	cfg.bestEffort = true
@@ -583,6 +585,11 @@ func (c Config) Restrict(rules ...Rule) error {
 // Deprecated: This alias is only kept around for backwards
 // compatibility and will disappear with the next major release.
 type PathOpt = Rule
+
+// valid is true if c only uses access rights known to Go-Landlock.
+func (c Config) valid() bool {
+	return c.HandledAccessFS.valid() && c.HandledAccessNet.valid() && c.Scoped.valid()
+}
 
 // compatibleWith is true if c is compatible to work at the given Landlock ABI level.
 func (c Config) compatibleWithABI(abi abiInfo) bool {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/landlock-lsm/go-landlock/landlock"
 	"github.com/landlock-lsm/go-landlock/landlock/lltest"
+	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 	"golang.org/x/sys/unix"
 )
 
@@ -131,6 +132,67 @@ func TestReferNotPermittedInStrictV1(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "incompatible rule") {
 			t.Errorf("expected a 'incompatible rule' error, got: %v", err)
+		}
+	}
+}
+
+// Unknown access rights are rejected, also in best effort mode.
+// No RequireABI: the Config is rejected before any syscall.
+func TestUnknownAccessRights(t *testing.T) {
+	const (
+		unknownFS     = landlock.AccessFSSet(1 << 63)
+		unknownNet    = landlock.AccessNetSet(1 << 63)
+		unknownScoped = landlock.ScopedSet(1 << 63)
+	)
+
+	for _, tc := range []struct {
+		name    string
+		cfg     landlock.Config
+		enforce func(landlock.Config) error
+	}{
+		{
+			name:    "RestrictPaths",
+			cfg:     landlock.Config{HandledAccessFS: ll.AccessFSReadFile | unknownFS},
+			enforce: func(c landlock.Config) error { return c.RestrictPaths(landlock.RODirs("/")) },
+		},
+		{
+			name:    "RestrictNet",
+			cfg:     landlock.Config{HandledAccessNet: ll.AccessNetConnectTCP | unknownNet},
+			enforce: func(c landlock.Config) error { return c.RestrictNet(landlock.ConnectTCP(53)) },
+		},
+		{
+			name:    "RestrictScoped",
+			cfg:     landlock.Config{Scoped: ll.ScopeSignal | unknownScoped},
+			enforce: func(c landlock.Config) error { return c.RestrictScoped() },
+		},
+		{
+			name:    "Restrict",
+			cfg:     landlock.Config{HandledAccessFS: unknownFS},
+			enforce: func(c landlock.Config) error { return c.Restrict(landlock.RODirs("/")) },
+		},
+	} {
+		for _, mode := range []struct {
+			name string
+			cfg  landlock.Config
+		}{
+			{name: "strict", cfg: tc.cfg},
+			{name: "best_effort", cfg: tc.cfg.BestEffort()},
+		} {
+			t.Run(tc.name+"_"+mode.name, func(t *testing.T) {
+				err := tc.enforce(mode.cfg)
+				if err == nil {
+					t.Fatalf("expected 'invalid argument' error, got success")
+				}
+				if !errors.Is(err, unix.EINVAL) {
+					t.Errorf("expected 'invalid argument' error, got: %v", err)
+				}
+				if !strings.Contains(err.Error(), "upgrade go-landlock") {
+					t.Errorf("expected an 'upgrade go-landlock' error, got: %v", err)
+				}
+				if isGoLandlockBug(err) {
+					t.Errorf("should not be marked as a go-landlock bug, but was: %v", err)
+				}
+			})
 		}
 	}
 }

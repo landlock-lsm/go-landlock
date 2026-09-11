@@ -181,10 +181,89 @@ func TestNewConfigFailures(t *testing.T) {
 		// May not specify an unsupported AccessNetSet value
 		{AccessNetSet(1 << 4)},
 		{AccessNetSet(1 << 63)},
+		// May not specify an unsupported ScopedSet value
+		{ScopedSet(1 << 2)},
+		{ScopedSet(1 << 63)},
 	} {
 		_, err := NewConfig(args...)
 		if err == nil {
 			t.Errorf("NewConfig(%v) success, expected error", args)
+		}
+	}
+}
+
+func TestConfigValid(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		cfg  Config
+		want bool
+	}{
+		{name: "empty", cfg: Config{}, want: true},
+		{name: "v1", cfg: V1, want: true},
+		{name: "v10", cfg: V10, want: true},
+		{name: "v10_best_effort", cfg: V10.BestEffort(), want: true},
+		{name: "v10_quiet", cfg: V10.QuietAll(), want: true},
+		{
+			name: "unknown_fs_right",
+			cfg:  Config{HandledAccessFS: 1 << 17},
+			want: false,
+		},
+		{
+			name: "unknown_fs_right_high",
+			cfg:  Config{HandledAccessFS: 1 << 63},
+			want: false,
+		},
+		{
+			name: "known_and_unknown_fs_rights",
+			cfg:  Config{HandledAccessFS: ll.AccessFSReadFile | 1<<63},
+			want: false,
+		},
+		{
+			name: "unknown_net_right",
+			cfg:  Config{HandledAccessNet: 1 << 4},
+			want: false,
+		},
+		{
+			name: "unknown_scope",
+			cfg:  Config{Scoped: 1 << 2},
+			want: false,
+		},
+		{
+			name: "unknown_right_is_not_excused_by_best_effort",
+			cfg:  Config{HandledAccessFS: 1 << 63}.BestEffort(),
+			want: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.cfg.valid(); got != tc.want {
+				t.Errorf("cfg.valid() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// Catches ABI versions added to abiInfos without extending the
+// name tables.
+func TestPresetConfigsValid(t *testing.T) {
+	for i, abi := range abiInfos {
+		if cfg := abi.asConfig(); !cfg.valid() {
+			t.Errorf("abiInfos[%v].asConfig().valid() = false, want true; cfg = %v", i, cfg)
+		}
+	}
+}
+
+// Access rights which are unknown to the library are not compatible
+// with any Landlock ABI version, including the newest one.
+func TestCompatibleWithABIUnknownAccessRights(t *testing.T) {
+	for _, cfg := range []Config{
+		{HandledAccessFS: 1 << 63},
+		{HandledAccessNet: 1 << 63},
+		{Scoped: 1 << 63},
+	} {
+		for i, abi := range abiInfos {
+			if cfg.compatibleWithABI(abi) {
+				t.Errorf("%v.compatibleWithABI(abiInfos[%v]) = true, want false", cfg, i)
+			}
 		}
 	}
 }
