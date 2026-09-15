@@ -1,7 +1,13 @@
+<div align="center">
+
+<img width="30%" src="docs/images/go-landlock.svg">
+
+# Go Landlock library
+
 📚 [Godoc](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock)
 | 🌍 [landlock.io](https://landlock.io/)
 
-# Go Landlock library
+</div>
 
 Go-Landlock is a Go library for the Landlock LSM,
 an unprivileged sandboxing mechanism on Linux.
