@@ -404,15 +404,15 @@ func TestDowngrade(t *testing.T) {
 
 			gotCfg.bestEffort = false // ignored for comparison
 			if gotCfg != tc.wantCfg {
-				t.Errorf("config: got %v, want %v", gotCfg, tc.wantCfg)
+				t.Errorf("Config: got %v, want %v", gotCfg, tc.wantCfg)
 			}
 
 			if len(gotRules) != len(tc.wantRules) {
-				t.Fatalf("rules count: got %d, want %d", len(gotRules), len(tc.wantRules))
+				t.Fatalf("Rules count: got %d, want %d", len(gotRules), len(tc.wantRules))
 			}
 			for i := range gotRules {
 				if !rulesEqual(gotRules[i], tc.wantRules[i]) {
-					t.Errorf("rule %d: got %v, want %v", i, gotRules[i], tc.wantRules[i])
+					t.Errorf("Rule %d: got %v, want %v", i, gotRules[i], tc.wantRules[i])
 				}
 			}
 		})

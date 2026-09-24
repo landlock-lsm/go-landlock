@@ -124,6 +124,7 @@ func TestRestrictNet(t *testing.T) {
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
 			lltest.RunInSubprocess(t, func() {
+				ctx := t.Context()
 				lltest.RequireABI(t, tt.RequiredABI)
 
 				// Set up a service that we can dial for the test.
@@ -137,7 +138,7 @@ func TestRestrictNet(t *testing.T) {
 				if err := tryDial(cPort); !errEqual(err, tt.WantConnectErr) {
 					t.Errorf("net.Dial(tcp, localhost:%v) = «%v»; want «%v»", cPort, err, tt.WantConnectErr)
 				}
-				if err := trySinglePathListen(bPort); !errEqual(err, tt.WantBindErr) {
+				if err := trySinglePathListen(ctx, bPort); !errEqual(err, tt.WantBindErr) {
 					t.Errorf("net.Listen(single-path tcp, localhost:%v) = «%v»; want «%v»", bPort, err, tt.WantBindErr)
 				}
 			})
@@ -177,10 +178,10 @@ func tryDial(port int) error {
 	return err
 }
 
-func trySinglePathListen(port int) error {
+func trySinglePathListen(ctx context.Context, port int) error {
 	var lc net.ListenConfig
 	lc.SetMultipathTCP(false)
-	conn, err := lc.Listen(context.Background(), "tcp", fmt.Sprintf("localhost:%v", port))
+	conn, err := lc.Listen(ctx, "tcp", fmt.Sprintf("localhost:%v", port))
 	if err == nil {
 		conn.Close()
 	}

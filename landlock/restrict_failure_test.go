@@ -47,7 +47,7 @@ func TestPathDoesNotExist(t *testing.T) {
 		landlock.RODirs(doesNotExistPath),
 	)
 	if !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("expected 'not exist' error, got: %v", err)
+		t.Errorf("Want 'not exist' error, got: %v", err)
 	}
 }
 
@@ -61,7 +61,7 @@ func TestPathDoesNotExist_Ignored(t *testing.T) {
 			landlock.RODirs(doesNotExistPath).IgnoreIfMissing(),
 		)
 		if err != nil {
-			t.Errorf("expected no error, got: %v", err)
+			t.Errorf("Want no error, got: %v", err)
 		}
 	})
 }
@@ -75,10 +75,10 @@ func TestRestrictingPlainFileWithDirectoryFlags(t *testing.T) {
 		landlock.RODirs(fpath),
 	)
 	if !errors.Is(err, unix.EINVAL) {
-		t.Errorf("expected 'invalid argument' error, got: %v", err)
+		t.Errorf("Want 'invalid argument' error, got: %v", err)
 	}
 	if isGoLandlockBug(err) {
-		t.Errorf("should not be marked as a go-landlock bug, but was: %v", err)
+		t.Errorf("Should not be marked as a go-landlock bug, but was: %v", err)
 	}
 }
 
@@ -96,7 +96,7 @@ func TestEmptyAccessRights(t *testing.T) {
 			landlock.PathAccess(0, fpath),
 		)
 		if err != nil {
-			t.Errorf("expected success, got: %v", err)
+			t.Errorf("Want success, got: %v", err)
 		}
 	})
 }
@@ -110,7 +110,7 @@ func TestOverlyBroadFSRule(t *testing.T) {
 		landlock.PathAccess(excempt, "/tmp"),
 	)
 	if !errors.Is(err, unix.EINVAL) {
-		t.Errorf("expected 'invalid argument' error, got: %v", err)
+		t.Errorf("Want 'invalid argument' error, got: %v", err)
 	}
 }
 
@@ -128,10 +128,10 @@ func TestReferNotPermittedInStrictV1(t *testing.T) {
 	} {
 		err := landlock.V1.RestrictPaths(rule)
 		if !errors.Is(err, unix.EINVAL) {
-			t.Errorf("expected 'invalid argument' error, got: %v", err)
+			t.Errorf("Want 'invalid argument' error, got: %v", err)
 		}
 		if !strings.Contains(err.Error(), "incompatible rule") {
-			t.Errorf("expected a 'incompatible rule' error, got: %v", err)
+			t.Errorf("Want a 'incompatible rule' error, got: %v", err)
 		}
 	}
 }
@@ -181,16 +181,16 @@ func TestUnknownAccessRights(t *testing.T) {
 			t.Run(tc.name+"_"+mode.name, func(t *testing.T) {
 				err := tc.enforce(mode.cfg)
 				if err == nil {
-					t.Fatalf("expected 'invalid argument' error, got success")
+					t.Fatalf("Want 'invalid argument' error, got success")
 				}
 				if !errors.Is(err, unix.EINVAL) {
-					t.Errorf("expected 'invalid argument' error, got: %v", err)
+					t.Errorf("Want 'invalid argument' error, got: %v", err)
 				}
 				if !strings.Contains(err.Error(), "upgrade go-landlock") {
-					t.Errorf("expected an 'upgrade go-landlock' error, got: %v", err)
+					t.Errorf("Want an 'upgrade go-landlock' error, got: %v", err)
 				}
 				if isGoLandlockBug(err) {
-					t.Errorf("should not be marked as a go-landlock bug, but was: %v", err)
+					t.Errorf("Should not be marked as a go-landlock bug, but was: %v", err)
 				}
 			})
 		}

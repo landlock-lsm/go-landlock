@@ -7,7 +7,7 @@ import (
 func TestABIVersionsIncrementing(t *testing.T) {
 	for i, abiInfo := range abiInfos {
 		if i != abiInfo.version {
-			t.Errorf("Expected ABI version %d at index %d, got version %d", i, i, abiInfo.version)
+			t.Errorf("abiInfos[%d].version = %d, want %d", i, abiInfo.version, i)
 		}
 	}
 }

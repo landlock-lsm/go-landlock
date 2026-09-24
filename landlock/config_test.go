@@ -146,7 +146,7 @@ func TestNewConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg, err := NewConfig(tt.args...)
 			if err != nil {
-				t.Errorf("NewConfig(): expected success, got %v", err)
+				t.Errorf("NewConfig(): want success, got %v", err)
 			}
 			if *cfg != tt.want {
 				t.Errorf("cfg = %v, want %v", cfg, tt.want)

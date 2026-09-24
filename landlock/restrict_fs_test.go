@@ -230,7 +230,7 @@ func TestRestrictPaths(t *testing.T) {
 				}
 
 				if err := openForWrite(fpath); !errEqual(err, tt.WantCreateErr) {
-					t.Errorf("os.Create(%q) = «%v», want «%v»", fpath, err, tt.WantCreateErr)
+					t.Errorf("openForWrite(%q) = «%v», want «%v»", fpath, err, tt.WantCreateErr)
 				}
 
 				if err := os.Truncate(fpath, 3); !errEqual(err, tt.WantTruncateErr) {
@@ -248,7 +248,7 @@ func TestRestrictPaths(t *testing.T) {
 
 				fifoPath := filepath.Join(dir, "fifo")
 				if err := unix.Mkfifo(fifoPath, 0600); !errEqual(err, tt.WantMkfifoErr) {
-					t.Errorf("os.Mkfifo(%q, ...) = «%v», want «%v»", fifoPath, err, tt.WantMkfifoErr)
+					t.Errorf("unix.Mkfifo(%q, ...) = «%v», want «%v»", fifoPath, err, tt.WantMkfifoErr)
 				}
 
 				dstFpath := filepath.Join(dstDirPath, "target.txt")

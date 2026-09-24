@@ -14,7 +14,7 @@ func TestRestrictNonLinux_BestEffort(t *testing.T) {
 		landlock.RODirs("/"),
 	)
 	if err != nil {
-		t.Errorf("expected success (downgraded to doing nothing)")
+		t.Errorf("Expected success (downgraded to doing nothing)")
 	}
 }
 
@@ -24,7 +24,7 @@ func TestRestrictNonLinux_Strict(t *testing.T) {
 	)
 	errStr := "missing kernel Landlock support"
 	if !strings.Contains(err.Error(), errStr) {
-		t.Errorf("expected error with %q, got %v", errStr, err)
+		t.Errorf("Expected error with %q, got %v", errStr, err)
 	}
 }
 
@@ -34,7 +34,7 @@ func TestRestrictNonLinux_UnknownAccessRights(t *testing.T) {
 		err := c.RestrictPaths(landlock.RODirs("/"))
 		errStr := "upgrade go-landlock"
 		if err == nil || !strings.Contains(err.Error(), errStr) {
-			t.Errorf("expected error with %q, got %v", errStr, err)
+			t.Errorf("Expected error with %q, got %v", errStr, err)
 		}
 	}
 }

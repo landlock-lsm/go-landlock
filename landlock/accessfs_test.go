@@ -19,7 +19,7 @@ func TestSubset(t *testing.T) {
 	} {
 		got := tc.a.isSubset(tc.b)
 		if got != tc.want {
-			t.Errorf("flagSubset(0b%b, 0b%b) = %v, want %v", tc.a, tc.b, got, tc.want)
+			t.Errorf("AccessFSSet(0b%b).isSubset(AccessFSSet(0b%b)) = %v, want %v", tc.a, tc.b, got, tc.want)
 		}
 	}
 }
