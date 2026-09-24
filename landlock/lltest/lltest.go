@@ -72,16 +72,16 @@ func TempDir(t testing.TB) string {
 	return t.TempDir()
 }
 
-func abiVersion() (int, error) {
-	return internal.DetectedABIVersion(), nil
+func abiVersion() int {
+	return internal.DetectedABIVersion()
 }
 
 // RequireABI skips the test if the kernel does not provide the given ABI version.
 func RequireABI(t testing.TB, want int) {
 	t.Helper()
 
-	if v, err := abiVersion(); err != nil || v < want {
-		t.Skipf("Requires Landlock >= V%v, got V%v (err=%v)", want, v, err)
+	if v := abiVersion(); v < want {
+		t.Skipf("Requires Landlock >= V%v, got V%v", want, v)
 	}
 }
 
