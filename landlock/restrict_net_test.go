@@ -152,9 +152,7 @@ func runBackgroundService(t *testing.T, network, addr string) {
 		t.Fatalf("net.Listen: Failed to set up local service to connect to: %v", err)
 	}
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			c, err := l.Accept()
 			if err != nil {
@@ -163,7 +161,7 @@ func runBackgroundService(t *testing.T, network, addr string) {
 			}
 			c.Close()
 		}
-	}()
+	})
 	t.Cleanup(func() {
 		l.Close()
 		wg.Wait()

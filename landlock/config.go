@@ -3,6 +3,7 @@ package landlock
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	ll "github.com/landlock-lsm/go-landlock/landlock/syscall"
 )
@@ -261,8 +262,8 @@ func MustConfig(args ...any) Config {
 // String builds a human-readable representation of the Config.
 func (c Config) String() string {
 	abi := abiInfo{version: -1} // invalid
-	for i := len(abiInfos) - 1; i >= 0; i-- {
-		a := abiInfos[i]
+	for _, a := range slices.Backward(abiInfos) {
+
 		if c.compatibleWithABI(a) {
 			abi = a
 		}

@@ -35,15 +35,13 @@ func TestRestrictInPresenceOfThreading(t *testing.T) {
 			attempts    = 10
 		)
 		for range parallelism {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				for range attempts {
 					if err := openForRead(fpath); err == nil {
 						t.Errorf("openForRead(%q) successful, want error", fpath)
 					}
 				}
-			}()
+			})
 		}
 	})
 }
