@@ -244,7 +244,7 @@ func NewConfig(args ...any) (*Config, error) {
 			}
 			c.Scoped = arg
 		default:
-			return nil, fmt.Errorf("unknown argument %v; only AccessFSSet-type argument is supported", arg)
+			return nil, fmt.Errorf("unsupported argument %v", arg)
 		}
 	}
 	return &c, nil

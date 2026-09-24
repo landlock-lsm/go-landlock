@@ -90,7 +90,7 @@ func restrict(c Config, rules ...Rule) error {
 	if !useTsync {
 		if err := ll.AllThreadsPrctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
 			// This prctl invocation should always work.
-			return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))
+			return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %w", err))
 		}
 
 		if err := ll.AllThreadsLandlockRestrictSelf(fd, uint32(c.flags)); err != nil {
