@@ -61,7 +61,7 @@ const (
 // Flags for [AllThreadsLandlockRestrictSelf].
 //
 // Please see full documentation at
-// https://docs.kernel.org/userspace-api/landlock.html#enforcing-a-ruleset
+// https://docs.kernel.org/userspace-api/landlock.html#enforcing-a-ruleset.
 const (
 	FlagRestrictSelfLogSameExecOff = 1 << iota
 	FlagRestrictSelfLogNewExecOn
@@ -72,7 +72,7 @@ const (
 // Flags for [LandlockAddPathBeneathRule] and [LandlockAddNetPortRule].
 //
 // Please see full documentation at
-// https://docs.kernel.org/userspace-api/landlock.html#adding-a-new-rule-to-a-ruleset
+// https://docs.kernel.org/userspace-api/landlock.html#adding-a-new-rule-to-a-ruleset.
 const (
 	FlagAddRuleQuiet = 1 << 0
 )

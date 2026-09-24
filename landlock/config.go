@@ -179,9 +179,8 @@ var (
 // v0 denotes "no Landlock support". Only used internally.
 var v0 = Config{}
 
-// The Landlock configuration describes the desired set of
-// landlockable operations to be restricted and the constraints on it
-// (e.g., best effort mode).
+// Config describes the desired set of landlockable operations to be
+// restricted and the constraints on it (e.g., best effort mode).
 //
 // It is recommended to use one of the preset configurations such as
 // [landlock.V10], which restrict the full set of access rights
@@ -591,7 +590,7 @@ func (c Config) valid() bool {
 	return c.HandledAccessFS.valid() && c.HandledAccessNet.valid() && c.Scoped.valid()
 }
 
-// compatibleWith is true if c is compatible to work at the given Landlock ABI level.
+// compatibleWithABI is true if c is compatible to work at the given Landlock ABI level.
 func (c Config) compatibleWithABI(abi abiInfo) bool {
 	return (c.HandledAccessFS.isSubset(abi.supportedAccessFS) &&
 		c.HandledAccessNet.isSubset(abi.supportedAccessNet) &&
