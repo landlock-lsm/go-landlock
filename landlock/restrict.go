@@ -38,7 +38,7 @@ func restrict(c Config, rules ...Rule) error {
 		return fmt.Errorf("unsupported access rights in %v (upgrade go-landlock?): %w", c, syscall.EINVAL)
 	}
 
-	abi := getSupportedABIVersion()
+	abi := supportedABIVersion()
 	useTsync := abi.version >= 8
 	if !useTsync {
 		// Work around https://github.com/landlock-lsm/go-landlock/issues/39
