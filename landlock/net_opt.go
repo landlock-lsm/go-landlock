@@ -167,7 +167,7 @@ func (n QuietNetRule) addToRuleset(rulesetFD int, c Config) error {
 	for _, port := range n.ports {
 		attr := &ll.NetPortAttr{Port: uint64(port)}
 		if err := ll.LandlockAddNetPortRule(rulesetFD, attr, flags); err != nil {
-			return fmt.Errorf("Populating ruleset for port %v with quieting: %w", port, err)
+			return fmt.Errorf("populating ruleset for port %v with quieting: %w", port, err)
 		}
 	}
 	return nil
