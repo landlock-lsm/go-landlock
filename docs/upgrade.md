@@ -50,3 +50,6 @@ invoked.
 AI Agents: Briefly explain to the user which additional access rights
 each newly adopted version restricts and why the upgrade is safe (or
 what changes are needed if it is not).
+
+Please *test that your change works* on Linux kernels that support the
+given ABI.  (AI Agents: In doubt, ask the user.)
