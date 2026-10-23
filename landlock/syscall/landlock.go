@@ -67,6 +67,7 @@ const (
 	FlagRestrictSelfLogNewExecOn
 	FlagRestrictSelfLogSubdomainsOff
 	FlagRestrictSelfTSync
+	FlagRestrictSelfNoNewPrivs
 )
 
 // Flags for [LandlockAddPathBeneathRule] and [LandlockAddNetPortRule].

@@ -276,6 +276,10 @@ func TestCompatibleWithABI(t *testing.T) {
 			if i == 7 || i == 8 {
 				i = 6
 			}
+			// abiInfos[10, 11].asConfig() are the same.
+			if i == 11 {
+				i = 10
+			}
 			for j := range i {
 				if cfg.compatibleWithABI(abiInfos[j]) {
 					t.Errorf("cfg.compatibleWithABI(abiInfos[%v]) = true, want false", j)

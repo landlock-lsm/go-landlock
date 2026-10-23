@@ -65,6 +65,13 @@ func TestAccessRights(t *testing.T) {
 	}
 }
 
+func TestRestrictSelfNoNewPrivsFlag(t *testing.T) {
+	// TODO: compare with unix.LANDLOCK_RESTRICT_SELF_NO_NEW_PRIVS when available.
+	if FlagRestrictSelfNoNewPrivs != (1 << 4) {
+		t.Errorf("FlagRestrictSelfNoNewPrivs differs from x/sys/unix definition; got %v, want %v", FlagRestrictSelfNoNewPrivs, 1<<4)
+	}
+}
+
 func TestAddRuleFlags(t *testing.T) {
 	// TODO: compare with unix.LANDLOCK_ADD_RULE_QUIET when available.
 	if FlagAddRuleQuiet != (1 << 0) {

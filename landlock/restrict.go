@@ -103,13 +103,20 @@ func restrict(c Config, rules ...Rule) error {
 		return nil
 	}
 
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+	flags := uint32(c.flags) | ll.FlagRestrictSelfTSync | ll.FlagRestrictSelfNoNewPrivs
+	if abi.version < 11 {
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
 
-	if err := unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
-		return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))
+		// The kernel sets no_new_privs on all threads, but
+		// only if the ruleset enforcement succeeds.
+		flags &^= ll.FlagRestrictSelfNoNewPrivs
+		if err := unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
+			return bug(fmt.Errorf("prctl(PR_SET_NO_NEW_PRIVS): %v", err))
+		}
 	}
-	if err := ll.LandlockRestrictSelf(fd, uint32(c.flags)|ll.FlagRestrictSelfTSync); err != nil {
+
+	if err := ll.LandlockRestrictSelf(fd, flags); err != nil {
 		if errors.Is(err, syscall.E2BIG) {
 			return fmt.Errorf("the maximum number of stacked rulesets is reached for the current thread: %w", err)
 		}
