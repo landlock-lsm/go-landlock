@@ -21,8 +21,8 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Staticcheck
-        uses: dominikh/staticcheck-action@024238d2898c874f26d723e7d0ff4308c35589a2 # v1.4.0
+        uses: dominikh/staticcheck-action@9716614d4101e79b4340dd97b10e54d68234e431 # v1.4.1
         with:
-          version: "v0.8.1"
+          version: "v0.8.2"
       - name: Govulncheck
         uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
