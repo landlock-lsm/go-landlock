@@ -38,7 +38,7 @@ func main() {
 		cmd = []string{"/bin/bash"}
 	}
 
-	if err := landlock.V10.RestrictScoped(); err != nil {
+	if err := landlock.V11.RestrictScoped(); err != nil {
 		log.Fatalf("landlock RestrictScoped: %v", err)
 	}
 

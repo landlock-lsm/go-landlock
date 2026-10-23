@@ -58,6 +58,11 @@ func TestConfigString(t *testing.T) {
 			want: "{Landlock V10; FS: all; Net: all; Scoped: all}",
 		},
 		{
+			// V11 is the same as V10...
+			cfg:  V11,
+			want: "{Landlock V10; FS: all; Net: all; Scoped: all}",
+		},
+		{
 			cfg:  Config{HandledAccessNet: ll.AccessNetBindUDP},
 			want: "{Landlock V10; FS: ∅; Net: {bind_udp}; Scoped: ∅}",
 		},
@@ -203,6 +208,7 @@ func TestConfigValid(t *testing.T) {
 		{name: "v10", cfg: V10, want: true},
 		{name: "v10_best_effort", cfg: V10.BestEffort(), want: true},
 		{name: "v10_quiet", cfg: V10.QuietAll(), want: true},
+		{name: "v11", cfg: V11, want: true},
 		{
 			name: "unknown_fs_right",
 			cfg:  Config{HandledAccessFS: 1 << 17},

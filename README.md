@@ -33,7 +33,7 @@ distributions](https://landlock.io/integrations/#linux-distributions).
 In a Go program, after starting up and doing program initialization work, run:
 
 ```
-err := landlock.V10.BestEffort().RestrictPaths(
+err := landlock.V11.BestEffort().RestrictPaths(
     landlock.RODirs("/usr", "/bin"),
     landlock.RWDirs("/tmp"),
 )
