@@ -52,3 +52,4 @@ Goals of Go-Landlock are:
 
 * [...onboard a program to use Go-Landlock](docs/onboarding.md)
 * [...upgrade a Go-Landlock usage to use more advanced features](docs/upgrade.md)
+* [...use Landlock in Go without Go-Landlock](docs/raw_syscalls_in_go.md) (discouraged)
