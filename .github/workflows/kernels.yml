@@ -1,0 +1,117 @@
+name: Kernel Tests
+
+# Runs the Go tests in User-Mode Linux (UML) kernels, one before
+# Landlock existed and one for each Landlock ABI version, the same way
+# as rust-landlock does it.
+
+permissions: {}
+
+on: [push, pull_request]
+
+env:
+  LANDLOCK_TEST_TOOLS_COMMIT: 1dd31a0f7961cd7107b78497859d593849f30008
+
+jobs:
+  go_tests:
+    name: Go Tests on Linux ${{ matrix.linux }}.y (ABI ${{ matrix.abi }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # The versions must be quoted, as YAML would read 6.10 as 6.1.
+        # TODO: Add the kernel for Landlock ABI 11, once it has a stable branch.
+        include:
+          - { linux: '5.10', abi: 0 }
+          - { linux: '5.15', abi: 1 }
+          - { linux: '6.1',  abi: 2 }
+          - { linux: '6.4',  abi: 3 }
+          - { linux: '6.7',  abi: 4 }
+          - { linux: '6.10', abi: 5 }
+          - { linux: '6.12', abi: 6 }
+          - { linux: '6.15', abi: 7 }
+          - { linux: '7.0',  abi: 8 }
+          - { linux: '7.1',  abi: 9 }
+          - { linux: '7.2',  abi: 10 }
+    env:
+      # The glibc resolver needs files which some tests forbid accessing.
+      CGO_ENABLED: '0'
+      UML_EXEC: >-
+        timeout --signal KILL 300
+        ${{ github.workspace }}/landlock-test-tools/uml-run.sh
+        ${{ github.workspace }}/linux-${{ matrix.linux }}
+        --
+        env LANDLOCK_GO_TEST_ABI=${{ matrix.abi }}
+    steps:
+      - name: Identify latest Linux ${{ matrix.linux }}.y
+        id: linux
+        run: |
+          commit="$(git ls-remote https://github.com/landlock-lsm/linux refs/heads/linux-${{ matrix.linux }}.y | awk 'NR == 1 { print $1 }')"
+          if [[ -z "${commit}" ]]; then
+            echo "ERROR: Failed to fetch Linux ${{ matrix.linux }}" >&2
+            exit 1
+          fi
+          echo "commit=${commit}" >> "${GITHUB_OUTPUT}"
+          echo "Linux ${{ matrix.linux }}.y with Landlock ABI ${{ matrix.abi }}: https://github.com/landlock-lsm/linux/commit/${commit}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Clone Landlock test tools
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          repository: landlock-lsm/landlock-test-tools
+          ref: ${{ env.LANDLOCK_TEST_TOOLS_COMMIT }}
+          path: landlock-test-tools
+          persist-credentials: false
+
+      # The cache is saved separately right after the build, so that a
+      # built kernel is kept even if the tests fail.
+      - name: Get cached Linux ${{ matrix.linux }}.y
+        id: cache_linux
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: linux-${{ matrix.linux }}
+          key: linux-${{ steps.linux.outputs.commit }}-${{ env.LANDLOCK_TEST_TOOLS_COMMIT }}
+
+      - name: Clone Linux ${{ matrix.linux }}.y
+        if: steps.cache_linux.outputs.cache-hit != 'true'
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          repository: landlock-lsm/linux
+          ref: ${{ steps.linux.outputs.commit }}
+          path: linux
+          persist-credentials: false
+
+      - name: Build Linux ${{ matrix.linux }}.y
+        if: steps.cache_linux.outputs.cache-hit != 'true'
+        working-directory: linux
+        run: |
+          O=. BUILD_FLAVOR=light ../landlock-test-tools/check-linux.sh build
+          mv linux ../linux-${{ matrix.linux }}
+
+      - name: Cache Linux ${{ matrix.linux }}.y
+        if: steps.cache_linux.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: linux-${{ matrix.linux }}
+          key: ${{ steps.cache_linux.outputs.cache-primary-key }}
+
+      - name: Clone go-landlock
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          path: go-landlock
+          persist-credentials: false
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: 'stable'
+          cache-dependency-path: go-landlock/go.sum
+
+      # The UML guest mounts a tmpfs on /tmp, hiding the test binaries there.
+      - name: Build test binaries outside of /tmp
+        run: echo "GOTMPDIR=${RUNNER_TEMP}" >> "${GITHUB_ENV}"
+
+      - name: Run tests
+        working-directory: go-landlock
+        run: go test -count=1 -v -exec "${UML_EXEC}" ./...
+
+      - name: Run tests (landlocktsync)
+        working-directory: go-landlock
+        run: go test -count=1 -v -tags landlocktsync -exec "${UML_EXEC}" ./...
