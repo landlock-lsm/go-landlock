@@ -54,7 +54,7 @@ jobs:
           echo "Linux ${{ matrix.linux }}.y with Landlock ABI ${{ matrix.abi }}: https://github.com/landlock-lsm/linux/commit/${commit}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Clone Landlock test tools
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: landlock-lsm/landlock-test-tools
           ref: ${{ env.LANDLOCK_TEST_TOOLS_COMMIT }}
@@ -72,7 +72,7 @@ jobs:
 
       - name: Clone Linux ${{ matrix.linux }}.y
         if: steps.cache_linux.outputs.cache-hit != 'true'
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: landlock-lsm/linux
           ref: ${{ steps.linux.outputs.commit }}
@@ -94,7 +94,7 @@ jobs:
           key: ${{ steps.cache_linux.outputs.cache-primary-key }}
 
       - name: Clone go-landlock
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: go-landlock
           persist-credentials: false
