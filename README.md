@@ -4,8 +4,10 @@
 
 # Go Landlock library
 
-📚 [Godoc](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock)
-| 🌍 [landlock.io](https://landlock.io/)
+🌍 [landlock.io](https://landlock.io/)
+| [![Go Reference](https://pkg.go.dev/badge/github.com/landlock-lsm/go-landlock/landlock.svg)](https://pkg.go.dev/github.com/landlock-lsm/go-landlock/landlock)
+[![Unit Tests](https://github.com/landlock-lsm/go-landlock/actions/workflows/tests.yml/badge.svg)](https://github.com/landlock-lsm/go-landlock/actions/workflows/tests.yml)
+[![Kernel Tests](https://github.com/landlock-lsm/go-landlock/actions/workflows/kernels.yml/badge.svg)](https://github.com/landlock-lsm/go-landlock/actions/workflows/kernels.yml)
 
 </div>
 
