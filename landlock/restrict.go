@@ -59,10 +59,8 @@ func restrict(c Config, rules ...Rule) error {
 		return fmt.Errorf("missing kernel Landlock support. Got Landlock ABI v%v, wanted %v", abi.version, c)
 	}
 
-	// TODO: This might be incorrect - the "refer" permission is
-	// always implicit, even in Landlock V1. So enabling Landlock
-	// on a Landlock V1 kernel without any handled access rights
-	// will still forbid linking files between directories.
+	// Remark: The "refer" right is implicit, but only enabled if
+	// any of the other filesystem access rights is handled.
 	if c.HandledAccessFS.isEmpty() && c.HandledAccessNet.isEmpty() && c.Scoped.isEmpty() {
 		return nil // Success: Nothing to restrict.
 	}
