@@ -587,6 +587,91 @@ func (c Config) Restrict(rules ...Rule) error {
 	return restrict(c, rules...)
 }
 
+// NewRulesetFD creates a Landlock ruleset for the access rights
+// restricted by the Config and the given rules, without enforcing it.
+//
+// This is a helper solely meant for advanced use, and it is difficult
+// to use correctly.  To restrict the current Go process, please use
+// [Config.Restrict] instead.
+//
+//   - For single-threaded enforcement, you MUST hold the
+//     [runtime.LockOSThread] lock across all relevant operations,
+//     including prctl(2) with PR_SET_NO_NEW_PRIVS (if needed), ruleset
+//     enforcement ([ll.LandlockRestrictSelf]), and possible
+//     [syscall.Exec], to ensure that the goroutine does not switch OS
+//     threads in between.  After enforcement, you MUST NOT unlock the
+//     OS thread again, so that the Go runtime terminates the
+//     restricted thread instead of reusing it for other goroutines.
+//
+//   - The caller is responsible for closing the returned file
+//     descriptor.  It is created with the close-on-exec flag.
+//
+//   - If there is nothing to enforce, NewRulesetFD returns a file
+//     descriptor of -1 with a nil error.  This happens if the Config
+//     does not restrict any access rights, or in [Config.BestEffort]
+//     mode if Landlock is not available.  Callers need to check for
+//     this case.
+//
+//   - In case of error, the returned file descriptor is always
+//     invalid (-1).
+//
+//   - The returned set of flags includes "persistent" properties of a
+//     Landlock domain, but excludes the enforcement options
+//     LANDLOCK_RESTRICT_SELF_NO_NEW_PRIVS and
+//     LANDLOCK_RESTRICT_SELF_TSYNC.  The caller is responsible for
+//     applying these where needed.  In particular, enforcement
+//     requires the no_new_privs attribute or the CAP_SYS_ADMIN
+//     capability.
+//
+//   - Note that a Landlock domain does not log denials after
+//     execve(2) by default.  When enforcing the ruleset just before
+//     execve(2), callers will usually want to use
+//     [Config.EnableLoggingForSubprocesses], so that denials of the
+//     newly executed program are logged.
+//
+// The returned ruleset is constructed in the same way as in
+// [Config.Restrict], including the validation of rules and the
+// downgrade in best effort mode.
+//
+// # Example 1: Enforce the ruleset and immediately call syscall.Exec
+//
+// This replaces the running Go process with all goroutines with
+// another program.
+//
+//	fd, flags, err := cfg.NewRulesetFD(rules...)
+//	if err != nil { /* handle */ }
+//	if fd >= 0 {
+//		defer unix.Close(fd)
+//		runtime.LockOSThread() // Never unlocked.
+//		err = unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
+//		if err != nil { /* handle */ }
+//		err = llsyscall.LandlockRestrictSelf(fd, flags)
+//		if err != nil { /* handle */ }
+//	}
+//	err = syscall.Exec(argv0, argv, envv)
+//	/* handle err */
+//
+// # Example 2: Use the ruleset for a subprocess (Go 1.28+)
+//
+// This runs a subprocess with a given Landlock policy.
+//
+//	cmd := exec.CommandContext(...)
+//	fd, flags, err := cfg.NewRulesetFD(rules...)
+//	if err != nil { /* handle */ }
+//	if fd >= 0 {
+//		defer unix.Close(fd) // Must stay open until cmd.Start returns.
+//		cmd.SysProcAttr = &syscall.SysProcAttr{
+//			NoNewPrivs:    true,
+//			UseLandlock:   true,
+//			LandlockFD:    fd,
+//			LandlockFlags: flags,
+//		}
+//	}
+//	err = cmd.Run()
+func (c Config) NewRulesetFD(rules ...Rule) (fd int, flags uint32, err error) {
+	return newRulesetFD(c, rules...)
+}
+
 // PathOpt is a deprecated alias for [Rule].
 //
 // Deprecated: This alias is only kept around for backwards

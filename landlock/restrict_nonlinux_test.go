@@ -38,3 +38,21 @@ func TestRestrictNonLinux_UnknownAccessRights(t *testing.T) {
 		}
 	}
 }
+
+func TestNewRulesetFDNonLinux_BestEffort(t *testing.T) {
+	fd, flags, err := landlock.V3.BestEffort().NewRulesetFD(landlock.RODirs("/"))
+	if fd != -1 || flags != 0 || err != nil {
+		t.Errorf("NewRulesetFD() = (%v, %#x, %v), want (-1, 0, nil)", fd, flags, err)
+	}
+}
+
+func TestNewRulesetFDNonLinux_Strict(t *testing.T) {
+	fd, flags, err := landlock.V3.NewRulesetFD(landlock.RODirs("/"))
+	errStr := "missing kernel Landlock support"
+	if err == nil || !strings.Contains(err.Error(), errStr) {
+		t.Errorf("Expected error with %q, got %v", errStr, err)
+	}
+	if fd != -1 || flags != 0 {
+		t.Errorf("NewRulesetFD() = (%v, %#x, _), want (-1, 0, _)", fd, flags)
+	}
+}

@@ -17,3 +17,10 @@ func restrict(c Config, rules ...Rule) error {
 	}
 	return fmt.Errorf("missing kernel Landlock support. Landlock is only supported on Linux")
 }
+
+func newRulesetFD(c Config, rules ...Rule) (fd int, flags uint32, err error) {
+	if err := restrict(c, rules...); err != nil {
+		return -1, 0, err
+	}
+	return -1, 0, nil // Best effort: Nothing to restrict.
+}
