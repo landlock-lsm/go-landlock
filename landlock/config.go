@@ -217,6 +217,9 @@ type Config struct {
 // Example:
 //
 //	cfg, err := NewConfig(AccessFSSet(llsyscall.AccessFSExecute))
+//
+// Deprecated: Use a struct literal instead:
+// Config{HandledAccessFS: llsyscall.AccessFSExecute}
 func NewConfig(args ...any) (*Config, error) {
 	// Implementation note: This factory is written with future
 	// extensibility in mind. Only specific types are supported as
@@ -258,6 +261,9 @@ func NewConfig(args ...any) (*Config, error) {
 }
 
 // MustConfig is like NewConfig but panics on error.
+//
+// Deprecated: Use a struct literal instead:
+// Config{HandledAccessFS: llsyscall.AccessFSExecute}
 func MustConfig(args ...any) Config {
 	c, err := NewConfig(args...)
 	if err != nil {

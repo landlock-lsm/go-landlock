@@ -20,8 +20,9 @@ to identify which ABI version is currently in use.
 grep -R 'landlock\.V'
 ```
 
-In the less common case, the user might also use `landlock.NewConfig`
-or `landlock.MustConfig`.
+In the less common case, the user might also construct a
+`landlock.Config{...}` struct literal directly, or use the deprecated
+`landlock.NewConfig` or `landlock.MustConfig` functions.
 
 ## Step 3 — Check what changed
 

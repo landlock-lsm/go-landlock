@@ -52,13 +52,9 @@ func main() {
 
 	// Build Landlock config.
 	forbiddenAccess := accessFSSet(jsonCfg.ForbiddenAccess)
-	cfg, err := landlock.NewConfig(forbiddenAccess)
-	if err != nil {
-		log.Fatalf("landlock.NewConfig: %v", err)
-	}
+	cfg := landlock.Config{HandledAccessFS: forbiddenAccess}
 	if jsonCfg.BestEffort {
-		cfg2 := cfg.BestEffort()
-		cfg = &cfg2
+		cfg = cfg.BestEffort()
 	}
 
 	// Enforce.
