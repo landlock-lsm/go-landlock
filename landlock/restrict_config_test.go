@@ -18,7 +18,8 @@ func TestCustomConfig(t *testing.T) {
 		pathNoAccess := MakeSomeFile(t)
 
 		readFile := landlock.AccessFSSet(ll.AccessFSReadFile)
-		if err := landlock.MustConfig(readFile).RestrictPaths(
+		cfg := landlock.Config{HandledAccessFS: readFile}
+		if err := cfg.RestrictPaths(
 			landlock.PathAccess(readFile, pathRO),
 		); err != nil {
 			t.Fatalf("Could not restrict paths: %v", err)
@@ -61,9 +62,7 @@ func TestAbsurdDowngradeCase(t *testing.T) {
 	}
 
 	lltest.RunInSubprocess(t, func() {
-		cfg := landlock.MustConfig(
-			landlock.AccessFSSet(ll.AccessFSTruncate | ll.AccessFSMakeDir),
-		).BestEffort()
+		cfg := landlock.Config{HandledAccessFS: ll.AccessFSTruncate | ll.AccessFSMakeDir}.BestEffort()
 
 		path := MakeSomeFile(t)
 		err := cfg.Restrict(landlock.PathAccess(ll.AccessFSTruncate, path))

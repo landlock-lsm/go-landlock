@@ -345,7 +345,7 @@ func TestRulesetAttr(t *testing.T) {
 			// The quiet masks must stay a subset of the handled
 			// sets, so they only cover what the Config restricts.
 			name: "quiet masks stay within the handled sets",
-			cfg:  MustConfig(AccessFSSet(ll.AccessFSReadFile)).QuietAll(),
+			cfg:  Config{HandledAccessFS: ll.AccessFSReadFile}.QuietAll(),
 			want: ll.RulesetAttr{
 				HandledAccessFS: ll.AccessFSReadFile,
 				QuietAccessFS:   ll.AccessFSReadFile,

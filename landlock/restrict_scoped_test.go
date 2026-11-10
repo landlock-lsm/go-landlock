@@ -42,9 +42,7 @@ func TestRestrictScoped(t *testing.T) {
 			Name:        "RestrictAbstractUnixSockets",
 			RequiredABI: 6,
 			EnableLandlock: func() error {
-				return landlock.MustConfig(
-					landlock.ScopedSet(ll.ScopeAbstractUnixSocket),
-				).Restrict()
+				return landlock.Config{Scoped: ll.ScopeAbstractUnixSocket}.Restrict()
 			},
 			WantDialErr: syscall.EPERM,
 		},
@@ -52,9 +50,7 @@ func TestRestrictScoped(t *testing.T) {
 			Name:        "RestrictSignal",
 			RequiredABI: 6,
 			EnableLandlock: func() error {
-				return landlock.MustConfig(
-					landlock.ScopedSet(ll.ScopeSignal),
-				).Restrict()
+				return landlock.Config{Scoped: ll.ScopeSignal}.Restrict()
 			},
 			WantKillErr: syscall.EPERM,
 		},

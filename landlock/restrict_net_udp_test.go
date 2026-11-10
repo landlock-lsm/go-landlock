@@ -26,9 +26,9 @@ func TestRestrictNetUDP(t *testing.T) {
 		cPort = 4545 // the remote port that gets connect(2)-ed and sent to
 	)
 
-	bindUDP := landlock.AccessNetSet(ll.AccessNetBindUDP)
-	connectSendUDP := landlock.AccessNetSet(ll.AccessNetConnectSendUDP)
-	tcpOnly := landlock.AccessNetSet(ll.AccessNetBindTCP | ll.AccessNetConnectTCP)
+	bindUDP := landlock.Config{HandledAccessNet: ll.AccessNetBindUDP}
+	connectSendUDP := landlock.Config{HandledAccessNet: ll.AccessNetConnectSendUDP}
+	tcpOnly := landlock.Config{HandledAccessNet: ll.AccessNetBindTCP | ll.AccessNetConnectTCP}
 
 	for _, tt := range []struct {
 		Name           string
@@ -43,46 +43,46 @@ func TestRestrictNetUDP(t *testing.T) {
 		},
 		{
 			Name:           "TCPRightsDoNotRestrictUDP",
-			EnableLandlock: func() error { return landlock.MustConfig(tcpOnly).RestrictNet() },
+			EnableLandlock: func() error { return tcpOnly.RestrictNet() },
 		},
 		{
 			Name:           "BindUDPWithoutRules",
-			EnableLandlock: func() error { return landlock.MustConfig(bindUDP).RestrictNet() },
+			EnableLandlock: func() error { return bindUDP.RestrictNet() },
 			WantBindErr:    syscall.EACCES,
 			WantDialErr:    syscall.EACCES, // connect(2) autobinds an ephemeral port
 		},
 		{
 			Name:           "PermitTheBindPort",
-			EnableLandlock: func() error { return landlock.MustConfig(bindUDP).RestrictNet(landlock.BindUDP(bPort)) },
+			EnableLandlock: func() error { return bindUDP.RestrictNet(landlock.BindUDP(bPort)) },
 			WantDialErr:    syscall.EACCES, // the ephemeral autobind port is still denied
 		},
 		{
 			Name:           "PermitTheWrongBindPort",
-			EnableLandlock: func() error { return landlock.MustConfig(bindUDP).RestrictNet(landlock.BindUDP(bPort + 1)) },
+			EnableLandlock: func() error { return bindUDP.RestrictNet(landlock.BindUDP(bPort + 1)) },
 			WantBindErr:    syscall.EACCES,
 			WantDialErr:    syscall.EACCES,
 		},
 		{
 			Name:           "PermitEphemeralAutobind",
-			EnableLandlock: func() error { return landlock.MustConfig(bindUDP).RestrictNet(landlock.BindUDP(0)) },
+			EnableLandlock: func() error { return bindUDP.RestrictNet(landlock.BindUDP(0)) },
 			WantBindErr:    syscall.EACCES,
 		},
 		{
 			Name:           "ConnectSendUDPWithoutRules",
-			EnableLandlock: func() error { return landlock.MustConfig(connectSendUDP).RestrictNet() },
+			EnableLandlock: func() error { return connectSendUDP.RestrictNet() },
 			WantDialErr:    syscall.EACCES,
 			WantSendErr:    syscall.EACCES,
 		},
 		{
 			Name: "PermitTheConnectSendPort",
 			EnableLandlock: func() error {
-				return landlock.MustConfig(connectSendUDP).RestrictNet(landlock.ConnectSendUDP(cPort))
+				return connectSendUDP.RestrictNet(landlock.ConnectSendUDP(cPort))
 			},
 		},
 		{
 			Name: "PermitTheWrongConnectSendPort",
 			EnableLandlock: func() error {
-				return landlock.MustConfig(connectSendUDP).RestrictNet(landlock.ConnectSendUDP(cPort + 1))
+				return connectSendUDP.RestrictNet(landlock.ConnectSendUDP(cPort + 1))
 			},
 			WantDialErr: syscall.EACCES,
 			WantSendErr: syscall.EACCES,

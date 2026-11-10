@@ -75,7 +75,7 @@ func TestQuietPathsAddRuleFlags(t *testing.T) {
 			// EINVAL if the ruleset's quiet mask is empty.
 			name: "quiet rule in a Config without filesystem access rights",
 			rule: QuietPaths("/tmp"),
-			cfg:  MustConfig(AccessNetSet(ll.AccessNetBindTCP)).QuietAll(),
+			cfg:  Config{HandledAccessNet: ll.AccessNetBindTCP}.QuietAll(),
 			want: 0,
 		},
 	} {
@@ -111,7 +111,7 @@ func TestQuietPortsAddRuleFlags(t *testing.T) {
 			// EINVAL if the ruleset's quiet mask is empty.
 			name: "quiet rule in a Config without network access rights",
 			rule: QuietPorts(53),
-			cfg:  MustConfig(AccessFSSet(ll.AccessFSReadFile)).QuietAll(),
+			cfg:  Config{HandledAccessFS: ll.AccessFSReadFile}.QuietAll(),
 			want: 0,
 		},
 	} {

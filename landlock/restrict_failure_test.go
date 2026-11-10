@@ -106,7 +106,7 @@ func TestOverlyBroadFSRule(t *testing.T) {
 
 	handled := landlock.AccessFSSet(0b011)
 	excempt := landlock.AccessFSSet(0b111) // superset of handled!
-	err := landlock.MustConfig(handled).RestrictPaths(
+	err := landlock.Config{HandledAccessFS: handled}.RestrictPaths(
 		landlock.PathAccess(excempt, "/tmp"),
 	)
 	if !errors.Is(err, unix.EINVAL) {

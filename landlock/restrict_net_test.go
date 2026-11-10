@@ -61,9 +61,7 @@ func TestRestrictNet(t *testing.T) {
 			Name:        "RestrictingBindButConnectShouldWork",
 			RequiredABI: 4,
 			EnableLandlock: func() error {
-				return landlock.MustConfig(
-					landlock.AccessNetSet(ll.AccessNetBindTCP),
-				).RestrictNet()
+				return landlock.Config{HandledAccessNet: ll.AccessNetBindTCP}.RestrictNet()
 			},
 			WantConnectErr: nil,
 			WantBindErr:    syscall.EACCES,
@@ -72,9 +70,7 @@ func TestRestrictNet(t *testing.T) {
 			Name:        "RestrictingConnectButBindShouldWork",
 			RequiredABI: 4,
 			EnableLandlock: func() error {
-				return landlock.MustConfig(
-					landlock.AccessNetSet(ll.AccessNetConnectTCP),
-				).RestrictNet()
+				return landlock.Config{HandledAccessNet: ll.AccessNetConnectTCP}.RestrictNet()
 			},
 			WantConnectErr: syscall.EACCES,
 			WantBindErr:    nil,
